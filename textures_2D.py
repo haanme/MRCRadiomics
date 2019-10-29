@@ -49,12 +49,13 @@ from skimage.util import img_as_ubyte
 from skimage.feature import peak_local_max
 import step6_calculate_AUCs_utilities as step6utils
 from skimage.filters import frangi, hessian
-from pyzernikemoment import Zernikemoment
 from scipy.fftpack import rfft, irfft, fftfreq
 from scipy.ndimage.filters import gaussian_filter
 from scipy.interpolate import UnivariateSpline
 import scipy.fftpack as fp
 import pywt
+import visualizations
+
 try:
     from skimage import filters
 except ImportError:
@@ -87,8 +88,9 @@ class bcolors:
 def make_cv2_slice2D(slice2D):
     # re-scale to 0..255
     slice2D -= np.min(slice2D)
-    slice2D = (slice2D/np.max(slice2D))*255.0
-    cvimg = cv2.resize(slice2D.astype(np.uint8), (slice2D.shape[0], slice2D.shape[1]))
+    if(not (np.max(slice2D)==0)):
+        slice2D = (slice2D/np.max(slice2D))*255.0
+    cvimg = np.transpose(cv2.resize(slice2D.astype(np.uint8), (slice2D.shape[0], slice2D.shape[1])))
     return cvimg
 
 
@@ -226,6 +228,7 @@ def zernike_2D(data, params, roidata):
         Fast opposite weight learning rules with application in breast cancer
         diagnosis, Comput. Biol. Med., vol. 43, no. 1, pp. 32-41, 2013.
     """
+    from pyzernikemoment import Zernikemoment
 
     # Size of patch
     s = params[0]
@@ -234,11 +237,11 @@ def zernike_2D(data, params, roidata):
     # m = The repetition number of Zernike moment (scalar)
     m = params[2]
 
-    print('data.shape:' + str(data.shape))
+    # print('data.shape:' + str(data.shape))
     outdata = np.zeros(data.shape)
     for slice_i in range(data.shape[2]):
         if np.max(roidata[:,:,slice_i]) == 0:
-            print('Skipped [outside ROI] ' + str(slice_i+1) + '/' + str(data.shape[2]))    
+            # print('Skipped [outside ROI] ' + str(slice_i+1) + '/' + str(data.shape[2]))    
             continue
         if len(data.shape) > 3:
             for t in range(data.shape[3]):
@@ -249,10 +252,10 @@ def zernike_2D(data, params, roidata):
             slicedata = data[:, :, slice_i]
             Z_amplitude = zernike_2D_slice(slicedata, s, n, m)
             outdata[:, :, slice_i] = Z_amplitude.transpose()
-        print('Filtered ' + str(slice_i+1) + '/' + str(data.shape[2]))
-    print(np.max(outdata))
+        # print('Filtered ' + str(slice_i+1) + '/' + str(data.shape[2]))
+    # print(np.max(outdata))
     outdata = np.divide(outdata, np.max(outdata))
-    print('outdata.shape:' + str(outdata.shape))
+    # print('outdata.shape:' + str(outdata.shape))
     return [outdata]
 
 
@@ -336,17 +339,17 @@ def wavelet_2D_slice4(slicedata, waveletname):
 
 def wavelet_2D(data, roidata, waveletname):
 
-    print('data.shape:' + str(data.shape))
+    # print('data.shape:' + str(data.shape))
     outdata = np.zeros([data.shape[0], data.shape[1], data.shape[2], 11])
     for slice_i in range(data.shape[2]):
         if np.max(roidata[:,:,slice_i]) == 0:
-            print('Skipped [outside ROI] ' + str(slice_i+1) + '/' + str(data.shape[2]))    
+            # print('Skipped [outside ROI] ' + str(slice_i+1) + '/' + str(data.shape[2]))    
             continue
         slicedata = data[:, :, slice_i]
         output = wavelet_2D_slice4(slicedata, waveletname)
         outdata[:, :, slice_i, :] = output
-        print('Filtered ' + str(slice_i+1) + '/' + str(data.shape[2]))
-    print('outdata.shape:' + str(outdata.shape))
+        # print('Filtered ' + str(slice_i+1) + '/' + str(data.shape[2]))
+    # print('outdata.shape:' + str(outdata.shape))
     return outdata
 
 
@@ -425,11 +428,14 @@ def calculate_2D_contour_measures(contours, resolution):
     Contour_convexitydefect_length
     """
     if len(contours[1]) == 0:
+        print('len(contours[1]) == 0')
         return None
     points = np.squeeze(np.array(contours[1][0]))
     if(len(points.shape) < 2):
+        print('len(points.shape) < 2')
         return None
-    if(points.shape[1] < 3):
+    if(points.shape[0] < 3):
+        print('points.shape[0] < 3')
         return None
     contour = []
     for p in points:
@@ -515,40 +521,48 @@ contour2D_names.append('2D_mean_contour_convexity_defect_depths_proportional_to_
 contour2D_names.append('2D_median_contour_convexity_defect_depths_proportional_to_area')
 contour2D_names.append('2D_SD_contour_convexity_defect_depths_proportional_to_area')
 contour2D_names.append('2D_IQR_contour_convexity_defect_depths_proportional_to_area')
-def subfun_3D_2D_Hu_moments(labelimage, resolution):
+def subfun_3D_2D_Hu_moments(LESIONDATAr, LESIONr, labelimage, resolution, params):
 
+    print((LESIONDATAr.shape, LESIONr.shape, labelimage.shape))
     # Resolve which directions to be calculated
     Contour_measures = []
     if labelimage.shape[1] == labelimage.shape[2]:
-      resolution2D = [resolution[1], resolution[2]]
-      for x in range(labelimage.shape[0]):
-          if np.max(labelimage[x,:,:]) == 0:
-              continue
-          cvimg = make_cv2_slice2D(labelimage[x,:,:])
-          contours = cv2.findContours(cvimg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-          contour_measures = calculate_2D_contour_measures(contours, resolution2D)
-          if contour_measures is not None:
-             Contour_measures.append(contour_measures)
+        resolution2D = [resolution[1], resolution[2]]
+        for x in range(labelimage.shape[0]):
+            if len(np.unique(labelimage[x,:,:])) < 2:
+                continue
+            cvimg = make_cv2_slice2D(labelimage[x,:,:]).copy()
+            contours = cv2.findContours(cvimg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            contour_measures = calculate_2D_contour_measures(contours, resolution2D)
+            if contour_measures is not None:
+                Contour_measures.append(contour_measures)
     if labelimage.shape[0] == labelimage.shape[2]:
-      resolution2D = [resolution[0], resolution[2]]
-      for y in range(labelimage.shape[1]):
-          if np.max(labelimage[:,y,:]) == 0:
-              continue
-          cvimg = make_cv2_slice2D(labelimage[:,y,:])
-          contours = cv2.findContours(cvimg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-          contour_measures = calculate_2D_contour_measures(contours, resolution2D)
-          if contour_measures is not None:
-             Contour_measures.append(contour_measures)
+        resolution2D = [resolution[0], resolution[2]]
+        for y in range(labelimage.shape[1]):
+            if len(np.unique(labelimage[:,y,:])) < 2:
+                continue
+            cvimg = make_cv2_slice2D(labelimage[:,y,:]).copy()
+            contours = cv2.findContours(cvimg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            contour_measures = calculate_2D_contour_measures(contours, resolution2D)
+            if contour_measures is not None:
+                Contour_measures.append(contour_measures)
     if labelimage.shape[0] == labelimage.shape[1]:
-      resolution2D = [resolution[0], resolution[1]]
-      for z in range(labelimage.shape[2]):
-          if np.max(labelimage[:,:,z]) == 0:
-              continue
-          cvimg = make_cv2_slice2D(labelimage[:,:,z])
-          contours = cv2.findContours(cvimg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-          contour_measures = calculate_2D_contour_measures(contours, resolution2D)
-          if contour_measures is not None:
-             Contour_measures.append(contour_measures)
+        resolution2D = [resolution[0], resolution[1]]
+        for z in range(labelimage.shape[2]):
+            if len(np.unique(labelimage[:,:,z])) < 2:
+                continue
+            cvimg = make_cv2_slice2D(labelimage[:,:,z]).copy()
+            contours = cv2.findContours(cvimg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            contour_measures = calculate_2D_contour_measures(contours, resolution2D)
+            if contour_measures is not None:
+                if 'write_visualization' in params[-1]:
+                    LESIONDATAr_cvimg = make_cv2_slice2D(LESIONDATAr[:,:,z]).copy()
+                    LESIONr_cvimg = make_cv2_slice2D(LESIONr[:,:,z]).copy()
+                    basename = params[-1]['name'] + '_2D_curvature_' + str(params[:-1]).replace(' ','_') + '_slice' + str(z)
+                    visualizations.write_slice2D(LESIONDATAr_cvimg, params[-1]['write_visualization'] + os.sep + basename + '_data.tiff')
+                    visualizations.write_slice2D_ROI(LESIONDATAr_cvimg, LESIONr_cvimg, params[-1]['write_visualization'] + os.sep + basename + '_lesion.tiff', 0.4)
+                    visualizations.write_slice2D_polygon(LESIONDATAr_cvimg, np.squeeze(np.array(contours[1][0])), params[-1]['write_visualization'] + os.sep + basename + '_contour.tiff')
+                Contour_measures.append(contour_measures)
 
     subfun_3D_2D_Hu_moment_suffixes = ['Hu_Inv_1', 'Hu_Inv_1', 'Hu_Inv_1', 'Hu_Inv_1', 'Hu_Inv_1', 'Hu_Inv_1', 'Hu_Inv_1']
     r = []
@@ -698,17 +712,17 @@ Hu, M.K., 1962. Visual pattern recognition by moment invariants. IRE transaction
 casefun_3D_2D_Hu_moments_rawintensity_names = []
 for name in contour2D_names:
     casefun_3D_2D_Hu_moments_rawintensity_names.append('2D_curvature_raw_intensity_' + name)
-def casefun_3D_2D_Hu_moments_rawintensity(LESIONDATAr, LESIONr, WGr, resolution):
+def casefun_3D_2D_Hu_moments_rawintensity(LESIONDATAr, LESIONr, WGr, resolution, params):
     if np.max(LESIONDATAr) == 0:
         return [float('nan') for x in casefun_3D_2D_Hu_moments_rawintensity_names]
-    labelimage = LESIONDATAr
+    labelimage = copy.deepcopy(LESIONDATAr)
     labelimage[LESIONr[0] == 0] = 0
-    return subfun_3D_2D_Hu_moments(labelimage, resolution)
+    return subfun_3D_2D_Hu_moments(copy.deepcopy(LESIONDATAr), copy.deepcopy(LESIONr[0]), labelimage, resolution, ['raw']+params)
 
 casefun_3D_2D_Hu_moments_gradient_names = []
 for name in contour2D_names:
     casefun_3D_2D_Hu_moments_gradient_names.append('2D_curvature_gradient_' + name)
-def casefun_3D_2D_Hu_moments_gradient(LESIONDATAr, LESIONr, WGr, resolution):
+def casefun_3D_2D_Hu_moments_gradient(LESIONDATAr, LESIONr, WGr, resolution, params):
     if np.max(LESIONDATAr) == 0:
         return [float('nan') for x in casefun_3D_2D_Hu_moments_gradient_names]
     x_lo, x_hi, y_lo, y_hi = find_bounded_subregion3D2D(LESIONDATAr)
@@ -717,61 +731,35 @@ def casefun_3D_2D_Hu_moments_gradient(LESIONDATAr, LESIONr, WGr, resolution):
     labelimage = np.zeros_like(LESIONDATArs)
     for slice_i in range(LESIONDATArs.shape[2]):
         img_slice = LESIONDATArs[:, :, slice_i]
-        img_slice = img_slice[x_lo:x_hi, y_lo:y_hi]
         cvimg = cv2.resize(img_slice.astype(np.float), (img_slice.shape[0], img_slice.shape[1]))
         laplacian = cv2.Laplacian(cvimg, cv2.CV_64F)
         laplacian[LESIONrs[:,:,slice_i] == 0] = 0
         labelimage[:, :, slice_i] = laplacian
-    return subfun_3D_2D_Hu_moments(labelimage, resolution)
+    return subfun_3D_2D_Hu_moments(copy.deepcopy(LESIONDATArs), copy.deepcopy(LESIONrs), labelimage, resolution, ['gradient']+params)
 
 casefun_3D_2D_Hu_moments_2bins_names = []
 for name in contour2D_names:
     casefun_3D_2D_Hu_moments_2bins_names.append('2D_curvature_2_bins_histogram_' + name)
-def casefun_3D_2D_Hu_moments_2bins(LESIONDATAr, LESIONr, WGr, resolution):
+casefun_3D_2D_Hu_moments_3bins_names = []
+for name in contour2D_names:
+    casefun_3D_2D_Hu_moments_3bins_names.append('2D_curvature_3_bins_histogram_' + name)
+casefun_3D_2D_Hu_moments_4bins_names = []
+for name in contour2D_names:
+    casefun_3D_2D_Hu_moments_4bins_names.append('2D_curvature_4_bins_histogram_' + name)
+def casefun_3D_2D_Hu_moments_bins(LESIONDATAr, LESIONr, WGr, resolution, params):
+    no_bins=params[0]
     if np.max(LESIONDATAr) == 0:
         return [float('nan') for x in casefun_3D_2D_Hu_moments_2bins_names]
     x_lo, x_hi, y_lo, y_hi = find_bounded_subregion3D2D(LESIONDATAr)
     ROIdata = LESIONDATAr[LESIONr[0] > 0]
-    hist, bin_edges = np.histogram(ROIdata, bins=2)
-    labelimage = np.zeros_like(LESIONDATAr)
+    hist, bin_edges = np.histogram(ROIdata, bins=no_bins)
+    LESIONDATArs = LESIONDATAr[x_lo:x_hi, y_lo:y_hi, :]
+    LESIONrs = LESIONr[0][x_lo:x_hi, y_lo:y_hi, :]
+    labelimage = np.zeros_like(LESIONDATArs)
     for bin_edge_i in range(1, len(bin_edges)):
-        labelimage[LESIONDATAr < bin_edges[bin_edge_i]] = bin_edge_i
-    labelimage[LESIONr[0] == 0] = 0
-    labelimage = labelimage[x_lo:x_hi, y_lo:y_hi, :]
-    return subfun_3D_2D_Hu_moments(labelimage, resolution)
-
-casefun_3D_2D_Hu_moments_3bins_names = []
-for name in contour2D_names:
-    casefun_3D_2D_Hu_moments_3bins_names.append('2D_curvature_3_bins_histogram_' + name)
-def casefun_3D_2D_Hu_moments_3bins(LESIONDATAr, LESIONr, WGr, resolution):
-    if np.max(LESIONDATAr) == 0:
-        return [float('nan') for x in casefun_3D_2D_Hu_moments_3bins_names]
-    x_lo, x_hi, y_lo, y_hi = find_bounded_subregion3D2D(LESIONDATAr)
-    ROIdata = LESIONDATAr[LESIONr[0] > 0]
-    hist, bin_edges = np.histogram(ROIdata, bins=3)
-    labelimage = np.zeros_like(LESIONDATAr)
-    for bin_edge_i in range(1, len(bin_edges)):
-        labelimage[LESIONDATAr < bin_edges[bin_edge_i]] = bin_edge_i
-    labelimage[LESIONr[0] == 0] = 0
-    labelimage = labelimage[x_lo:x_hi, y_lo:y_hi, :]
-    return subfun_3D_2D_Hu_moments(labelimage, resolution)
-
-casefun_3D_2D_Hu_moments_4bins_names = []
-for name in contour2D_names:
-    casefun_3D_2D_Hu_moments_4bins_names.append('2D_curvature_4_bins_histogram_' + name)
-def casefun_3D_2D_Hu_moments_4bins(LESIONDATAr, LESIONr, WGr, resolution):
-    if np.max(LESIONDATAr) == 0:
-        return [float('nan') for x in casefun_3D_2D_Hu_moments_4bins_names]
-    x_lo, x_hi, y_lo, y_hi = find_bounded_subregion3D2D(LESIONDATAr)
-    ROIdata = LESIONDATAr[LESIONr[0] > 0]
-    hist, bin_edges = np.histogram(ROIdata, bins=4)
-    labelimage = np.zeros_like(LESIONDATAr)
-    for bin_edge_i in range(1, len(bin_edges)):
-        labelimage[LESIONDATAr < bin_edges[bin_edge_i]] = bin_edge_i
-    labelimage[LESIONr[0] == 0] = 0
-    labelimage = labelimage[x_lo:x_hi, y_lo:y_hi, :]
-    return subfun_3D_2D_Hu_moments(labelimage, resolution)
-
+        labelimage = np.where(LESIONDATArs < bin_edges[bin_edge_i], bin_edge_i, labelimage)
+    labelimage[LESIONrs == 0] = 0
+    return subfun_3D_2D_Hu_moments(copy.deepcopy(LESIONDATArs), copy.deepcopy(LESIONrs), labelimage, resolution, ['bins']+params)
 
 subfun_3D_2D_local_binary_pattern_names = ['mean', 'median', 'p25', 'p75', 'skewness', 'kurtosis', 'SD', 'IQR', 'meanWG', 'medianWG', 'Cmedian', 'Cmean', 'CNR']
 def subfun_3D_2D_local_binary_pattern(LESIONDATAr, LESIONr, WGr, params):
@@ -883,6 +871,25 @@ def subfun_3D_2D_gabor_filter(data, LESIONr, WGr, params):
                 filt_real, filt_imag = skimage.filters.gabor(slicedata, frequency=params[0], theta=radians[r_i], n_stds=params[2])
                 filt_reals[:, :, r_i] = filt_real
             outdata[:, :, slice_i] = np.mean(filt_reals, 2)
+            if 'write_visualization' in params[-1]:
+                if not params[0] == 1.0:
+                    continue
+                if not params[1] == 2:
+                    continue
+                if not params[2] == 2:
+                    continue
+                LESIONDATAr_cvimg = make_cv2_slice2D(slicedata).copy()
+                LESIONr_cvimg = make_cv2_slice2D(LESIONr[0][:,:,slice_i]).copy()
+                WGr_cvimg = make_cv2_slice2D(WGr[:,:,slice_i]).copy()
+                outdata_cvimg = make_cv2_slice2D(outdata[:, :, slice_i]).copy()
+                if(np.max(LESIONr_cvimg)==0):
+                    continue
+                basename = params[-1]['name'] + '_Gabor_' + str(params[:-1]).replace(' ','_') + '_slice' + str(slice_i)
+                visualizations.write_slice2D(LESIONDATAr_cvimg, params[-1]['write_visualization'] + os.sep + basename + '_data.tiff')
+                visualizations.write_slice2D_ROI(LESIONDATAr_cvimg, LESIONr_cvimg, params[-1]['write_visualization'] + os.sep + basename + '_lesion.tiff', 0.4)
+                visualizations.write_slice2D_ROI_color(LESIONDATAr_cvimg, LESIONr_cvimg, outdata_cvimg, params[-1]['write_visualization'] + os.sep + basename + '_overlay.tiff', 0.8)
+                visualizations.write_slice2D_ROI_color(LESIONDATAr_cvimg, WGr_cvimg, outdata_cvimg, params[-1]['write_visualization'] + os.sep + basename + '_WGoverlay.tiff', 0.7)
+
     ROIdata = outdata[LESIONr[0] > 0]
     WGdata = outdata[WGr > 0]
     mean = np.mean(ROIdata)
@@ -976,7 +983,7 @@ def casefun_3D_2D_Harris_name_generator(params):
     return names
 def casefun_3D_2D_Harris(LESIONDATAr, LESIONr, WGr, resolution, params):
     blockSize = int(np.round(params[0]/np.mean([resolution[0], resolution[1]])))
-    print('Harris effective block size:' + str(blockSize))
+    # print('Harris effective block size:' + str(blockSize))
     ksize = params[1]
     k = params[2]
     No_corners_ROI = 0
@@ -987,17 +994,19 @@ def casefun_3D_2D_Harris(LESIONDATAr, LESIONr, WGr, resolution, params):
     Densities_WG_mean = []
     Densities_ROI_ratio = []
     for slice_i in range(LESIONDATAr.shape[2]):
-        if(np.max(LESIONr[0][:,:,slice_i]) == 0 and np.max(WGr[:,:,slice_i]) == 0):
+        LS = LESIONr[0][:,:,slice_i]
+        WG = WGr[:,:,slice_i]
+        if(np.max(LS) == 0 and np.max(WG) == 0):
             continue
         cvimg = make_cv2_slice2D(LESIONDATAr[:, :, slice_i])
         edgemap = abs(cv2.cornerHarris(cvimg, blockSize, ksize, k))
         ROIdata = copy.deepcopy(edgemap)
-        ROIdata[LESIONr[0][:,:,slice_i] == 0] = 0
+        ROIdata[LS == 0] = 0
         locs_ROI = peak_local_max(ROIdata, min_distance=1, threshold_abs=0.0)
         No_corners_ROI += len(locs_ROI)
         WGdata = copy.deepcopy(edgemap)
-        WGdata[WGr[:,:,slice_i] == 0] = 0
-        WGdata[LESIONr[0][:,:,slice_i] > 0] = 0
+        WGdata[WG == 0] = 0
+        WGdata[LS > 0] = 0
         locs_WG = peak_local_max(WGdata, min_distance=1)
         No_corners_WG += len(locs_WG)
         if locs_ROI.shape[0] > 3:
@@ -1014,8 +1023,6 @@ def casefun_3D_2D_Harris(LESIONDATAr, LESIONr, WGr, resolution, params):
            for p in locs_ROI:
               x.append(p[0])
               y.append(p[1])
-           print(x)
-           print(y)
            try:
                kernel = stats.gaussian_kde(np.vstack([x,y]))
                kernel = kernel.covariance*kernel.factor
@@ -1089,6 +1096,85 @@ def casefun_3D_2D_Harris(LESIONDATAr, LESIONr, WGr, resolution, params):
 
     return No_corners_ROI, No_corners_WG, No_corners_ratio, Corner_density_primary, Corner_density_secondary, Corner_density_mean, Corner_density_ratio, Corner_density_ratio_overall
 
+"""
+Harris corner detection
+Harris, C. and Stephens, M., 1988, August. A combined corner and edge detector. In Alvey vision conference (Vol. 15, No. 50, pp. 10-5244).
+blockSize - Neighborhood size (see the details on cornerEigenValsAndVecs()).
+ksize - Aperture parameter for the Sobel() operator.
+k - Harris detector free parameter.
+"""
+subfun_3D_2D_Harris_names_WG = ('No_corners_ROI', 'Corner_density_primary', 'Corner_density_secondary', 'Corner_density_mean')
+def casefun_3D_2D_Harris_name_generator_WG(params):
+    names = []
+    for name in subfun_3D_2D_Harris_names_WG:
+        names.append('WGUTUHarris_b%d_ks%d_k%3.2f_%s' % (params[0], params[1], params[2], name))
+    return names
+def casefun_3D_2D_Harris_WG(LESIONDATAr, LESIONr, WGr, resolution, params):
+    blockSize = int(np.round(params[0]/np.mean([resolution[0], resolution[1]])))
+    # print('Harris effective block size:' + str(blockSize))
+    ksize = params[1]
+    k = params[2]
+    No_corners_ROI = 0
+    Densities_ROI_primary = []
+    Densities_ROI_secondary = []
+    Densities_ROI_mean = []
+    Densities_WG_mean = []
+    Densities_ROI_ratio = []
+    for slice_i in range(LESIONDATAr.shape[2]):
+        if(np.max(WGr[:,:,slice_i]) == 0):
+            continue
+        cvimg = make_cv2_slice2D(LESIONDATAr[:, :, slice_i])
+        edgemap = abs(cv2.cornerHarris(cvimg, blockSize, ksize, k))
+        ROIdata = copy.deepcopy(edgemap)
+        ROIdata[WGr[:,:,slice_i] == 0] = 0
+        locs_ROI = peak_local_max(ROIdata, min_distance=1, threshold_abs=0.0)
+        No_corners_ROI += len(locs_ROI)
+        if locs_ROI.shape[0] > 3:
+           ROI_density = 1
+        else:
+           ROI_density = 0
+        if ROI_density == 1:
+           x = []
+           y = []
+           for p in locs_ROI:
+              x.append(p[0])
+              y.append(p[1])
+           try:
+               kernel = stats.gaussian_kde(np.vstack([x,y]))
+               kernel = kernel.covariance*kernel.factor
+               covs = sorted([kernel[0,0], kernel[1,1]], reverse=True)
+               ROI_axis_a = covs[0]
+               ROI_axis_b = covs[1]
+           except:
+               ROI_density = 0
+        if ROI_density == 1:
+           Densities_ROI_primary.append(ROI_axis_a)
+           Densities_ROI_secondary.append(ROI_axis_b)
+           Densities_ROI_mean.append(np.mean([ROI_axis_a, ROI_axis_b]))
+           Densities_WG_mean.append(0)
+           Densities_ROI_ratio.append(1)
+        else:
+           Densities_ROI_primary.append(0)
+           Densities_ROI_secondary.append(0)
+           Densities_ROI_mean.append(0)
+           Densities_WG_mean.append(0)
+           Densities_ROI_ratio.append(0)
+    if len(Densities_ROI_primary) == 0:
+       Corner_density_primary = 0
+    else:
+       Corner_density_primary = np.mean(Densities_ROI_primary)
+
+    if len(Densities_ROI_secondary) == 0:
+       Corner_density_secondary = 0
+    else:
+       Corner_density_secondary = np.mean(Densities_ROI_secondary)
+
+    if len(Densities_ROI_mean) == 0:
+       Corner_density_mean = 0
+    else:
+       Corner_density_mean = np.mean(Densities_ROI_mean)
+
+    return No_corners_ROI, Corner_density_primary, Corner_density_secondary, Corner_density_mean
 
 """
 Shi-Tomasi corner detection
@@ -1101,7 +1187,7 @@ subfun_3D_2D_ShiTomasi_names = ('No_corners_ROI', 'No_corners_WG', 'No_corners_r
 def casefun_3D_2D_ShiTomasi_name_generator(params):
     names = []
     for name in subfun_3D_2D_Harris_names:
-        names.append('UTUShiTomasi_b%d_ks%d_k%3.2f_%s' % (params[0], params[1], params[2], name))
+        names.append('UTUShiTomasi_b%d_ks%4.3f_k%3.2f_%s' % (params[0], params[1], params[2], name))
     return names
 def casefun_3D_2D_ShiTomasi(LESIONDATAr, LESIONr, WGr, resolution, params):
     maxCorners = params[0]
@@ -1220,8 +1306,6 @@ def casefun_3D_2D_ShiTomasi(LESIONDATAr, LESIONr, WGr, resolution, params):
 
     return No_corners_ROI, No_corners_WG, No_corners_ratio, Corner_density_primary, Corner_density_secondary, Corner_density_mean, Corner_density_ratio, Corner_density_ratio_overall
 
-
-
 """
 Collection of edge detectors
 
@@ -1253,6 +1337,25 @@ def casefun_3D_2D_objectprops_name_generator(filtername, param_strs):
         else:
             names.append('UTU3D2D%s_objprops_%s' % (filtername, name))
     return names
+subfun_3D_2D_objectprops_names_WG = ('Area_mean_mm2', 'Area_median_mm2', 'Area_SD_mm2', 'Area_IQR_mm2', 
+                                  'Ecc_mean', 'Ecc_median', 'Ecc_SD', 'Ecc_IQR', 
+                                  'Ax1len_mean_mm', 'Ax1len_median_mm', 'Ax1len_SD_mm', 'Ax1len_IQR_mm', 
+                                  'Ax2len_mean_mm', 'Ax2len_median_mm', 'Ax2len_SD_mm', 'Ax2len_IQR_mm', 
+                                  'Int_mean', 'Int_median', 'Int_SD', 'Int_IQR', 
+                                  'Ori_SD', 'Ori_IQR', 
+                                  'Per_mean_mm', 'Per_median_mm', 'Per_SD_mm', 'Per_IQR_mm', 
+                                  'Den_mean', 'Den_median', 'N_objs')
+def casefun_3D_2D_objectprops_name_generator_WG(filtername, param_strs):
+    names = []
+    for name in subfun_3D_2D_objectprops_names_WG:
+        if len(param_strs) > 0:
+            suffix = ''
+            for param in param_strs:
+                suffix += ('_%s' % param_strs)
+            names.append('WGUTU3D2D%s_%s_objprops_%s' % (filtername, suffix, name))
+        else:
+            names.append('WGUTU3D2D%s_objprops_%s' % (filtername, name))
+    return names
 
 def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, WGr, resolution, fun2D, params):
 
@@ -1275,7 +1378,7 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, WGr, resolution, fun2D, para
     blobs = 0
     WGblobs = 0
     for slice_i in range(LESIONDATAr.shape[2]):
-        if(np.max(LESIONr[0][:,:,slice_i]) == 0 and np.max(WGr[:,:,slice_i]) ==0):
+        if(np.max(LESIONr[0][:,:,slice_i]) == 0 or np.max(WGr[:,:,slice_i]) ==0):
             continue
         slice2Ddata = LESIONDATAr[:, :, slice_i]
         x_lo, x_hi, y_lo, y_hi = find_bounded_subregion2D(slice2Ddata)
@@ -1285,13 +1388,23 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, WGr, resolution, fun2D, para
 
         # Resize to 1x1 mm space
         cvimg = cv2.resize(slice2Ddata, None, fx = resolution[0], fy = resolution[1], interpolation = cv2.INTER_LANCZOS4)
+        cvWG = cv2.resize(slice2D_WG, None, fx = resolution[0], fy = resolution[1], interpolation = cv2.INTER_NEAREST)
+        cvROI = cv2.resize(slice2D_ROI, None, fx = resolution[0], fy = resolution[1], interpolation = cv2.INTER_NEAREST)
         slice2D = fun2D(cvimg, params)
 
+        if 'write_visualization' in params[-1]:
+            LESIONDATAr_cvimg = make_cv2_slice2D(LESIONDATAr[:,:,z]).copy()
+            LESIONr_cvimg = make_cv2_slice2D(LESIONr[:,:,z]).copy()
+            basename = params[-1]['name'] + '_2D_curvature_' + str(params[:-1]).replace(' ','_') + '_slice' + str(z)
+            visualizations.write_slice2D(cvimg, params[-1]['write_visualization'] + os.sep + basename + '_data.tiff')
+            visualizations.write_slice2D_ROI(LESIONDATAr_cvimg, LESIONr_cvimg, params[-1]['write_visualization'] + os.sep + basename + '_lesion.tiff', 0.4)
+            visualizations.write_slice2D_polygon(LESIONDATAr_cvimg, np.squeeze(np.array(contours[1][0])), params[-1]['write_visualization'] + os.sep + basename + '_contour.tiff')
+
         sliceROI = copy.deepcopy(slice2D)
-        sliceROI[slice2D_ROI == 0] = 0
+        sliceROI[cvROI == 0] = 0
         sliceWG = copy.deepcopy(slice2D)
-        sliceWG[slice2D_WG == 0] = 0
-        sliceWG[slice2D_ROI > 0] = 0
+        sliceWG[cvWG == 0] = 0
+        sliceWG[cvROI > 0] = 0
 
         # label non-zero regions
         all_labels_ROI = measure.label(sliceROI)
@@ -1341,61 +1454,103 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, WGr, resolution, fun2D, para
     ret.append(np.median(area))
     ret.append(np.std(area))
     ret.append(iqr(area))
+    # print((fun2D,'meanarea',meanarea, area, blobs,eccentricity))
     if meanarea == 0:
         ret.append(0)
     else:
         ret.append(meanarea/(meanarea+np.mean(WGarea)))
 
-    meaneccentricity = np.mean(eccentricity)
-    ret.append(meaneccentricity)
-    ret.append(np.median(eccentricity))
-    ret.append(np.std(eccentricity))
-    ret.append(iqr(eccentricity))
+    if(len(eccentricity)==0):
+        meaneccentricity = 0
+        ret.append(0)
+        ret.append(0)
+        ret.append(0)
+        ret.append(0)
+    else:
+        meaneccentricity = np.mean(eccentricity)
+        ret.append(meaneccentricity)
+        ret.append(np.median(eccentricity))
+        ret.append(np.std(eccentricity))
+        ret.append(iqr(eccentricity))
     if meaneccentricity == 0:
         ret.append(0)
     else:
         ret.append(meaneccentricity/(meaneccentricity+np.mean(WGeccentricity)))
         
-    meanmajor_axis_length = np.mean(major_axis_length)
-    ret.append(meanmajor_axis_length)
-    ret.append(np.median(major_axis_length))
-    ret.append(np.std(major_axis_length))
-    ret.append(iqr(major_axis_length))
+    if(len(major_axis_length)==0):
+        meanmajor_axis_length = 0
+        ret.append(meanmajor_axis_length)
+        ret.append(0)
+        ret.append(0)
+        ret.append(0)
+    else:
+        meanmajor_axis_length = np.mean(major_axis_length)
+        ret.append(meanmajor_axis_length)
+        ret.append(np.median(major_axis_length))
+        ret.append(np.std(major_axis_length))
+        ret.append(iqr(major_axis_length))
     if meanmajor_axis_length == 0:
         ret.append(0)
     else:
         ret.append(meanmajor_axis_length/(meanmajor_axis_length+np.mean(WGmajor_axis_length)))
 
-    meanminor_axis_length = np.mean(minor_axis_length)
-    ret.append(meanminor_axis_length)
-    ret.append(np.median(minor_axis_length))
-    ret.append(np.std(minor_axis_length))
-    ret.append(iqr(minor_axis_length))
+    if(len(minor_axis_length)==0):
+        meanminor_axis_length = 0
+        ret.append(meanminor_axis_length)
+        ret.append(0)
+        ret.append(0)
+        ret.append(0)
+    else:
+        meanminor_axis_length = np.mean(minor_axis_length)
+        ret.append(meanminor_axis_length)
+        ret.append(np.median(minor_axis_length))
+        ret.append(np.std(minor_axis_length))
+        ret.append(iqr(minor_axis_length))
     if meanminor_axis_length == 0:
         ret.append(0)
     else:
         ret.append(meanminor_axis_length/(meanminor_axis_length+np.mean(WGminor_axis_length)))
 
-    mean_mean_intensity = np.mean(mean_intensity)
-    ret.append(mean_mean_intensity)
-    ret.append(np.median(mean_intensity))
-    ret.append(np.std(mean_intensity))
-    ret.append(iqr(mean_intensity))
+    if(len(mean_intensity)==0):
+        mean_mean_intensity = 0
+        ret.append(mean_mean_intensity)
+        ret.append(0)
+        ret.append(0)
+        ret.append(0)
+    else:
+        mean_mean_intensity = np.mean(mean_intensity)
+        ret.append(mean_mean_intensity)
+        ret.append(np.median(mean_intensity))
+        ret.append(np.std(mean_intensity))
+        ret.append(iqr(mean_intensity))
     if mean_mean_intensity == 0:
         ret.append(0)
     else:
         ret.append(mean_mean_intensity/(mean_mean_intensity+np.mean(WGmean_intensity)))
 
-    ret.append(np.std(orientation))
-    ret.append(iqr(orientation))
-    meanorientation = np.mean(orientation)
-    ret.append(meanorientation/(meanorientation+np.mean(WGorientation)))
+    if(len(orientation)==0):
+        ret.append(0)
+        ret.append(0)
+        meanorientation = 0
+        ret.append(0)
+    else:
+        ret.append(np.std(orientation))
+        ret.append(iqr(orientation))
+        meanorientation = np.mean(orientation)
+        ret.append(meanorientation/(meanorientation+np.mean(WGorientation)))
 
-    meanperimeter = np.mean(perimeter)
-    ret.append(meanperimeter)
-    ret.append(np.median(perimeter))
-    ret.append(np.std(perimeter))
-    ret.append(iqr(perimeter))
+    if(len(perimeter)==0):
+        meanperimeter = 0
+        ret.append(0)
+        ret.append(0)
+        ret.append(0)
+        ret.append(0)
+    else:
+        meanperimeter = np.mean(perimeter)
+        ret.append(meanperimeter)
+        ret.append(np.median(perimeter))
+        ret.append(np.std(perimeter))
+        ret.append(iqr(perimeter))
     if meanperimeter == 0:
         ret.append(0)
     else:
@@ -1406,19 +1561,19 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, WGr, resolution, fun2D, para
         ret.append(0)
         ret.append(0)
     else:
-        print(density)
+        # print(density)
         meandensity = np.mean(density)
-        print(meandensity)
+        # print(meandensity)
         ret.append(meandensity)
         ret.append(np.median(density))
-        print(np.median(density))
+        # print(np.median(density))
         if len(WGdensity) == 0:
             ret.append(0)
         else:
             ret.append(meandensity/(meandensity+np.mean(WGdensity)))
-            print(WGdensity)
-            print(np.mean(WGdensity))
-            print(meandensity/(meandensity+np.mean(WGdensity)))
+            # print(WGdensity)
+            # print(np.mean(WGdensity))
+            # print(meandensity/(meandensity+np.mean(WGdensity)))
 
     if blobs == 0:
         ret.append(0)
@@ -1429,6 +1584,114 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, WGr, resolution, fun2D, para
 
     return ret
 
+
+def casefun_3D_2D_objectprops_WG(LESIONDATAr, LESIONr, WGr, resolution, fun2D, params):
+
+    area = []
+    eccentricity = []
+    major_axis_length = []
+    mean_intensity = []
+    minor_axis_length = []
+    orientation = []
+    perimeter = []
+    density = []
+    blobs = 0
+    for slice_i in range(LESIONDATAr.shape[2]):
+        if(np.max(WGr[:,:,slice_i]) ==0):
+            continue
+        slice2Ddata = LESIONDATAr[:, :, slice_i]
+        x_lo, x_hi, y_lo, y_hi = find_bounded_subregion2D(slice2Ddata)
+        slice2Ddata = slice2Ddata[x_lo:x_hi, y_lo:y_hi]
+        slice2D_ROI = WGr[x_lo:x_hi, y_lo:y_hi, slice_i]
+
+        # Resize to 1x1 mm space
+        cvimg = cv2.resize(slice2Ddata, None, fx = resolution[0], fy = resolution[1], interpolation = cv2.INTER_LANCZOS4)
+        cvROI = cv2.resize(slice2D_ROI, None, fx = resolution[0], fy = resolution[1], interpolation = cv2.INTER_NEAREST)
+        slice2D = fun2D(cvimg, params)
+
+        sliceROI = copy.deepcopy(slice2D)
+        sliceROI[cvROI == 0] = 0
+
+        # label non-zero regions
+        all_labels_ROI = measure.label(sliceROI)
+        # calculate region properties
+        regions_ROI = regionprops(all_labels_ROI, intensity_image=cvimg, cache=True)
+        centroid_x = []
+        centroid_y = []
+        blobs += len(regions_ROI)
+        for region in regions_ROI:
+            area.append(region.area)
+            centroid_x.append(region.centroid[0])
+            centroid_y.append(region.centroid[1])
+            eccentricity.append(region.eccentricity)
+            major_axis_length.append(region.major_axis_length)
+            mean_intensity.append(region.mean_intensity)
+            minor_axis_length.append(region.minor_axis_length)
+            orientation.append(region.orientation)
+            perimeter.append(region.perimeter)
+        if len(centroid_x) > 3:
+            kernel = stats.gaussian_kde(np.vstack([centroid_x,centroid_y]))
+            kernel = kernel.covariance*kernel.factor
+            density.append(np.mean([kernel[0,0], kernel[1,1]]))
+
+    ret = []
+    if(blobs == 0):
+        for ret_i in range(27):
+            ret.append(0)
+    else:
+        meanarea = np.mean(area)
+        ret.append(meanarea)
+        ret.append(np.median(area))
+        ret.append(np.std(area))
+        ret.append(iqr(area))
+
+        meaneccentricity = np.mean(eccentricity)
+        ret.append(meaneccentricity)
+        ret.append(np.median(eccentricity))
+        ret.append(np.std(eccentricity))
+        ret.append(iqr(eccentricity))
+
+        meanmajor_axis_length = np.mean(major_axis_length)
+        ret.append(meanmajor_axis_length)
+        ret.append(np.median(major_axis_length))
+        ret.append(np.std(major_axis_length))
+        ret.append(iqr(major_axis_length))
+
+        meanminor_axis_length = np.mean(minor_axis_length)
+        ret.append(meanminor_axis_length)
+        ret.append(np.median(minor_axis_length))
+        ret.append(np.std(minor_axis_length))
+        ret.append(iqr(minor_axis_length))
+
+        mean_mean_intensity = np.mean(mean_intensity)
+        ret.append(mean_mean_intensity)
+        ret.append(np.median(mean_intensity))
+        ret.append(np.std(mean_intensity))
+        ret.append(iqr(mean_intensity))
+
+        ret.append(np.std(orientation))
+        ret.append(iqr(orientation))
+
+        meanperimeter = np.mean(perimeter)
+        ret.append(meanperimeter)
+        ret.append(np.median(perimeter))
+        ret.append(np.std(perimeter))
+        ret.append(iqr(perimeter))
+
+    if len(density) == 0:
+        ret.append(0)
+        ret.append(0)
+    else:
+        meandensity = np.mean(density)
+        ret.append(meandensity)
+        ret.append(np.median(density))
+
+    if blobs == 0:
+        ret.append(0)
+    else:
+        ret.append(blobs)
+
+    return ret
 
 casefun_3D_2D_Frangi_objectprops_names = casefun_3D_2D_objectprops_name_generator('Frangi', [])
 def subfun_Frangi(slice2D, params):
@@ -1444,8 +1707,13 @@ def casefun_3D_2D_Frangi_objectprops(LESIONDATAr, LESIONr, WGr, resolution):
 def casefun_3D_2D_Hessian_objectprops_name_generator(params):
     names = []
     for name in subfun_3D_2D_objectprops_names:
-        names.append('UTU3D2DHessian_%2.1f_%2.1f_objprops_%s' % (params[0], params[1], name))
+        names.append('UTU3D2DHessian_%4.3f_%2.1f_objprops_%s' % (params[0], params[1], name))
     return names
+def casefun_3D_2D_Hessian_objectprops_name_generator_WG(params):
+    names = []
+    for name in subfun_3D_2D_objectprops_names_WG:
+        names.append('WGUTU3D2DHessian_%4.3f_%2.1f_objprops_%s' % (params[0], params[1], name))
+    return names    
 def subfun_Hessian(slice2D, params):
     """
     beta1 : float, optional
@@ -1463,6 +1731,10 @@ def subfun_Hessian(slice2D, params):
     return hessian_bin
 def casefun_3D_2D_Hessian_objectprops(LESIONDATAr, LESIONr, WGr, resolution, params):
     return casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, WGr, resolution, subfun_Hessian, params)
+
+def casefun_3D_2D_Hessian_objectprops_WG(LESIONDATAr, LESIONr, WGr, resolution, params):
+    return casefun_3D_2D_objectprops_WG(LESIONDATAr, LESIONr, WGr, resolution, subfun_Hessian, params)
+
 
 casefun_3D_2D_Scharr_objectprops_names = casefun_3D_2D_objectprops_name_generator('Scharr', [])
 def subfun_Scharr(slice2D, params):
@@ -1549,7 +1821,7 @@ def casefun_3D_2D_Laws(LESIONDATAr, LESIONr, WGr, resolution, params):
         return [float('nan') for x in casefun_3D_2D_Laws_names_generator(params)]
 
     x_lo, x_hi, y_lo, y_hi = find_bounded_subregion3D2D(LESIONDATAr)
-    print('bounded_subregion3D2D:' + str((x_lo, x_hi, y_lo, y_hi)))
+    # print('bounded_subregion3D2D:' + str((x_lo, x_hi, y_lo, y_hi)))
     LESIONDATArs = LESIONDATAr[x_lo:x_hi, y_lo:y_hi, :]
     LESIONrs_temp = LESIONr[0][x_lo:x_hi, y_lo:y_hi, :]
     WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi, :]
@@ -1579,7 +1851,7 @@ def casefun_3D_2D_Laws(LESIONDATAr, LESIONr, WGr, resolution, params):
     outdata_7 = np.zeros_like(LESIONrs)
     outdata_8 = np.zeros_like(LESIONrs)
     outdata_9 = np.zeros_like(LESIONrs)
-    print(str(accepted_slices) + ' accepted slices')
+    # print(str(accepted_slices) + ' accepted slices')
     if accepted_slices == 0:
         return [float('nan') for x in casefun_3D_2D_Laws_names_generator(params)]
 
@@ -1636,7 +1908,7 @@ def casefun_3D_2D_Laws(LESIONDATAr, LESIONr, WGr, resolution, params):
             outdata_7[xmid, ymid, slice_i] = Laws_7
             outdata_8[xmid, ymid, slice_i] = Laws_8
             outdata_9[xmid, ymid, slice_i] = Laws_9
-        print(('%d/%d Laws' % (slice_i, LESIONDATArs.shape[2])))
+        # print(('%d/%d Laws' % (slice_i, LESIONDATArs.shape[2])))
 
     ret = []
     ret = append_Laws_results(outdata_1, LESIONrs, WGrs, ret)
@@ -1673,7 +1945,24 @@ def casefun_3D_2D_FFT2D_names_generator(params):
             names.append('UTU3D2DFFT2D_%s_f%2.1f_FWHM%3.2f_LP' % (name, res_f, threshold_FWHM))
         for name in casefun_3D_2D_FFT2D_names:
             names.append('UTU3D2DFFT2D_%s_f%2.1f_FWHM%3.2f_HP' % (name, res_f, threshold_FWHM))
+    return names
 
+def casefun_3D_2D_FFT2D_names_generator_WG(params):
+    res_f = params[0]
+    start_FWHM = params[1]
+    end_FWHM = params[2]
+    step_FWHM = params[3]
+    thresholds_FWHM = np.linspace(start_FWHM, end_FWHM, step_FWHM)
+    # FWHM = 2*sigma*sqrt(2*ln(2))=2.35*sigma
+    # more accurately 2.3548200450309493
+    names = []
+    for threshold_FWHM in thresholds_FWHM:
+        for name_i in range(len(casefun_3D_2D_FFT2D_names)-1):
+            name = casefun_3D_2D_FFT2D_names[name_i]
+            names.append('WGUTU3D2DFFT2D_%s_f%2.1f_FWHM%3.2f_LP' % (name, res_f, threshold_FWHM))
+        for name_i in range(len(casefun_3D_2D_FFT2D_names)-1):
+            name = casefun_3D_2D_FFT2D_names[name_i]
+            names.append('WGUTU3D2DFFT2D_%s_f%2.1f_FWHM%3.2f_HP' % (name, res_f, threshold_FWHM))
     return names
 
 def append_FFT2D_results(outdata, LESIONrs, WGrs, ret):
@@ -1749,18 +2038,18 @@ def casefun_3D_2D_FFT2D(LESIONDATAr, LESIONr, WGr, resolution, params):
     step_FWHM = params[3]
     thresholds_FWHM = np.linspace(start_FWHM, end_FWHM, step_FWHM)
 
-    print(np.max(LESIONDATAr))
+    # print(np.max(LESIONDATAr))
     x_lo, x_hi, y_lo, y_hi = find_bounded_subregion3D2D(LESIONDATAr)
-    print((x_lo, x_hi, y_lo, y_hi))
+    # print((x_lo, x_hi, y_lo, y_hi))
     LESIONDATArs_temp = LESIONDATAr[x_lo:x_hi, y_lo:y_hi, :]
     LESIONrs_temp = LESIONr[0][x_lo:x_hi, y_lo:y_hi, :]
     WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi, :]
 
     # Create masks and output data to desired resolution, starting with 1mm x 1mm resolution
     slice2Ddata = LESIONDATArs_temp[:, :, 0]
-    print(resolution)
-    print(res_f)
-    print(slice2Ddata.shape)
+    # print(resolution)
+    # print(res_f)
+    # print(slice2Ddata.shape)
     cvimg = cv2.resize(slice2Ddata, None, fx = resolution[0]*res_f, fy = resolution[1]*res_f, interpolation = cv2.INTER_NEAREST)
     out_dim = np.max([cvimg.shape[0], cvimg.shape[1]])
     if np.mod(out_dim,2) == 0:
@@ -1774,22 +2063,22 @@ def casefun_3D_2D_FFT2D(LESIONDATAr, LESIONr, WGr, resolution, params):
             Y = kern[out_dim//2, :]
             X = range(len(Y))
             fwhm_est = FWHM(X,Y)
-            print('FWHM[' + str(threshold_FWHM_i+1) + ']:' + str(fwhm_est) + 'mm')
+            # print('FWHM[' + str(threshold_FWHM_i+1) + ']:' + str(fwhm_est) + 'mm')
     except:
         print('FWHM estimation failed')
         return [float('nan') for x in casefun_3D_2D_FFT2D_names_generator(params)]
 
     pad_x = out_dim-cvimg.shape[0]
     pad_y = out_dim-cvimg.shape[1]
-    print((out_dim, pad_x, pad_y))
+    # print((out_dim, pad_x, pad_y))
     LESIONrs = np.zeros([out_dim, out_dim, LESIONDATAr.shape[2]])
     WGrs = np.zeros_like(LESIONrs)
     LESIONDATArs = np.zeros_like(LESIONrs)
     for slice_i in range(LESIONrs.shape[2]):
         slice2Ddata = LESIONrs_temp[:, :, slice_i]
         LESIONcvimg = cv2.resize(slice2Ddata, None, fx = resolution[0]*res_f, fy = resolution[1]*res_f, interpolation = cv2.INTER_NEAREST)
-        print(LESIONcvimg.shape)
-        print(LESIONrs.shape)
+        # print(LESIONcvimg.shape)
+        # print(LESIONrs.shape)
         LESIONrs[pad_x:pad_x+LESIONcvimg.shape[0],pad_y:pad_y+LESIONcvimg.shape[1],slice_i] = LESIONcvimg
         slice2Ddata = WGrs_temp[:, :, slice_i]
         WGcvimg = cv2.resize(slice2Ddata, None, fx = resolution[0]*res_f, fy = resolution[1]*res_f, interpolation = cv2.INTER_NEAREST)
@@ -1810,10 +2099,120 @@ def casefun_3D_2D_FFT2D(LESIONDATAr, LESIONr, WGr, resolution, params):
              data_hi = np.subtract(img, data_lo)
              outdata[threshold_FWHM_i]['data_lo'][:,:,slice_i] = data_lo
              outdata[threshold_FWHM_i]['data_hi'][:,:,slice_i] = data_hi
-        print(('%d/%d FFT2D' % (slice_i, LESIONDATArs.shape[2])))
+        # print(('%d/%d FFT2D' % (slice_i, LESIONDATArs.shape[2])))
 
     ret = []
     for threshold_FWHM_i in range(len(thresholds_FWHM)):
         ret = append_FFT2D_results(outdata[threshold_FWHM_i], LESIONrs, WGrs, ret)
 
     return ret
+
+
+def append_FFT2D_results_WG(outdata, WGrs, ret):
+    ROIdata = outdata['data_lo'][WGrs > 0]
+    mean1 = np.mean(ROIdata)
+    ret.append(np.mean(ROIdata))
+    median1 = np.median(ROIdata)
+    ret.append(np.median(ROIdata))
+    std1 = np.std(ROIdata)
+    ret.append(std1)
+    iqr1 = iqr(ROIdata)
+    ret.append(iqr(ROIdata))
+    ret.append(scipy.stats.skew(ROIdata))
+    ret.append(scipy.stats.kurtosis(ROIdata))
+    ret.append(np.percentile(ROIdata, 25))
+    ret.append(np.percentile(ROIdata, 75))
+    ROIdata = outdata['data_hi'][WGrs > 0]
+    mean1 = np.mean(ROIdata)
+    ret.append(np.mean(ROIdata))
+    median1 = np.median(ROIdata)
+    ret.append(np.median(ROIdata))
+    std1 = np.std(ROIdata)
+    ret.append(std1)
+    iqr1 = iqr(ROIdata)
+    ret.append(iqr(ROIdata))
+    ret.append(scipy.stats.skew(ROIdata))
+    ret.append(scipy.stats.kurtosis(ROIdata))
+    ret.append(np.percentile(ROIdata, 25))
+    ret.append(np.percentile(ROIdata, 75))
+    return ret
+
+def casefun_3D_2D_FFT2D_WG(LESIONDATAr, LESIONr, WGr, resolution, params):
+
+    if np.max(LESIONDATAr) == 0:
+        return [float('nan') for x in casefun_3D_2D_FFT2D_names_generator(params)]
+
+    # res_f: resolution factor affecting laws feature sampling ratio
+    # 1: original resolution
+    # <1: upsampling
+    # >1: downsampling
+    # start_FWHM: starting FWHM threshold in mm
+    # end_FWHM: starting FWHM threshold in mm
+    # step_FWHM: starting FWHM threshold in mm
+    res_f = params[0]
+    start_FWHM = params[1]
+    end_FWHM = params[2]
+    step_FWHM = params[3]
+    thresholds_FWHM = np.linspace(start_FWHM, end_FWHM, step_FWHM)
+
+    # print(np.max(LESIONDATAr))
+    x_lo, x_hi, y_lo, y_hi = find_bounded_subregion3D2D(LESIONDATAr)
+    # print((x_lo, x_hi, y_lo, y_hi))
+    LESIONDATArs_temp = LESIONDATAr[x_lo:x_hi, y_lo:y_hi, :]
+    WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi, :]
+
+    # Create masks and output data to desired resolution, starting with 1mm x 1mm resolution
+    slice2Ddata = LESIONDATArs_temp[:, :, 0]
+    # print(resolution)
+    # print(res_f)
+    # print(slice2Ddata.shape)
+    cvimg = cv2.resize(slice2Ddata, None, fx = resolution[0]*res_f, fy = resolution[1]*res_f, interpolation = cv2.INTER_NEAREST)
+    out_dim = np.max([cvimg.shape[0], cvimg.shape[1]])
+    if np.mod(out_dim,2) == 0:
+       out_dim += 1
+
+    # FWHM = 2*sigma*sqrt(2*ln(2))=2.35*sigma
+    # more accurately 2.3548200450309493
+    try:
+        for threshold_FWHM_i in range(len(thresholds_FWHM)):
+            kern = gkern2(out_dim, thresholds_FWHM[threshold_FWHM_i]/2.3548200450309493)
+            Y = kern[out_dim//2, :]
+            X = range(len(Y))
+            fwhm_est = FWHM(X,Y)
+            # print('FWHM[' + str(threshold_FWHM_i+1) + ']:' + str(fwhm_est) + 'mm')
+    except:
+        print('FWHM estimation failed')
+        return [float('nan') for x in casefun_3D_2D_FFT2D_names_generator(params)]
+
+    pad_x = out_dim-cvimg.shape[0]
+    pad_y = out_dim-cvimg.shape[1]
+    # print((out_dim, pad_x, pad_y))
+    WGrs = np.zeros([out_dim, out_dim, LESIONDATAr.shape[2]])
+    LESIONDATArs = np.zeros_like(WGrs)
+    for slice_i in range(WGrs.shape[2]):
+        slice2Ddata = WGrs_temp[:, :, slice_i]
+        WGcvimg = cv2.resize(slice2Ddata, None, fx = resolution[0]*res_f, fy = resolution[1]*res_f, interpolation = cv2.INTER_NEAREST)
+        WGrs[pad_x:pad_x+WGcvimg.shape[0],pad_y:pad_y+WGcvimg.shape[1],slice_i] = WGcvimg
+        slice2Ddata = LESIONDATArs_temp[:, :, slice_i]
+        DATAcvimg = cv2.resize(slice2Ddata, None, fx = resolution[0]*res_f, fy = resolution[1]*res_f, interpolation = cv2.INTER_LANCZOS4)
+        LESIONDATArs[pad_x:pad_x+DATAcvimg.shape[0],pad_y:pad_y+DATAcvimg.shape[1],slice_i] = DATAcvimg
+    outdata = []
+    for threshold_FWHM in thresholds_FWHM:
+        outdata.append({'FWHM':threshold_FWHM, 'data_lo':np.zeros_like(WGrs), 'data_hi':np.zeros_like(WGrs)})
+
+    for slice_i in range(LESIONDATArs.shape[2]):
+        if(np.max(WGrs[:,:,slice_i]) ==0):
+            continue
+        img = LESIONDATArs[:, :, slice_i]
+        for threshold_FWHM_i in range(len(thresholds_FWHM)):
+             data_lo = gaussian_filter(img, thresholds_FWHM[threshold_FWHM_i])
+             data_hi = np.subtract(img, data_lo)
+             outdata[threshold_FWHM_i]['data_lo'][:,:,slice_i] = data_lo
+             outdata[threshold_FWHM_i]['data_hi'][:,:,slice_i] = data_hi
+        # print(('%d/%d FFT2D' % (slice_i, LESIONDATArs.shape[2])))
+
+    ret = []
+    for threshold_FWHM_i in range(len(thresholds_FWHM)):
+        ret = append_FFT2D_results_WG(outdata[threshold_FWHM_i], WGrs, ret)
+
+    return ret    

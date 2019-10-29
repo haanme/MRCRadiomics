@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
+
 import os
+import io
 import cv2
 import tempfile
 import numpy as np
@@ -26,7 +28,6 @@ import sys
 import os
 import subprocess
 from plyfile import PlyData, PlyElement
-import cv2
 from skimage import measure
 from skimage.segmentation import active_contour
 from scipy.interpolate import UnivariateSpline
@@ -36,14 +37,14 @@ from skimage.morphology import convex_hull_image
 from skimage import feature
 from scipy import ndimage
 import step6_calculate_AUCs_utilities as step6utils
-import operations3D
+#import operations3D
 import copy
 from scipy import stats
+import warnings
 
 # Directory where result data are located
 experiment_dir = ''
 stat_funs = []
-    
 
 # Resolve non-zero subregion in the image
 def find_bounded_subregion3D(img):
@@ -148,8 +149,10 @@ def casefun_levelset(LESIONDATAr, LESIONr, WGr, resolution):
            Curvatures2.append(v)
 
     return np.median(Curvatures2), np.std(Curvatures2)
-  
 
+"""
+Lee, J., Jain, R., Khalil, K., Griffith, B., Bosca, R., Rao, G. and Rao, A., 2016. Texture feature ratios from relative CBV maps of perfusion MRI are associated with patient survival in glioblastoma. American Journal of Neuroradiology, 37(1), pp.37-43.
+"""
 def get_3D_GLCM(LESIONDATAr, LESIONr, resolution):
     Ng = []
 
@@ -221,25 +224,31 @@ def get_3D_GLCM(LESIONDATAr, LESIONr, resolution):
             G[i, j, 0, Ng_coord_i] += 1
             comparisons += 1
     P = np.divide(G, comparisons)
-#    print(('contrast', skimage.feature.texture.greycoprops(P, prop='contrast')))
-    contrast = np.mean(skimage.feature.texture.greycoprops(P, prop='contrast'))
-#    print(('dissimilarity', skimage.feature.texture.greycoprops(P, prop='dissimilarity')))
-    dissimilarity = np.mean(skimage.feature.texture.greycoprops(P, prop='dissimilarity'))
-#    print(('homogeneity', skimage.feature.texture.greycoprops(P, prop='homogeneity')))
-    homogeneity = np.mean(skimage.feature.texture.greycoprops(P, prop='homogeneity'))
-    ASM = np.mean(skimage.feature.texture.greycoprops(P, prop='ASM'))
-    energy = np.mean(skimage.feature.texture.greycoprops(P, prop='energy'))
-#    print(('correlation', skimage.feature.texture.greycoprops(P, prop='correlation')))
-    correlation = np.mean(skimage.feature.texture.greycoprops(P, prop='correlation'))
+    if(len(np.unique(P))==1):
+        contrast = 0.0
+        dissimilarity = 0.0
+        homogeneity = np.sum(P)
+        ASM = np.sum(P)*np.sum(P)
+        energy = np.sqrt(ASM)
+        correlation = 1
+    else:
+        contrast = np.mean(skimage.feature.texture.greycoprops(P, prop='contrast'))
+        dissimilarity = np.mean(skimage.feature.texture.greycoprops(P, prop='dissimilarity'))
+        homogeneity = np.mean(skimage.feature.texture.greycoprops(P, prop='homogeneity'))
+        ASM = np.mean(skimage.feature.texture.greycoprops(P, prop='ASM'))
+        energy = np.mean(skimage.feature.texture.greycoprops(P, prop='energy'))
+        correlation = np.mean(skimage.feature.texture.greycoprops(P, prop='correlation'))
     return contrast, dissimilarity, homogeneity, ASM, energy, correlation
 
 
 def get_mesh_surface_features(tmw, verts, faces, Idata, resolution):
     CoM = tmw.center_mass
     c_all = []
+    c_all_vis = []
     polar_coordinates = []
-    for v_i in range(len(verts)):
-        vert = verts[v_i]
+    vertex_neighbors = []
+    for v_i in range(len(tmw.vertices)):
+        vert = tmw.vertices[v_i]
         avg_loc_x = int(round(vert[0]/resolution[0]))
         avg_loc_y = int(round(vert[1]/resolution[1]))
         avg_loc_z = int(round(vert[2]/resolution[2]))
@@ -249,31 +258,38 @@ def get_mesh_surface_features(tmw, verts, faces, Idata, resolution):
            c = float('NaN')
         else:
            c = Idata[avg_loc_x, avg_loc_y, avg_loc_z]
-        c_all.append(c)
         x = (CoM[0]-vert[0])
         y = (CoM[1]-vert[1])
         z = (CoM[2]-vert[2])
         r = np.sqrt(np.power(x, 2.0) + np.power(y, 2.0) + np.power(z, 2.0))
         t = np.arccos(z/r)
         s = np.arctan(y/x)
-        polar_coordinates.append((r,t,s))
+        if(not np.isnan(c)):
+            c_all.append(c)
+            c_all_vis.append(v_i)
+            vertex_neighbors.append(tmw.vertex_neighbors[v_i])
+            polar_coordinates.append((r,t,s))
     c_all = np.array(c_all)
-    c_all = c_all[~np.isnan(c_all)]
     if len(c_all) == 0:
+       return 0, 0, 0, 0, 0, 0
+    if len(np.unique(c_all)) < 2:
        return 0, 0, 0, 0, 0, 0
     c_min = np.min(c_all)
     c_max = np.max(c_all)-c_min
+    print((c_all, c_min, c_max))
     c_all = [int(x) for x in np.round(np.multiply(np.divide(np.subtract(c_all, c_min), c_max), 127))]
     G = np.zeros([128, 128, 1, 10])
     # Calculate Haralick across surface
     comparisons = 0
-    for v_i in range(len(verts)):
-        Ng_verts = tmw.vertex_neighbors[v_i]
+    for v_i in range(len(vertex_neighbors)):
+        Ng_verts = vertex_neighbors[v_i]
         v_t = polar_coordinates[v_i][1]
         v_s = polar_coordinates[v_i][2]
         # Divide into
         for Ng_i in range(len(Ng_verts)):
             Ng = Ng_verts[Ng_i]
+            if(not Ng in c_all):
+                continue
             i = c_all[Ng]
             j = c_all[v_i]
             t = polar_coordinates[v_i][1]
@@ -282,15 +298,24 @@ def get_mesh_surface_features(tmw, verts, faces, Idata, resolution):
             G[i, j, 0, angle] += 1
             comparisons += 1
     P = np.divide(G, comparisons)
-    contrast = np.mean(skimage.feature.texture.greycoprops(P, prop='contrast'))
-    dissimilarity = np.mean(skimage.feature.texture.greycoprops(P, prop='dissimilarity'))
-    homogeneity = np.mean(skimage.feature.texture.greycoprops(P, prop='homogeneity'))
-    ASM = np.mean(skimage.feature.texture.greycoprops(P, prop='ASM'))
-    energy = np.mean(skimage.feature.texture.greycoprops(P, prop='energy'))
-    correlation = np.mean(skimage.feature.texture.greycoprops(P, prop='correlation'))
+    if(len(np.unique(P))==1):
+        contrast = 0.0
+        dissimilarity = 0.0
+        homogeneity = np.sum(P)
+        ASM = np.sum(P)*np.sum(P)
+        energy = np.sqrt(ASM)
+        correlation = 1
+    else:
+        contrast = np.mean(skimage.feature.texture.greycoprops(P, prop='contrast'))
+        dissimilarity = np.mean(skimage.feature.texture.greycoprops(P, prop='dissimilarity'))
+        homogeneity = np.mean(skimage.feature.texture.greycoprops(P, prop='homogeneity'))
+        ASM = np.mean(skimage.feature.texture.greycoprops(P, prop='ASM'))
+        energy = np.mean(skimage.feature.texture.greycoprops(P, prop='energy'))
+        correlation = np.mean(skimage.feature.texture.greycoprops(P, prop='correlation'))
 #    print((contrast, dissimilarity, homogeneity, ASM, energy, correlation))
 
     return contrast, dissimilarity, homogeneity, ASM, energy, correlation
+
 
 casefun_3D_GLCM_names = ('median_contrastS', 'median_dissimilarityS', 'median_homogeneityS', 'median_ASMS', 'median_energyS', 'median_correlationS', 'median_contrastV', 'median_dissimilarityV', 'median_homogeneityV', 'median_ASMV', 'median_energyV', 'median_correlationV')
 def casefun_3D_GLCM(LESIONDATAr, LESIONr, WGr, resolution):
@@ -351,8 +376,32 @@ def casefun_3D_GLCM(LESIONDATAr, LESIONr, WGr, resolution):
     return contrastS, dissimilarityS, homogeneityS, ASMS, energyS, correlationS, contrastV, dissimilarityV, homogeneityV, ASMV, energyV, correlationV
 
 
+casefun_3D_GLCM_names_WG = ('WGmedian_contrastS', 'WGmedian_dissimilarityS', 'WGmedian_homogeneityS', 'WGmedian_ASMS', 'WGmedian_energyS', 'WGmedian_correlationS', 'WGmedian_contrastV', 'WGmedian_dissimilarityV', 'WGmedian_homogeneityV', 'WGmedian_ASMV', 'WGmedian_energyV', 'WGmedian_correlationV')
+def casefun_3D_GLCM_WG(LESIONDATAr, LESIONr, WGr, resolution):
+    verts_all, faces_all = create_mesh_smooth(LESIONDATAr, WGr, 0.5, resolution, 'WG')
+    if len(verts_all) == 0:
+        return 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    tm = trimesh.base.Trimesh(vertices=verts_all, faces=faces_all)
+    contrastS_all, dissimilarityS_all, homogeneityS_all, ASMS_all, energyS_all, correlationS_all = get_mesh_surface_features(tm, verts_all, faces_all, LESIONDATAr, resolution)
+    contrastV_all, dissimilarityV_all, homogeneityV_all, ASMV_all, energyV_all, correlationV_all = get_3D_GLCM(LESIONDATAr, WGr, resolution)
+
+    contrastS = np.median(contrastS_all)
+    dissimilarityS = np.median(dissimilarityS_all)
+    homogeneityS = np.median(homogeneityS_all)
+    ASMS = np.median(ASMS_all)
+    energyS = np.median(energyS_all)
+    correlationS = np.median(correlationS_all)
+    contrastV = np.median(contrastV_all)
+    dissimilarityV = np.median(dissimilarityV_all)
+    homogeneityV = np.median(homogeneityV_all)
+    ASMV = np.median(ASMV_all)
+    energyV = np.median(energyV_all)
+    correlationV = np.median(correlationV_all)
+    return contrastS, dissimilarityS, homogeneityS, ASMS, energyS, correlationS, contrastV, dissimilarityV, homogeneityV, ASMV, energyV, correlationV
+
+
 # Features for each
-casefun_01_moments_names = ('mean', 'median', '25percentile', '75percentile', 'skewness', 'kurtosis', 'SD', 'range', 'volume', 'CV')
+casefun_01_moments_names = ('mean', 'median', '25percentile', '75percentile', 'skewness', 'kurtosis', 'SD', 'range', 'ml', 'CV')
 def casefun_01_moments(LESIONDATAr, LESIONr, WGr, resolution):
     
     ROIdata = LESIONDATAr[LESIONr[0] > 0]
@@ -364,7 +413,9 @@ def casefun_01_moments(LESIONDATAr, LESIONr, WGr, resolution):
     kurtosis = scipy.stats.kurtosis(ROIdata)
     SD = np.std(ROIdata)
     rng = np.max(ROIdata)-np.min(ROIdata)
-    volume = len(ROIdata)
+    # Volume as cubic mm to cubic centimeters, which is mL
+    volume = len(ROIdata)*(0.001*resolution[0]*resolution[1]*resolution[2])
+    print((resolution,volume))
     if not mean == 0:
         CV = SD/mean
     else:
@@ -373,11 +424,29 @@ def casefun_01_moments(LESIONDATAr, LESIONr, WGr, resolution):
 
 
 # Features for each
-casefun_01_moments_WG_names = ('WGmean', 'WGmedian', 'WG25percentile', 'WG75percentile', 'WGskewness', 'WGkurtosis', 'WGSD', 'WGIQR',
-                                'relWGmean', 'relWGmedian', 'relWG25percentile', 'relWG75percentile', 'relWGskewness', 'relWGkurtosis', 'relWGSD', 'WGIQR')
+casefun_01_moments_WG_names = ('WGmean', 'WGmedian', 'WG25percentile', 'WG75percentile', 'WGskewness', 'WGkurtosis', 'WGSD', 'WGIQR', 'WGml')
 def casefun_01_moments_WG(LESIONDATAr, LESIONr, WGr, resolution):
+    WGdata = LESIONDATAr[WGr > 0]
+    volume = len(WGdata)*(0.001*resolution[0]*resolution[1]*resolution[2])
+    print((resolution,volume))
+    wmean = np.mean(WGdata)
+    wmedian = np.median(WGdata)
+    wp25 = np.percentile(WGdata, 25)
+    wp75 = np.percentile(WGdata, 75)
+    wskewness = scipy.stats.skew(WGdata)
+    wkurtosis = scipy.stats.kurtosis(WGdata)
+    wSD = np.std(WGdata)
+    wIQrange = iqr(WGdata)
+
+    return wmean, wmedian, wp25, wp75, wskewness, wkurtosis, wSD, wIQrange, volume
+
+
+casefun_01_moments_relativeWG_names = ('relWGmean', 'relWGmedian', 'relWG25percentile', 'relWG75percentile', 'relWGskewness', 'relWGkurtosis', 'relWGSD', 'WGIQR')
+def casefun_01_moments_relativeWG(LESIONDATAr, LESIONr, WGr, resolution):
     ROIdata = LESIONDATAr[LESIONr[0] > 0]
     WGdata = LESIONDATAr[WGr > 0]
+    volume = len(WGdata)*(0.001*resolution[0]*resolution[1]*resolution[2])
+    print((resolution,volume))
     mean = np.mean(ROIdata)
     median = np.median(ROIdata)
     print(ROIdata.shape)
@@ -387,14 +456,6 @@ def casefun_01_moments_WG(LESIONDATAr, LESIONr, WGr, resolution):
     kurtosis = scipy.stats.kurtosis(ROIdata)
     SD = np.std(ROIdata)
     IQrange = iqr(ROIdata)
-    wmean = np.mean(WGdata)
-    wmedian = np.median(WGdata)
-    wp25 = np.percentile(WGdata, 25)
-    wp75 = np.percentile(WGdata, 75)
-    wskewness = scipy.stats.skew(WGdata)
-    wkurtosis = scipy.stats.kurtosis(WGdata)
-    wSD = np.std(WGdata)
-    wIQrange = iqr(WGdata)
     if(mean == 0):
       WGmean = 0
     else:
@@ -429,7 +490,7 @@ def casefun_01_moments_WG(LESIONDATAr, LESIONr, WGr, resolution):
     else:
       WGIQrange = IQrange/(IQrange+iqr(WGdata))
 
-    return wmean, wmedian, wp25, wp75, wskewness, wkurtosis, wSD, wIQrange, WGmean, WGmedian, WGp25, WGp75, WGskewness, WGkurtosis, WGSD, WGIQrange
+    return WGmean, WGmedian, WGp25, WGp75, WGskewness, WGkurtosis, WGSD, WGIQrange
 
 
 # largest slice statistics
@@ -651,6 +712,8 @@ def casefun_01_Moments2(LESIONDATAr, LESIONr, WGr, resolution, params):
     IQR = iqr(ROIdata)
     wmean = np.mean(WGdata)
     wmedian = np.median(WGdata)
+    if len(WGdata)==0:
+        WGdata = [0]
     wp25 = np.percentile(WGdata, 25)
     print(WGdata)
     wp75 = np.percentile(WGdata, 75)
@@ -1019,7 +1082,7 @@ def create_mesh_smooth_fit_to_gradient(Idata, data, l, resolution, name):
 
 
 # Features for each
-casefun_3D_shape_names = ('sarea3D','relsarea3D', 'tm_area_faces', 'tm_relarea_faces', 'mean_angles', 'median_angles', 'SD_angles', 'distance_mean', 'distance_median', 'CSM_mean_curvature', 'CSM_Gaus_mean_curvature', 'WG_median', 'WG_SD', 'WG_skewness', 'WG_kurtosis')
+casefun_3D_shape_names = ('sarea3D','relsarea3D', 'tm_area_faces', 'tm_relarea_faces', 'mean_angles', 'median_angles', 'SD_angles', 'distance_mean', 'distance_median', 'CSM_mean_curvature', 'CSM_Gaus_mean_curvature', 'WGdistROI_median', 'WGdistROI_SD', 'WGdistROI_skewness', 'WGdistROI_kurtosis')
 def casefun_3D_shape(LESIONDATAr, LESIONr, WGr, resolution):
     ROIdata = LESIONDATAr[LESIONr[0] > 0]
     WGdata = LESIONDATAr[WGr > 0]
@@ -1060,6 +1123,25 @@ def casefun_3D_shape(LESIONDATAr, LESIONr, WGr, resolution):
     w4 = scipy.stats.kurtosis(distancew)
 
     return sarea, sarea/sareaw, np.median(tm.area_faces), np.median(tm.area_faces)/len(ROIdata), mean_angles, median_angles, SD_angles, distance_mean, distance_median, CSM_mean_curvature[0], CSM_Gaus_mean_curvature[0], w1, w2, w3, w4
+
+
+casefun_3D_shape_names_WG = ('WGsarea3D','WGtm_area_faces', 'WGdistance_mean', 'WGdistance_median', 'WGCSM_mean_curvature', 'WGCSM_Gaus_mean_curvature')
+def casefun_3D_shape_WG(LESIONDATAr, LESIONr, WGr, resolution):
+    WGdata = LESIONDATAr[WGr > 0]
+    print((len(WGdata), np.min(WGdata), np.max(WGdata)))
+
+    vertsw, facesw, normalsw, valuesw = create_mesh(WGr, 0.5, resolution)
+    sareaw = skimage.measure.mesh_surface_area(vertsw, facesw)
+    tmw = trimesh.base.Trimesh(vertices=vertsw, faces=facesw, face_normals=normalsw)
+    CoM = tmw.center_mass
+    distances = []
+    for v in tmw.vertices:
+        distances.append(np.sqrt(np.power(v[0]-CoM[0], 2.0)+np.power(v[1]-CoM[1], 2.0)+np.power(v[2]-CoM[2], 2.0)))
+    distance_mean = np.mean(distances)
+    distance_median = np.median(distances)
+    CSM_mean_curvature = trimesh.curvature.discrete_mean_curvature_measure(tmw, [CoM], np.max(distances))
+    CSM_Gaus_mean_curvature = trimesh.curvature.discrete_gaussian_curvature_measure(tmw, [CoM], np.max(distances))
+    return sareaw, np.median(tmw.area_faces), distance_mean, distance_median, CSM_mean_curvature[0], CSM_Gaus_mean_curvature[0]
 
 
 casefun_3D_shape2_names = ('sarea3Dsm','relsarea3Dsm', 'tm_area_facessm', 'tm_relarea_facessm', 'mean_anglessm', 'median_anglessm', 'SD_anglessm', 'distance_meansm', 'distance_mediansm', 'CSM_mean_curvaturesm', 'CSM_Gaus_mean_curvaturesm', 'WG_mediansm', 'WG_SDsm', 'WG_skewnesssm', 'WG_kurtosissm')
@@ -1223,10 +1305,10 @@ def casefun_3D_shape3(LESIONDATAr, LESIONr, WGr, resolution):
 casefun_3D_surface_textures_names = ('surf_mean', 'surf_median', 'surf_25percentile', 'surf_75percentile', 'surf_skewness', 'surf_kurtosis', 'surf_SD', 'surf_range', 'surf_volume', 'surf_CV')
 def casefun_3D_surface_textures(LESIONDATAr, LESIONr, WGr, resolution):
 
-    ROIdata = LESIONDATAr[LESIONr[1] > 0]
+    ROIdata = LESIONDATAr[LESIONr[0] > 0]
     print(len(ROIdata))
     #try:
-    verts_all, faces_all = create_mesh_smooth(LESIONDATAr, LESIONr[1], 0.5, resolution, 'L1')
+    verts_all, faces_all = create_mesh_smooth(LESIONDATAr, LESIONr[0], 0.5, resolution, 'L1')
     #except:
     #    return 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     if len(verts_all) == 0:
@@ -1240,6 +1322,40 @@ def casefun_3D_surface_textures(LESIONDATAr, LESIONr, WGr, resolution):
         #    continue
         Surface_data = np.concatenate((Surface_data, c))
 
+    mean = np.mean(Surface_data)
+    median = np.median(Surface_data)
+    p25 = np.percentile(Surface_data, 25)
+    p75 = np.percentile(Surface_data, 75)
+    skewness = scipy.stats.skew(Surface_data)
+    kurtosis = scipy.stats.kurtosis(Surface_data)
+    SD = np.std(Surface_data)
+    rng = np.max(Surface_data)-np.min(Surface_data)
+    volume = len(Surface_data)
+    if not mean == 0:
+        CV = SD/mean
+    else:
+        CV = 0.0
+    return mean, median, p25, p75, skewness, kurtosis, SD, rng, volume, CV
+
+
+casefun_3D_surface_textures_names_WG = ('WGsurf_mean', 'WGsurf_median', 'WGsurf_25percentile', 'WGsurf_75percentile', 'WGsurf_skewness', 'WGsurf_kurtosis', 'WGsurf_SD', 'WGsurf_range', 'WGsurf_volume', 'WGsurf_CV')
+def casefun_3D_surface_textures_WG(LESIONDATAr, LESIONr, WGr, resolution):
+
+    ROIdata = LESIONDATAr[WGr > 0]
+    verts_all, faces_all = create_mesh_smooth(LESIONDATAr, WGr, 0.5, resolution, 'WG')
+    if len(verts_all) == 0:
+        return 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    Surface_data = get_mesh_surface_samples(verts_all, faces_all, LESIONDATAr, resolution)
+    for LESION_i in range(2, len(LESIONr)):
+        verts, faces = create_mesh_smooth(LESIONDATAr, LESIONr[LESION_i], 0.5, resolution, 'L' + str(LESION_i-1))
+        c = get_mesh_surface_samples(verts, faces, LESIONDATAr, resolution)
+        Surface_data = np.concatenate((Surface_data, c))
+    Surface_data_v = []
+    for v in Surface_data:
+        if np.isnan(v):
+            continue
+        Surface_data_v.append(v)
+    Surface_data = Surface_data_v
     mean = np.mean(Surface_data)
     median = np.median(Surface_data)
     p25 = np.percentile(Surface_data, 25)
@@ -1342,6 +1458,7 @@ def read_3DLaws_kernel(filename):
     for i in range(len(kernels)):
         already_included = False
         for ii in range(len(kernels_pruned)):
+            # print((kernels[i]['data'].shape,kernels_pruned[ii]['data'].shape))
             if np.max(abs(np.subtract(kernels[i]['data'],kernels_pruned[ii]['data']))) == 0:
                 print('Excluding redundant kernel ' + kernels[i]['name'] + ' ' + kernels_pruned[ii]['name'])
                 already_included = True
@@ -1363,6 +1480,15 @@ def casefun_3D_Laws_names_generator(params):
     for l in range(len(laws3D_names)):
         for name in casefun_3D_Laws_names:
             names.append('UTU3DLaws%s_%s_f%2.1f' % (laws3D_names[l], name, params[0]))
+    return names
+
+
+def casefun_3D_Laws_names_generator_WG(params):
+    names = []
+    for l in range(len(laws3D_names)):
+        for name_i in range(len(casefun_3D_Laws_names)-1):
+            name = casefun_3D_Laws_names[name_i]
+            names.append('WGUTU3DLaws%s_%s_f%2.1f' % (laws3D_names[l], name, params[0]))
     return names
 
 
@@ -1390,15 +1516,33 @@ def append_Laws_results(outdata, LESIONrs, WGrs, ret):
     return ret
 
 
-def casefun_3D_Laws(LESIONDATAr, LESIONr, WGr, resolution, params):
+def append_Laws_results_WG(outdata, LESIONrs, ret):
+    ROIdata = outdata[LESIONrs > 0]
+    if(len(ROIdata) == 0):
+        for x in casefun_3D_Laws_names:
+            ret.append(float('nan'))
+        return ret
+    mean1 = np.mean(ROIdata)
+    ret.append(np.mean(ROIdata))
+    ret.append(np.median(ROIdata))
+    std1 = np.std(ROIdata)
+    ret.append(std1)
+    ret.append(iqr(ROIdata))
+    ret.append(scipy.stats.skew(ROIdata))
+    ret.append(scipy.stats.kurtosis(ROIdata))
+    ret.append(np.percentile(ROIdata, 25))
+    ret.append(np.percentile(ROIdata, 75))
+    return ret
 
+
+def casefun_3D_Laws(LESIONDATAr, LESIONr, WGr, resolution, params):
     # resolution factor affecting laws feature sampling ratio
     # 1: original resolution
     # <1: upsampling
     # >1: downsampling
     res_f = params[0]
 
-    x_lo, x_hi, y_lo, y_hi, z_lo, z_hi = find_bounded_subregion3D(LESIONDATAr)
+    x_lo, x_hi, y_lo, y_hi, z_lo, z_hi = find_bounded_subregion3D(WGr)
     LESIONDATArs = LESIONDATAr[x_lo:x_hi, y_lo:y_hi, :]
     LESIONrs_temp = LESIONr[0][x_lo:x_hi, y_lo:y_hi, :]
     WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi, :]
@@ -1416,6 +1560,7 @@ def casefun_3D_Laws(LESIONDATAr, LESIONr, WGr, resolution, params):
 
     s = 5
     mid = int(np.floor(s/2.0))
+    sys.stderr = io.StringIO()
     for (x, y, z, window) in sliding_window3D(LESIONDATArs, LESIONrs_temp, 1, (s, s, s)):
         window = np.subtract(window, np.mean(window))
         w_std = np.std(window)
@@ -1437,10 +1582,76 @@ def casefun_3D_Laws(LESIONDATAr, LESIONr, WGr, resolution, params):
             correlates.append(c[2:7,2:7,2:7])
         for c_i in range(len(correlates)):
             outdatas[c_i][xmid, ymid, zmid] = np.sum(correlates[c_i])                
-
+    sys.stderr = sys.__stderr__
     ret = []
     for kernel_i in range(1, len(Laws3Dkernel)):
         ret = append_Laws_results(outdatas[kernel_i-1], LESIONrs_temp, WGrs_temp, ret)
+    return ret
+
+
+def casefun_3D_Laws_WG(LESIONDATAr, LESIONr, WGr, resolution, params):
+
+    # resolution factor affecting laws feature sampling ratio
+    # 1: original resolution
+    # <1: upsampling
+    # >1: downsampling
+    res_f = params[0]
+
+    s = 5
+    x_lo, x_hi, y_lo, y_hi, z_lo, z_hi = find_bounded_subregion3D(LESIONDATAr)
+    x_lo -= 2
+    x_hi += 2
+    y_lo -= 2
+    y_hi += 2
+    if x_lo < 0:
+        x_lo = 0
+    if y_lo < 0:
+        y_lo = 0
+    if x_hi >= WGr.shape[0]:
+        x_hi = WGr.shape[0]-1
+    if y_hi >= WGr.shape[1]:
+        y_hi = WGr.shape[1]-1
+
+    LESIONDATArs = LESIONDATAr[x_lo:x_hi, y_lo:y_hi, :]
+    WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi, :]
+
+    # Create masks and output data to desired resolution, intensity data is resliced later for non-zero only
+    min_res = np.max(resolution)
+    new_res = [min_res*res_f, min_res*res_f, min_res*res_f]
+    WGrs_temp, affineWGrs_temp = reslice_array(WGrs_temp, resolution, new_res, 0)
+    LESIONDATArs, affineLESIONDATArs = reslice_array(LESIONDATArs, resolution, new_res, 1)                
+
+    outdatas = []
+    for kernel_i in range(1, len(Laws3Dkernel)):
+        outdatas.append(np.zeros_like(LESIONDATArs))
+
+    mid = int(np.floor(s/2.0))
+    sys.stderr = io.StringIO()
+    for (x, y, z, window) in sliding_window3D(LESIONDATArs, WGrs_temp, 1, (s, s, s)):
+        window = np.subtract(window, np.mean(window))
+        w_std = np.std(window)
+        if w_std > 0:
+            window = np.divide(window, np.std(window))
+        xmid = x + mid
+        ymid = y + mid
+        zmid = z + mid
+        if xmid >= LESIONDATArs.shape[0]:
+            continue
+        if ymid >= LESIONDATArs.shape[1]:
+            continue
+        if zmid >= LESIONDATArs.shape[2]:
+            continue
+
+        correlates = []
+        for kernel_i in range(1, len(Laws3Dkernel)):
+            c = correlate(window, Laws3Dkernel[kernel_i]['data'])
+            correlates.append(c[2:7,2:7,2:7])
+        for c_i in range(len(correlates)):
+            outdatas[c_i][xmid, ymid, zmid] = np.sum(correlates[c_i])                
+    sys.stderr = sys.__stderr__
+    ret = []
+    for kernel_i in range(1, len(Laws3Dkernel)):
+        ret = append_Laws_results_WG(outdatas[kernel_i-1], WGrs_temp, ret)
     return ret
 
 
