@@ -1,5 +1,21 @@
 #!/usr/bin/env python
 
+"""
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+(c) Harri Merisaari 2018-2020
+"""
 
 import os
 import io
@@ -18,34 +34,25 @@ from GleasonScore import GS
 from scipy import ndimage
 from scipy.stats import iqr
 import scipy.ndimage
-import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import pymesh
 import skimage
 import trimesh
 import sys
-import os
 import subprocess
 from plyfile import PlyData, PlyElement
 from skimage import measure
 from skimage.segmentation import active_contour
 from scipy.interpolate import UnivariateSpline
-import numpy as np
-from scipy import ndimage
 from skimage.morphology import convex_hull_image
 from skimage import feature
-from scipy import ndimage
 import step6_calculate_AUCs_utilities as step6utils
-#import operations3D
 import copy
 from scipy import stats
 import warnings
-
-# Directory where result data are located
-experiment_dir = ''
-stat_funs = []
-
+import numba
+from numba import njit, prange, vectorize, float64
 
 """
 Resolve non-zero subregion in the image
@@ -142,7 +149,7 @@ Levelset coordinates
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
-@param WGr: Organ mask
+@param WGr: Background region mask
 @param resolution: data resolution in mm [x,y,z]
 @returns: [median of curvatures,, standard deviation of curvatures]
 """
@@ -355,12 +362,9 @@ def get_mesh_surface_features(tmw, verts, faces, Idata, resolution):
 
 
 """
-Get 3D GLCM
+Names for 3D Gray Level Co-occurrence Matrix features. 
 
-@param LESIONDATAr: Intensity data
-@param LESIONr: Lesion mask
-@param resolution: data resolution in mm [x,y,z]
-@returns:
+All features are median estimates
   contrastS: surface GLCM contrast
   dissimilarityS: surface GLCM dissimilarity
   homogeneityS: surface GLCM homogeneity
@@ -375,6 +379,16 @@ Get 3D GLCM
   correlationV: volume GLCM correlation
 """
 casefun_3D_GLCM_names = ('median_contrastS', 'median_dissimilarityS', 'median_homogeneityS', 'median_ASMS', 'median_energyS', 'median_correlationS', 'median_contrastV', 'median_dissimilarityV', 'median_homogeneityV', 'median_ASMV', 'median_energyV', 'median_correlationV')
+
+"""
+Get 3D Gray Level Co-occurrence Matrix features
+
+@param LESIONDATAr: Intensity data
+@param LESIONr: Lesion mask
+@param WGr: background mask
+@param resolution: data resolution in mm [x,y,z]
+@returns: Please see casefun_3D_GLCM_names
+"""
 def casefun_3D_GLCM(LESIONDATAr, LESIONr, WGr, resolution):
     ROIdata = LESIONDATAr[LESIONr[0] > 0]
     #try:
@@ -434,13 +448,9 @@ def casefun_3D_GLCM(LESIONDATAr, LESIONr, WGr, resolution):
 
 
 """
-Get 3D GLCM
+Names for 3D Gray Level Co-occurrence Matrix fro background region
 
-@param LESIONDATAr: Intensity data
-@param LESIONr: Lesion mask
-@param WGr: Whole organ mask
-@param resolution: data resolution in mm [x,y,z]
-@returns:
+All measurs are median estimates in background region
   contrastS: surface GLCM contrast
   dissimilarityS: surface GLCM dissimilarity
   homogeneityS: surface GLCM homogeneity
@@ -455,6 +465,16 @@ Get 3D GLCM
   correlationV: volume GLCM correlation
 """
 casefun_3D_GLCM_names_WG = ('WGmedian_contrastS', 'WGmedian_dissimilarityS', 'WGmedian_homogeneityS', 'WGmedian_ASMS', 'WGmedian_energyS', 'WGmedian_correlationS', 'WGmedian_contrastV', 'WGmedian_dissimilarityV', 'WGmedian_homogeneityV', 'WGmedian_ASMV', 'WGmedian_energyV', 'WGmedian_correlationV')
+
+"""
+Get 3D Gray Level Co-occurrence Matrix fro background region
+
+@param LESIONDATAr: Intensity data
+@param LESIONr: not in use
+@param WGr: background mask
+@param resolution: data resolution in mm [x,y,z]
+@returns: Please see casefun_3D_GLCM_names_WG
+"""
 def casefun_3D_GLCM_WG(LESIONDATAr, LESIONr, WGr, resolution):
     verts_all, faces_all = create_mesh_smooth(LESIONDATAr, WGr, 0.5, resolution, 'WG')
     if len(verts_all) == 0:
@@ -479,12 +499,8 @@ def casefun_3D_GLCM_WG(LESIONDATAr, LESIONr, WGr, resolution):
 
 
 """
-Statistical moments of intensity values inside lesion
+Names for statistical moments of intensity values inside lesion
 
-@param LESIONDATAr: Intensity data
-@param LESIONr: Lesion mask
-@param resolution: data resolution in mm [x,y,z]
-@returns:
   mean: mean of lesion
   median: median of lesion
   p25: 25% percentile of lesion
@@ -497,6 +513,16 @@ Statistical moments of intensity values inside lesion
   CV: coefficient of variation for lesion
 """
 casefun_01_moments_names = ('mean', 'median', '25percentile', '75percentile', 'skewness', 'kurtosis', 'SD', 'range', 'ml', 'CV')
+
+"""
+Statistical moments of intensity values inside lesion
+
+@param LESIONDATAr: Intensity data
+@param LESIONr: Lesion mask
+@param WGr: background mask
+@param resolution: data resolution in mm [x,y,z]
+@returns: Please see casefun_01_moments_names
+"""
 def casefun_01_moments(LESIONDATAr, LESIONr, WGr, resolution):
 
     ROIdata = LESIONDATAr[LESIONr[0] > 0]
@@ -519,13 +545,8 @@ def casefun_01_moments(LESIONDATAr, LESIONr, WGr, resolution):
 
 
 """
-Statistical moments of intensity values inside whole organ
+Names for statistical moments of intensity values inside whole organ
 
-@param LESIONDATAr: Intensity data
-@param LESIONr: Lesion mask
-@param WGr: Whole organ mask
-@param resolution: data resolution in mm [x,y,z]
-@returns:
   wmean: mean of
   wmedian: median of organ
   wp25: 25% percentile of organ
@@ -537,6 +558,16 @@ Statistical moments of intensity values inside whole organ
   volume: volume of organ
 """
 casefun_01_moments_WG_names = ('WGmean', 'WGmedian', 'WG25percentile', 'WG75percentile', 'WGskewness', 'WGkurtosis', 'WGSD', 'WGIQR', 'WGml')
+
+"""
+Statistical moments of intensity values inside whole organ
+
+@param LESIONDATAr: Intensity data
+@param LESIONr: Lesion mask
+@param WGr: background mask
+@param resolution: data resolution in mm [x,y,z]
+@returns: Please see
+"""
 def casefun_01_moments_WG(LESIONDATAr, LESIONr, WGr, resolution):
     WGdata = LESIONDATAr[WGr > 0]
     volume = len(WGdata)*(0.001*resolution[0]*resolution[1]*resolution[2])
@@ -554,20 +585,28 @@ def casefun_01_moments_WG(LESIONDATAr, LESIONr, WGr, resolution):
 
 
 """
-<<TODO: write header>>
+Names for first order statistics of raw intensity using background region.
+
+  relWGmean: Relative mean intensity to background
+  relWGmedian: Relative mean intensity to background
+  relWG25percentile: : Relative 25% percentile to background
+  relWG75percentile: : Relative 75% percentile to background
+  relWGskewness: : Relative skewness to background
+  relWGkurtosis: : Relative kurtosity to background
+  relWGSD: : Relative standard deviation to background
+  WGIQR: : Relative iterquatile range to background
+"""
+casefun_01_moments_relativeWG_names = ('relWGmean', 'relWGmedian', 'relWG25percentile', 'relWG75percentile', 'relWGskewness', 'relWGkurtosis', 'relWGSD', 'WGIQR')
+
+"""
+First order statistics of raw intensity using background region.
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
+@param WGr: background mask
 @param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+@returns: Please see casefun_01_moments_relativeWG_names
 """
-casefun_01_moments_relativeWG_names = ('relWGmean', 'relWGmedian', 'relWG25percentile', 'relWG75percentile', 'relWGskewness', 'relWGkurtosis', 'relWGSD', 'WGIQR')
 def casefun_01_moments_relativeWG(LESIONDATAr, LESIONr, WGr, resolution):
     ROIdata = LESIONDATAr[LESIONr[0] > 0]
     WGdata = LESIONDATAr[WGr > 0]
@@ -620,20 +659,17 @@ def casefun_01_moments_relativeWG(LESIONDATAr, LESIONr, WGr, resolution):
 
 
 """
-<<TODO: write header>>
+Data from largest found slice in the lesion
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
+@param WGr: background mask
 @param resolution: data resolution in mm [x,y,z]
+@param amount: not in use
 @returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+  ROIdata: ROI data
+  WGdata: background data
 """
-# largest slice statistics
 def Moment2_fun_largest_slice(LESIONDATAr, LESIONr, WGr, resolution, amount):
     volumes = []
     indexes = []
@@ -657,21 +693,20 @@ def Moment2_fun_largest_slice(LESIONDATAr, LESIONr, WGr, resolution, amount):
 
 
 """
-<<TODO: write header>>
+Experimental method where data from largest found slice in the lesion, 
+using 3x3 region around location with smallest mean intensity in 3x3 
+smoothing.
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
+@param WGr: background mask
 @param resolution: data resolution in mm [x,y,z]
+@param amount: not in use
 @returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+  ROIdata: ROI data
+  WGdata: background data
 """
-# 5x5 from largest slice statistics
-def Moment2_fun_largest_slice5x5(LESIONDATAr, LESIONr, WGr, resolution, amount):
+def Moment2_fun_largest_slice3x3(LESIONDATAr, LESIONr, WGr, resolution, amount):
     volumes = []
     indexes = []
     max_vol = -1
@@ -689,7 +724,7 @@ def Moment2_fun_largest_slice5x5(LESIONDATAr, LESIONr, WGr, resolution, amount):
                 max_idx = z
     eroded = copy.deepcopy(LESIONr[0][:, :, max_idx])
 
-    # resolve 5x5 region around minimum or maximum
+    # resolve 3x3 region around minimum or maximum
     NG = []
     for x in [-1, 0, 1]:
         for y in [-1, 0, 1]:
@@ -714,7 +749,7 @@ def Moment2_fun_largest_slice5x5(LESIONDATAr, LESIONr, WGr, resolution, amount):
     eroded = np.zeros_like(eroded)
     for x in [-1, 0, 1]:
         for y in [-1, 0, 1]:
-            eroded[min_coords[0]+x, min_coords[0]+y] = 1
+            eroded[min_coords[0]+x, min_coords[1]+y] = 1
 
     ROIdata = LESIONDATAr[:, :, max_idx][eroded > 0]
     WGr = WGr[:, :, max_idx]
@@ -724,20 +759,18 @@ def Moment2_fun_largest_slice5x5(LESIONDATAr, LESIONr, WGr, resolution, amount):
 
 
 """
-<<TODO: write header>>
+Experimental method where thresholded region afte kernel density estimation 
+is considered
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
+@param WGr: background mask
 @param resolution: data resolution in mm [x,y,z]
+@param amount: coefficient for thresholding of KDE distribution
 @returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+  ROIdata: ROI data
+  WGdata: background data
 """
-# 5x5 from largest slice statistics
 def Moment2_fun_largest_sliceKDE(LESIONDATAr, LESIONr, WGr, resolution, amount):
 
     volumes = []
@@ -794,18 +827,17 @@ def Moment2_fun_largest_sliceKDE(LESIONDATAr, LESIONr, WGr, resolution, amount):
 
 
 """
-<<TODO: write header>>
+Experimental method where thresholded region afte kernel density estimation 
+is considered
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
+@param WGr: background mask
 @param resolution: data resolution in mm [x,y,z]
+@param amount: coefficient for thresholding of KDE distribution
 @returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+  ROIdata: ROI data
+  WGdata: background data
 """
 def Moment2_fun_KDE(LESIONDATAr, LESIONr, WGr, resolution, amount):
 
@@ -856,21 +888,34 @@ def Moment2_fun_KDE(LESIONDATAr, LESIONr, WGr, resolution, amount):
 
 
 """
-Get 3D GLCM
+3D Gray Level Co-occurrence Matrix feature names
 
-@param LESIONDATAr: Intensity data
-@param LESIONr: Lesion mask
-@param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+    mean
+    median
+    25percentile
+    75percentile
+    skewness
+    kurtosis
+    SD
+    IQR
+    relWGmean: Relatine mean to background
+    relWGmedian: Relatine median to background
+    relWG25percentile: Relatine 25% percentile to background
+    relWG75percentile: Relatine 75% percentile to background
+    relWGskewness: Relatine skewness to background
+    relWGkurtosis: Relatine kurtosis to background
+    relWGSD: Relatine standard deviation to background
+    WGIQR: Relatine interquartile range to background
 """
 casefun_01_moments2_WG_names = ('mean', 'median', '25percentile', '75percentile', 'skewness', 'kurtosis', 'SD', 'IQR',
                                 'relWGmean', 'relWGmedian', 'relWG25percentile', 'relWG75percentile', 'relWGskewness', 'relWGkurtosis', 'relWGSD', 'WGIQR')
+
+"""
+Resolve 3D Gray Level Co-occurrence Matrix feature names
+
+@param param: method parameters
+@returns: Method names as returned by the corresponding function
+"""
 def casefun_01_moments2_name_generator(params):
     names = []
     for name in casefun_01_moments2_WG_names:
@@ -879,18 +924,13 @@ def casefun_01_moments2_name_generator(params):
 
 
 """
-Get 3D GLCM
+3D Gray Level Co-occurrence Matrix features
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
+@param WGr: Background region mask
 @param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+@returns: Please see casefun_01_moments2_name_generator, 
 """
 def casefun_01_Moments2(LESIONDATAr, LESIONr, WGr, resolution, params):
 
@@ -968,25 +1008,18 @@ def casefun_01_Moments2(LESIONDATAr, LESIONr, WGr, resolution, params):
 
 
 """
-<<TODO: write header>>
+Smoothing of 3D mesh with external Meshlab tool (http://www.meshlab.net/). 
 
-@param LESIONDATAr: Intensity data
-@param LESIONr: Lesion mask
-@param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+@param in_file: input meshlab file
+@param out_file: input meshlab file
+@param binary_path: Meshlab binary location
+@param cfg_path: Configuration file location
 """
-def Meshlab_hausdorf(in_file, in_file2, out_file):
+def Meshlab_smooth(in_file, out_file, binary_path="C:/Program Files/VCG/Meshlab/meshlabserver", cfg_path=" -s ./meshlab_smooth.mlx"):
     # Add input mesh
-    command = "C:/Program Files/VCG/Meshlab/meshlabserver -i " + in_file
-    command += " -i " + in_file2
+    command = bianry_path+" -i " + in_file
     # Add the filter script
-    command += " -s D:/PRODIF_Jussi/scripts_whole_PRODIF/meshlab_smooth.mlx"
+    command += " -s " + cfg_path
     # Add the output filename and output flags
     if os.path.exists(out_file):
         os.remove(out_file)
@@ -1000,80 +1033,13 @@ def Meshlab_hausdorf(in_file, in_file2, out_file):
 
 
 """
-<<TODO: write header>>
+Get samples along mesh surface
 
-@param LESIONDATAr: Intensity data
-@param LESIONr: Lesion mask
-@param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
-"""
-def Meshlab_smooth(in_file, out_file):
-    # Add input mesh
-    command = "C:/Program Files/VCG/Meshlab/meshlabserver -i " + in_file
-    # Add the filter script
-    command += " -s D:/PRODIF_Jussi/scripts_whole_PRODIF/meshlab_smooth.mlx"
-    # Add the output filename and output flags
-    if os.path.exists(out_file):
-        os.remove(out_file)
-    command += " -o " + out_file + " -m vn fn"
-    # Execute command
-    print("Going to execute: " + command)
-    try:
-        output = subprocess.check_output(command, shell=False)
-    except:
-        print('Exception')
-
-
-"""
-<<TODO: write header>>
-
-@param LESIONDATAr: Intensity data
-@param LESIONr: Lesion mask
-@param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
-"""
-def Meshlab_smooth2(in_file, out_file):
-    # Add input mesh
-    command = "C:/Program Files/VCG/Meshlab/meshlabserver -i " + in_file
-    # Add the filter script
-    command += " -s D:/PRODIF_Jussi/scripts_whole_PRODIF/meshlab_smooth2.mlx"
-    # Add the output filename and output flags
-    if os.path.exists(out_file):
-        os.remove(out_file)
-    command += " -o " + out_file + " -m vn fn"
-    # Execute command
-    print("Going to execute: " + command)
-    try:
-        output = subprocess.check_output(command, shell=False)
-    except:
-        print('Exception')
-
-
-"""
-<<TODO: write header>>
-
-@param LESIONDATAr: Intensity data
-@param LESIONr: Lesion mask
-@param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+@param verts: Mesh vertices
+@param faces: Mesh faces
+@param Idata: Intensity data
+@param resolution: resolution in mm [x,y,z]
+@returns: Intensity values at the center of faces
 """
 def get_mesh_surface_samples(verts, faces, Idata, resolution):
     c_all = []
@@ -1092,18 +1058,13 @@ def get_mesh_surface_samples(verts, faces, Idata, resolution):
 
 
 """
-<<TODO: write header>>
+Writes ply ASCII mesh definition file
 
-@param LESIONDATAr: Intensity data
-@param LESIONr: Lesion mask
-@param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+@param verts: Mesh vertices
+@param faces: Mesh faces
+@param Idata: Intensity data
+@param resolution: Data resolution in mm [x,y,z]
+@param plyfilename: Output filename
 """
 def write_plyfile(verts, faces, Idata, resolution, plyfilename):
     verts_for_ply = []
@@ -1125,18 +1086,17 @@ def write_plyfile(verts, faces, Idata, resolution, plyfilename):
 
 
 """
-<<TODO: write header>>
+Creates 3D mesh from binary segmentation file suign Marching Cubes algorithm. 
+This implementation uses skimage.measure .masching_cubes_lewiner function.
 
-@param LESIONDATAr: Intensity data
-@param LESIONr: Lesion mask
-@param resolution: data resolution in mm [x,y,z]
+@param data: Binary mask data
+@param l: Intensity threshold value for segmentation
+@param resolution: Data resolution in mm [x,y,z]
 @returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+  verts: Mesh vertices
+  faces: Mesh faces
+  normals: Mesh normal vectors
+  values: Maximum value of the datain local region
 """
 def create_mesh(data, l, resolution):
     verts, faces, normals, values = measure.marching_cubes_lewiner(data, level=l, spacing=(resolution[0], resolution[1], resolution[2]))
@@ -1170,18 +1130,12 @@ def create_mesh(data, l, resolution):
 
 
 """
-<<TODO: write header>>
+Return closest point to a line
 
-@param LESIONDATAr: Intensity data
-@param LESIONr: Lesion mask
-@param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+@param a: Point s
+@param b: Point b
+@param p: Evaluated point
+@returns: closest point in line a-b to point p
 """
 def closest_point_on_line(a, b, p):
     ap = p-a
@@ -1191,18 +1145,16 @@ def closest_point_on_line(a, b, p):
 
 
 """
-<<TODO: write header>>
+Creates smoothed mesh for shape feature estimations
 
-@param LESIONDATAr: Intensity data
-@param LESIONr: Lesion mask
+@param Idata: Intensity data
+@param data: Data for mesh definition
+@param l: Intensity threshold for mesh definition
 @param resolution: data resolution in mm [x,y,z]
+@param name: Name for debug use, in local temporary directory
 @returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+    verts: Mesh vertices
+    faces: Mesh faces
 """
 def create_mesh_smooth(Idata, data, l, resolution, name):
     print(resolution)
@@ -1245,7 +1197,8 @@ def create_mesh_smooth(Idata, data, l, resolution, name):
     faces = np.asarray(faces)
     write_plyfile(verts, faces, Idata, resolution, 'C:/temp/' + name + 'temp_' + tempname + '_preprocessed.ply')
     if os.path.exists(plyfilename):
-        os.remove(plyfilename)
+        o
+        s.remove(plyfilename)
     if os.path.exists(plyfilenamep):
         try:
             os.remove(plyfilenamep)
@@ -1260,21 +1213,10 @@ def create_mesh_smooth(Idata, data, l, resolution, name):
 
 
 """
-<<TODO: write header>>
+Bresenham's algorithm, subfunction for poitn set normalization.
 
-@param LESIONDATAr: Intensity data
-@param LESIONr: Lesion mask
-@param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
-"""
-"""
-N-D Bresenham line algo
+@param slope: Points in N-D space
+@returns: Normalized points
 """
 import numpy as np
 def _bresenhamline_nslope(slope):
@@ -1288,18 +1230,12 @@ def _bresenhamline_nslope(slope):
 
 
 """
-<<TODO: write header>>
+Bresenham's algorithm in 3-D space, subfunction.
 
-@param LESIONDATAr: Intensity data
-@param LESIONr: Lesion mask
-@param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+@param start: Starting location
+@param end: Ending location
+@param max_iter: Maximum allowed iterations
+@returns: Point of line in 3-D space
 """
 def _bresenhamlines(start, end, max_iter):
 
@@ -1320,18 +1256,12 @@ def _bresenhamlines(start, end, max_iter):
 
 
 """
-<<TODO: write header>>
+Bresenham's algorithm in 3-D space.
 
-@param LESIONDATAr: Intensity data
-@param LESIONr: Lesion mask
-@param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+@param start: Starting location
+@param end: Ending location
+@param max_iter: Maximum allowed iterations
+@returns: Point of line in 3-D spac
 """
 def bresenhamline(start, end, max_iter=5):
 
@@ -1340,18 +1270,16 @@ def bresenhamline(start, end, max_iter=5):
 
 
 """
-<<TODO: write header>>
+Creates smooth 3D mesh whci is fitted to iamge gradients.
 
-@param LESIONDATAr: Intensity data
-@param LESIONr: Lesion mask
+@param Idata: Intensity data
+@param data: Data for mesh definition
+@param l: Intensity threshold for mesh definition
 @param resolution: data resolution in mm [x,y,z]
+@param name: Name for debug use, in local temporary directory
 @returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+    verts: Mesh vertices
+    faces: Mesh faces
 """
 def create_mesh_smooth_fit_to_gradient(Idata, data, l, resolution, name):
     print(resolution)
@@ -1461,21 +1389,36 @@ def create_mesh_smooth_fit_to_gradient(Idata, data, l, resolution, name):
 
 
 """
-<<TODO: write header>>
+Colletion of 3D shape feature names. 
+Some features use Trimesh package (https://trimsh.org/trimesh.html).
+
+    sarea3D: 3D surface area
+    relsarea3D: relative 3D surface area
+    tm_area_faces: trimesh package faces area
+    tm_relarea_faces: trimesh relative faces area
+    mean_angles: mean surface curvature angles
+    median_angles: medina surface curvature angles
+    SD_angles: standard deviation of suurface survature angles
+    distance_mean: mean distance to the Center of Mass
+    distance_median: median distance to the Center of Mass
+    CSM_mean_curvature: Cohen-Steiner and Morvan mean curvature
+    CSM_Gaus_mean_curvature: Gaussian curvature mean angle
+    WGdistROI_median: Median distance to background surface
+    WGdistROI_SD: Standard deviation fo distances to background surface
+    WGdistROI_skewness: Skewness of distances to background surface
+    WGdistROI_kurtosis: Kurtosity of distances to background surface
+"""
+casefun_3D_shape_names = ('sarea3D','relsarea3D', 'tm_area_faces', 'tm_relarea_faces', 'mean_angles', 'median_angles', 'SD_angles', 'distance_mean', 'distance_median', 'CSM_mean_curvature', 'CSM_Gaus_mean_curvature', 'WGdistROI_median', 'WGdistROI_SD', 'WGdistROI_skewness', 'WGdistROI_kurtosis')
+
+"""
+Colletion of 3D shape features. 
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
+@param WGr: Background region mask
 @param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+@returns: Please see casefun_3D_shape_names
 """
-# Features for each
-casefun_3D_shape_names = ('sarea3D','relsarea3D', 'tm_area_faces', 'tm_relarea_faces', 'mean_angles', 'median_angles', 'SD_angles', 'distance_mean', 'distance_median', 'CSM_mean_curvature', 'CSM_Gaus_mean_curvature', 'WGdistROI_median', 'WGdistROI_SD', 'WGdistROI_skewness', 'WGdistROI_kurtosis')
 def casefun_3D_shape(LESIONDATAr, LESIONr, WGr, resolution):
     ROIdata = LESIONDATAr[LESIONr[0] > 0]
     WGdata = LESIONDATAr[WGr > 0]
@@ -1519,20 +1462,27 @@ def casefun_3D_shape(LESIONDATAr, LESIONr, WGr, resolution):
 
 
 """
-<<TODO: write header>>
+Colletion of 3D shape feature names for background shape. 
+Some features use Trimesh package (https://trimsh.org/trimesh.html).
+
+    WGsarea3D: background 3D surface area
+    WGtm_area_faces: trimesh package faces area for backround
+    WGdistance_mean: mean distance to the Center of Mass of background
+    WGdistance_median: median distance to the Center of Mass of background
+    WGCSM_mean_curvature: Cohen-Steiner and Morvan mean curvature of background surface
+    CSM_Gaus_mean_curvature: Gaussian curvature mean angle of background surface
+"""
+casefun_3D_shape_names_WG = ('WGsarea3D','WGtm_area_faces', 'WGdistance_mean', 'WGdistance_median', 'WGCSM_mean_curvature', 'WGCSM_Gaus_mean_curvature')
+
+"""
+Colletion of 3D shape features for background shape only
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
+@param WGr: Background region mask
 @param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+@returns: Please see casefun_3D_shape_names_WG
 """
-casefun_3D_shape_names_WG = ('WGsarea3D','WGtm_area_faces', 'WGdistance_mean', 'WGdistance_median', 'WGCSM_mean_curvature', 'WGCSM_Gaus_mean_curvature')
 def casefun_3D_shape_WG(LESIONDATAr, LESIONr, WGr, resolution):
     WGdata = LESIONDATAr[WGr > 0]
     print((len(WGdata), np.min(WGdata), np.max(WGdata)))
@@ -1552,44 +1502,50 @@ def casefun_3D_shape_WG(LESIONDATAr, LESIONr, WGr, resolution):
 
 
 """
-<<TODO: write header>>
+Colletion of 3D shape feature names for smoothed shape. 
+Some features use Trimesh package (https://trimsh.org/trimesh.html).
+
+    sarea3Dsm: 3D surface area, smoothed
+    relsarea3Dsm: relative 3D surface area, smoothed
+    tm_area_facessm: trimesh package faces area, smoothed
+    tm_relarea_facessm: trimesh relative faces area, smoothed
+    mean_anglessm: mean surface curvature angles, smoothed
+    median_anglessm: medina surface curvature angles, smoothed
+    SD_anglessm: standard deviation of suurface survature angles, smoothed
+    distance_meansm: mean distance to the Center of Mass, smoothed
+    distance_mediansm: median distance to the Center of Mass, smoothed
+    CSM_mean_curvaturesm: Cohen-Steiner and Morvan mean curvature, smoothed
+    CSM_Gaus_mean_curvaturesm: Gaussian curvature mean angle, smoothed
+    WG_mediansm: Median distance to background surface, smoothed
+    WG_SDsm: Standard deviation fo distances to background surface, smoothed
+    WG_skewnesssm: Skewness of distances to background surface, smoothed
+    WG_kurtosissm: Kurtosity of distances to background surface, smoothed
+"""
+casefun_3D_shape2_names = ('sarea3Dsm','relsarea3Dsm', 'tm_area_facessm', 'tm_relarea_facessm', 'mean_anglessm', 'median_anglessm', 'SD_anglessm', 'distance_meansm', 'distance_mediansm', 'CSM_mean_curvaturesm', 'CSM_Gaus_mean_curvaturesm', 'WG_mediansm', 'WG_SDsm', 'WG_skewnesssm', 'WG_kurtosissm')
+
+"""
+Colletion of 3D shape features. 
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
+@param WGr: Background region mask
 @param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+@returns: Please see casefun_3D_shape2_names
 """
-casefun_3D_shape2_names = ('sarea3Dsm','relsarea3Dsm', 'tm_area_facessm', 'tm_relarea_facessm', 'mean_anglessm', 'median_anglessm', 'SD_anglessm', 'distance_meansm', 'distance_mediansm', 'CSM_mean_curvaturesm', 'CSM_Gaus_mean_curvaturesm', 'WG_mediansm', 'WG_SDsm', 'WG_skewnesssm', 'WG_kurtosissm')
 def casefun_3D_shape2(LESIONDATAr, LESIONr, WGr, resolution):
     ROIdata = LESIONDATAr[LESIONr[0] > 0]
-    #print((len(ROIdata), np.min(ROIdata), np.max(ROIdata)))
 
     # Whole Gland
-    #try:
     vertsw, facesw = create_mesh_smooth(LESIONDATAr, WGr, 0.5, resolution, 'WG')
-    #except:
-    #    print('failed to create smooth WG')
-    #    return 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     if len(vertsw) == 0:
         print('failed to create WG')
         return 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     tmw = trimesh.base.Trimesh(vertices=vertsw, faces=facesw)
 
     # Lesion1, then other lesions, if found
-    #try:
     verts_all, faces_all = create_mesh_smooth(LESIONDATAr, LESIONr[0], 0.5, resolution, 'L1')
-    #except:
-    #    print('failed to smooth')
-    #    return 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     if len(verts_all) == 0:
         return 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-    #print((len(verts_all), len(faces_all)))
     sarea = skimage.measure.mesh_surface_area(verts_all, faces_all)
     tm = trimesh.base.Trimesh(vertices=verts_all, faces=faces_all)
     angles_all = trimesh.curvature.face_angles(tm)
@@ -1649,109 +1605,36 @@ def casefun_3D_shape2(LESIONDATAr, LESIONr, WGr, resolution):
 
 
 """
-<<TODO: write header>>
+Colletion of 3D shape feature names for smoothed shape. 
+Some features use Trimesh package (https://trimsh.org/trimesh.html).
 
-@param LESIONDATAr: Intensity data
-@param LESIONr: Lesion mask
-@param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
-"""
-casefun_3D_shape3_names = ('sarea3Dsm3','relsarea3Dsm3', 'tm_area_facessm3', 'tm_relarea_facessm3', 'mean_angless3m', 'median_anglessm3', 'SD_anglessm3', 'distance_meansm3', 'distance_mediansm3', 'CSM_mean_curvaturesm3', 'CSM_Gaus_mean_curvaturesm3', 'WG_mediansm3', 'WG_SDsm3', 'WG_skewnesssm3', 'WG_kurtosissm3')
-def casefun_3D_shape3(LESIONDATAr, LESIONr, WGr, resolution):
-    ROIdata = LESIONDATAr[LESIONr[0] > 0]
-
-    # Whole Gland
-    #try:
-    vertsw, facesw = create_mesh_smooth(LESIONDATAr, WGr, 1.0, resolution, 'WG')
-    #except:
-    #    return 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-    tmw = trimesh.base.Trimesh(vertices=vertsw, faces=facesw)
-
-    # Lesion1, then other lesions, if found
-    #try:
-    verts_all, faces_all = create_mesh_smooth_fit_to_gradient(LESIONDATAr, LESIONr[1], 1.0, resolution, 'L1')
-    if len(verts_all) == 0:
-        return 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-    #except:
-    #    return 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-    sarea = skimage.measure.mesh_surface_area(verts_all, faces_all)
-    tm = trimesh.base.Trimesh(vertices=verts_all, faces=faces_all)
-    angles_all = trimesh.curvature.face_angles(tm)
-    CoM = tm.center_mass
-    distances_all = []
-    for v in tm.vertices:
-        distances_all.append(np.sqrt(np.power(v[0]-CoM[0], 2.0)+np.power(v[1]-CoM[1], 2.0)+np.power(v[2]-CoM[2], 2.0)))
-    CSM_mean_curvature = trimesh.curvature.discrete_mean_curvature_measure(tm, [CoM], np.max(distances_all))
-    CSM_Gaus_mean_curvature = trimesh.curvature.discrete_gaussian_curvature_measure(tm, [CoM], np.max(distances_all))
-    closest, distancew_all, triangle_id = trimesh.proximity.closest_point(tm, tmw.vertices)
-    for LESION_i in range(2, len(LESIONr)):
-        try:
-            verts, faces = create_mesh_smooth_fit_to_gradient(LESIONDATAr, LESIONr[LESION_i], 1.0, resolution, 'L' + str(LESION_i-1))
-        except:
-            continue
-        if len(verts) == 0:
-            continue
-        verts_all = np.concatenate((verts_all, verts))
-        faces_all = np.concatenate((faces_all, faces))
-        sarea = sarea + skimage.measure.mesh_surface_area(verts, faces)
-        tm = trimesh.base.Trimesh(vertices=verts, faces=faces)
-        angles = trimesh.curvature.face_angles(tm)
-        angles_all = np.concatenate((angles_all, angles))
-        CoM = tm.center_mass
-        distances = []
-        for v in tm.vertices:
-            distances.append(np.sqrt(np.power(v[0]-CoM[0], 2.0)+np.power(v[1]-CoM[1], 2.0)+np.power(v[2]-CoM[2], 2.0)))
-        CSM_mean_curvature = CSM_mean_curvature + trimesh.curvature.discrete_mean_curvature_measure(tm, [CoM], np.max(distances))
-        CSM_Gaus_mean_curvature = CSM_Gaus_mean_curvature + trimesh.curvature.discrete_gaussian_curvature_measure(tm, [CoM], np.max(distances))
-        distances_all = np.concatenate((distances_all, distances))
-        closest, distancew, triangle_id = trimesh.proximity.closest_point(tm, tmw.vertices)
-        distancew_all = np.concatenate((distancew_all, distancew))
-    verts = verts_all
-    faces = faces_all
-    sarea = sarea / (len(LESIONr)-1)
-    angles = angles_all
-    distances = distances_all
-    CSM_Gaus_mean_curvature = CSM_Gaus_mean_curvature / (len(LESIONr)-1)
-    CSM_mean_curvature = CSM_mean_curvature / (len(LESIONr)-1)
-    distancew = distancew_all
-
-    sareaw = skimage.measure.mesh_surface_area(vertsw, facesw)
-    mean_angles = np.mean(angles)
-    median_angles = np.median(angles)
-    SD_angles = np.std(angles)
-    distance_mean = np.mean(distances)
-    distance_median = np.median(distances)
-
-    # Distance to whole gland
-    w1 = np.median(distancew)
-    w2 = np.std(distancew)
-    w3 = scipy.stats.skew(distancew)
-    w4 = scipy.stats.kurtosis(distancew)
-
-    return sarea, sarea/sareaw, np.median(tm.area_faces), np.median(tm.area_faces)/len(ROIdata), mean_angles, median_angles, SD_angles, distance_mean, distance_median, CSM_mean_curvature[0], CSM_Gaus_mean_curvature[0], w1, w2, w3, w4
-
-
-"""
-<<TODO: write header>>
-
-@param LESIONDATAr: Intensity data
-@param LESIONr: Lesion mask
-@param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+    sarea3Dsm: 3D surface area, smoothed
+    relsarea3Dsm: relative 3D surface area, smoothed
+    tm_area_facessm: trimesh package faces area, smoothed
+    tm_relarea_facessm: trimesh relative faces area, smoothed
+    mean_anglessm: mean surface curvature angles, smoothed
+    median_anglessm: medina surface curvature angles, smoothed
+    SD_anglessm: standard deviation of suurface survature angles, smoothed
+    distance_meansm: mean distance to the Center of Mass, smoothed
+    distance_mediansm: median distance to the Center of Mass, smoothed
+    CSM_mean_curvaturesm: Cohen-Steiner and Morvan mean curvature, smoothed
+    CSM_Gaus_mean_curvaturesm: Gaussian curvature mean angle, smoothed
+    WG_mediansm: Median distance to background surface, smoothed
+    WG_SDsm: Standard deviation fo distances to background surface, smoothed
+    WG_skewnesssm: Skewness of distances to background surface, smoothed
+    WG_kurtosissm: Kurtosity of distances to background surface, smoothed
 """
 casefun_3D_surface_textures_names = ('surf_mean', 'surf_median', 'surf_25percentile', 'surf_75percentile', 'surf_skewness', 'surf_kurtosis', 'surf_SD', 'surf_range', 'surf_volume', 'surf_CV')
+
+"""
+Colletion of 3D shape features. 
+
+@param LESIONDATAr: Intensity data
+@param LESIONr: Lesion mask
+@param WGr: Background region mask
+@param resolution: data resolution in mm [x,y,z]
+@returns: Please see casefun_3D_surface_textures_names
+"""
 def casefun_3D_surface_textures(LESIONDATAr, LESIONr, WGr, resolution):
 
     ROIdata = LESIONDATAr[LESIONr[0] > 0]
@@ -1788,20 +1671,30 @@ def casefun_3D_surface_textures(LESIONDATAr, LESIONr, WGr, resolution):
 
 
 """
-<<TODO: write header>>
+Names for 3D surface textures of background region
+
+    WGsurf_mean: Surface mean intensity of background region
+    WGsurf_median: Surface median intensity of background region
+    WGsurf_25percentile: Surface intensity 25% intensity of background region
+    WGsurf_75percentile: Surface intensity 75% percentile of background region
+    WGsurf_skewness: Surface intensity skewness of background region
+    WGsurf_kurtosis: Surface intensity kurtosis of background region
+    WGsurf_SD: Surface intensity standard deviation of background region
+    WGsurf_range: Surface intensity range of background region
+    WGsurf_volume: Number of surface samples of background region
+    WGsurf_CV: Surface intensity Coefficient of Variation of background region
+"""
+casefun_3D_surface_textures_names_WG = ('WGsurf_mean', 'WGsurf_median', 'WGsurf_25percentile', 'WGsurf_75percentile', 'WGsurf_skewness', 'WGsurf_kurtosis', 'WGsurf_SD', 'WGsurf_range', 'WGsurf_volume', 'WGsurf_CV')
+
+"""
+3D surface textures of background region
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
+@param WGr: Background region mask
 @param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+@returns: Please see casefun_3D_surface_textures_names_WG
 """
-casefun_3D_surface_textures_names_WG = ('WGsurf_mean', 'WGsurf_median', 'WGsurf_25percentile', 'WGsurf_75percentile', 'WGsurf_skewness', 'WGsurf_kurtosis', 'WGsurf_SD', 'WGsurf_range', 'WGsurf_volume', 'WGsurf_CV')
 def casefun_3D_surface_textures_WG(LESIONDATAr, LESIONr, WGr, resolution):
 
     ROIdata = LESIONDATAr[WGr > 0]
@@ -1836,18 +1729,10 @@ def casefun_3D_surface_textures_WG(LESIONDATAr, LESIONr, WGr, resolution):
 
 
 """
-<<TODO: write header>>
+Otsu's thersholding of intensity distributions
 
-@param LESIONDATAr: Intensity data
-@param LESIONr: Lesion mask
-@param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+@param gray: Distribution of intensity values
+@returns: Otsu's threshold value
 """
 def otsu(gray):
     pixel_number = len(gray)
@@ -1869,23 +1754,17 @@ def otsu(gray):
         if value > final_value:
             final_thresh = t
             final_value = value
-    #print 'otsu th:' + str(bins[final_thresh])
     return bins[final_thresh]
 
 
 """
-<<TODO: write header>>
+3D sliding window help function
 
-@param LESIONDATAr: Intensity data
-@param LESIONr: Lesion mask
-@param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+@param image: Intensity image
+@param mask: Masking window
+@param stepSize: step size in voxels
+@param windowSize: window size in voxels
+@returns: yield for sliding window processing
 """
 def sliding_window3D(image, mask, stepSize, windowSize):
     # slide a window across the image
@@ -1902,25 +1781,15 @@ def sliding_window3D(image, mask, stepSize, windowSize):
 
 
 """
-<<TODO: write header>>
+3D analogue of laws texture features.
 
-@param LESIONDATAr: Intensity data
-@param LESIONr: Lesion mask
-@param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
-"""
-"""
-3D analogue of laws texture features
 Suzuki, M.T. and Yaginuma, Y., 2007, January.
 A solid texture analysis based on three-dimensional convolution kernels. In Videometrics IX (Vol. 6491, p. 64910W). International Society for Optics and Photonics.
 Suzuki, M.T., Yaginuma, Y., Yamada, T. and Shimizu, Y., 2006, December. A shape feature extraction method based on 3D convolution masks.
 In Multimedia, 2006. ISM'06. Eighth IEEE International Symposium on (pp. 837-844). IEEE.
+
+@param filename: txt file to be used for kernel definitions
+@returns: 3D kernel objects
 """
 # Read the kernels from file
 def read_3DLaws_kernel(filename):
@@ -1973,26 +1842,28 @@ def read_3DLaws_kernel(filename):
     #print(str(len(kernels_pruned)) + ' pruned 3D Laws kernels out of ' + str(len(kernels)))
     return kernels_pruned
 
+# Read kernels into memory by default
 Laws3Dkernel = read_3DLaws_kernel('mask-3d-5.txt')
 
+"""
+Names for 3D Laws features. Contains basic first order statistics to be takesn for each feature map.
+"""
 casefun_3D_Laws_names = ['mean_ROI', 'median_ROI', 'SD_ROI', 'IQR_ROI', 'skewnessROI', 'kurtosisROI', 'p25ROI', 'p75ROI', 'rel']
+
+# Initialize array formats for use in numba
 laws3D_names = []
-for kernel_i in range(1, len(Laws3Dkernel)):
+length_Laws3Dkernel = len(Laws3Dkernel)
+Laws3Dkernel_array = np.zeros([length_Laws3Dkernel, 5, 5, 5])
+for kernel_i in range(0, length_Laws3Dkernel):
+    Laws3Dkernel_array[kernel_i, :, :, :]  = Laws3Dkernel[kernel_i]['data']
+for kernel_i in range(1, length_Laws3Dkernel):
     laws3D_names.append(Laws3Dkernel[kernel_i]['name'])
 
 """
-<<TODO: write header>>
+Names generator function for 3D Laws
 
-@param LESIONDATAr: Intensity data
-@param LESIONr: Lesion mask
-@param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+@param params: Feature set parameters
+@returns: Feature names
 """
 def casefun_3D_Laws_names_generator(params):
     names = []
@@ -2003,18 +1874,10 @@ def casefun_3D_Laws_names_generator(params):
 
 
 """
-<<TODO: write header>>
+Names generator function for 3D Laws in background region
 
-@param LESIONDATAr: Intensity data
-@param LESIONr: Lesion mask
-@param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+@param params: Feature set parameters
+@returns: Feature names
 """
 def casefun_3D_Laws_names_generator_WG(params):
     names = []
@@ -2026,18 +1889,13 @@ def casefun_3D_Laws_names_generator_WG(params):
 
 
 """
-<<TODO: write header>>
+Appends Laws feature values to the end of exiting list
 
-@param LESIONDATAr: Intensity data
+@param outdata: Intensity data
 @param LESIONr: Lesion mask
-@param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+@param WGr: Background region mask
+@param ret: List of results
+@returns: List of results, with new data appended
 """
 def append_Laws_results(outdata, LESIONrs, WGrs, ret):
     ROIdata = outdata[LESIONrs > 0]
@@ -2064,18 +1922,13 @@ def append_Laws_results(outdata, LESIONrs, WGrs, ret):
 
 
 """
-<<TODO: write header>>
+Appends Laws feature values to the end of exiting list for background region
 
-@param LESIONDATAr: Intensity data
+@param outdata: Intensity data
 @param LESIONr: Lesion mask
-@param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+@param WGr: Background region mask
+@param ret: List of results
+@returns: List of results, with new data appended
 """
 def append_Laws_results_WG(outdata, LESIONrs, ret):
     ROIdata = outdata[LESIONrs > 0]
@@ -2097,18 +1950,177 @@ def append_Laws_results_WG(outdata, LESIONrs, ret):
 
 
 """
-<<TODO: write header>>
+Vectorized 3D cross-colleration for 3D Laws feature extraction. 
+This implementation is useing only 5x5x5 window for now. 
+
+@param img1: Mask window
+@param img2: Lesion mask
+@param res: Results image
+"""
+@numba.guvectorize(['(float64[:,:,:], float64[:,:,:], float64[:,:,:])'], '(n,n,n),(n,n,n)->(n,n,n)', nopython=True)
+def numba_vectorized_correlate(img1, img2, ret):
+    m1 = 0
+    m2 = 0
+    s = 2
+    N = 5
+    for x in range(N):
+        for y in range(N):
+            for z in range(N):
+                m1 += img1[x,y,z]
+                m2 += img2[x,y,z]
+                ret[x,y,z] = 0
+    m1 /= 5*5*5
+    m2 /= 5*5*5
+    for i in range(N):
+        for j in range(N):
+            for k in range(N):
+                for ii in range(-s, s):
+                    for jj in range(-s, s):
+                        for kk in range(-s, s):
+                            ret[i, j, k] = (img2[ii+s, jj+s, kk+s]-m2)*(img1[i+ii, j+jj, k+kk]-m1)
+
+"""
+3D Laws with numba GPU acceleration
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
+@param WGr: Background region mask
 @param resolution: data resolution in mm [x,y,z]
+@param params: param[0]: isotropic resampling in mm
 @returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+    Please see corresponding result name list generation function
+"""
+def casefun_3D_Laws_numba(LESIONDATAr, LESIONr, WGr, resolution, params):
+    # resolution factor affecting laws feature sampling ratio
+    # 1: original resolution
+    # <1: upsampling
+    # >1: downsampling
+    res_f = params[0]
+
+    x_lo, x_hi, y_lo, y_hi, z_lo, z_hi = find_bounded_subregion3D(WGr)
+    LESIONDATArs = LESIONDATAr[x_lo:x_hi, y_lo:y_hi, :]
+    LESIONrs_temp = LESIONr[0][x_lo:x_hi, y_lo:y_hi, :]
+    WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi, :]
+
+    # Create masks and output data to desired resolution, intensity data is resliced later for non-zero only
+    min_res = np.max(resolution)
+    new_res = [min_res*res_f, min_res*res_f, min_res*res_f]
+    LESIONrs_temp, affineLESIONrs_temp = reslice_array(LESIONrs_temp, resolution, new_res, 0)
+    WGrs_temp, affineWGrs_temp = reslice_array(WGrs_temp, resolution, new_res, 0)
+    LESIONDATArs, affineLESIONDATArs = reslice_array(LESIONDATArs, resolution, new_res, 1)
+
+    outdatas = []
+    for kernel_i in range(1, len(Laws3Dkernel)):
+        outdatas.append(np.zeros_like(LESIONDATArs))
+
+    s = 5
+    sys.stderr = io.StringIO()
+    ret = np.zeros((5,5,5))
+    for (x, y, z, window) in sliding_window3D(LESIONDATArs, LESIONrs_temp, 1, (s, s, s)):
+        window = np.subtract(window, np.mean(window))
+        w_std = np.std(window)
+        if w_std > 0:
+            window = np.divide(window, np.std(window))
+        xmid = x+2
+        ymid = y+2
+        zmid = z+2
+        if window.shape[0] < s:
+            continue
+        if window.shape[1] < s:
+            continue
+        if window.shape[2] < s:
+            continue
+        for kernel_i in range(1, len(Laws3Dkernel)):
+            c = numba_vectorized_correlate(window, Laws3Dkernel[kernel_i]['data'], ret)
+            outdatas[kernel_i-1][xmid, ymid, zmid] = np.sum(c)
+    sys.stderr = sys.__stderr__
+    ret = []
+    for kernel_i in range(1, len(Laws3Dkernel)):
+        ret = append_Laws_results(outdatas[kernel_i-1], LESIONrs_temp, WGrs_temp, ret)
+    return ret
+
+
+"""
+3D Laws with numba GPU acceleration using background region
+
+@param LESIONDATAr: Intensity data
+@param LESIONr: not in use
+@param WGr: Background region mask
+@param resolution: data resolution in mm [x,y,z]
+@param params: param[0]: isotropic resampling in mm
+@returns: Please see corresponding result name list generation function
+"""
+
+def casefun_3D_Laws_WG_numba(LESIONDATAr, LESIONr, WGr, resolution, params):
+
+    # resolution factor affecting laws feature sampling ratio
+    # 1: original resolution
+    # <1: upsampling
+    # >1: downsampling
+    res_f = params[0]
+
+    x_lo, x_hi, y_lo, y_hi, z_lo, z_hi = find_bounded_subregion3D(LESIONDATAr)
+    x_lo -= 2
+    x_hi += 2
+    y_lo -= 2
+    y_hi += 2
+    if x_lo < 0:
+        x_lo = 0
+    if y_lo < 0:
+        y_lo = 0
+    if x_hi >= WGr.shape[0]:
+        x_hi = WGr.shape[0]-1
+    if y_hi >= WGr.shape[1]:
+        y_hi = WGr.shape[1]-1
+
+    LESIONDATArs = LESIONDATAr[x_lo:x_hi, y_lo:y_hi, :]
+    WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi, :]
+
+    # Create masks and output data to desired resolution, intensity data is resliced later for non-zero only
+    min_res = np.max(resolution)
+    new_res = [min_res*res_f, min_res*res_f, min_res*res_f]
+    WGrs_temp, affineWGrs_temp = reslice_array(WGrs_temp, resolution, new_res, 0)
+    LESIONDATArs, affineLESIONDATArs = reslice_array(LESIONDATArs, resolution, new_res, 1)
+
+    outdatas = []
+    for kernel_i in range(1, len(Laws3Dkernel)):
+        outdatas.append(np.zeros_like(LESIONDATArs))
+
+    s = 5
+    sys.stderr = io.StringIO()
+    ret = np.zeros((5,5,5))
+    for (x, y, z, window) in sliding_window3D(LESIONDATArs, WGrs_temp, 1, (s, s, s)):
+        window = np.subtract(window, np.mean(window))
+        w_std = np.std(window)
+        if w_std > 0:
+            window = np.divide(window, np.std(window))
+        xmid = x+2
+        ymid = y+2
+        zmid = z+2
+        if window.shape[0] < s:
+            continue
+        if window.shape[1] < s:
+            continue
+        if window.shape[2] < s:
+            continue
+        for kernel_i in range(1, len(Laws3Dkernel)):
+            c = numba_vectorized_correlate(window, Laws3Dkernel[kernel_i]['data'], ret)
+            outdatas[kernel_i-1][xmid, ymid, zmid] = np.sum(c)
+    sys.stderr = sys.__stderr__
+    ret = []
+    for kernel_i in range(1, len(Laws3Dkernel)):
+        ret = append_Laws_results_WG(outdatas[kernel_i-1], WGrs_temp, ret)
+    return ret
+
+
+"""
+3D Laws
+
+@param LESIONDATAr: Intensity data
+@param LESIONr: Lesion mask
+@param WGr: Background region mask
+@param resolution: params[0]: isotropic data resampling in mm [x,y,z]
+@returns: Please see corresponding featue list variable
 """
 def casefun_3D_Laws(LESIONDATAr, LESIONr, WGr, resolution, params):
     # resolution factor affecting laws feature sampling ratio
@@ -2140,9 +2152,9 @@ def casefun_3D_Laws(LESIONDATAr, LESIONr, WGr, resolution, params):
         w_std = np.std(window)
         if w_std > 0:
             window = np.divide(window, np.std(window))
-        xmid = x
-        ymid = y
-        zmid = z
+        xmid = 2+x
+        ymid = 2+y
+        zmid = 2+z
         if xmid >= LESIONDATArs.shape[0]:
             continue
         if ymid >= LESIONDATArs.shape[1]:
@@ -2164,18 +2176,13 @@ def casefun_3D_Laws(LESIONDATAr, LESIONr, WGr, resolution, params):
 
 
 """
-<<TODO: write header>>
+3D Laws for backrgound region
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
-@param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+@param WGr: Background region mask
+@param resolution: params[0]: isotropic data resampling in mm [x,y,z]
+@returns: Please see corresponding featue list variable
 """
 def casefun_3D_Laws_WG(LESIONDATAr, LESIONr, WGr, resolution, params):
 
@@ -2241,22 +2248,19 @@ def casefun_3D_Laws_WG(LESIONDATAr, LESIONr, WGr, resolution, params):
         ret = append_Laws_results_WG(outdatas[kernel_i-1], WGrs_temp, ret)
     return ret
 
+"""
+First order statistics for SNR measurements
+"""
+casefun_SNR_names = ('mean', 'median', '25percentile', '75percentile', 'skewness', 'kurtosis', 'SD', 'IQR')
 
 """
-<<TODO: write header>>
+Names generator for signal-to-noise ration measurements features
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
 @param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+@returns: List of SNR feature names
 """
-casefun_SNR_names = ('mean', 'median', '25percentile', '75percentile', 'skewness', 'kurtosis', 'SD', 'IQR')
 def casefun_SNR_name_generator(params):
     names = []
     for Lname in ['', 'WG', 'rel']:
@@ -2268,18 +2272,7 @@ def casefun_SNR_name_generator(params):
 
 
 """
-<<TODO: write header>>
-
-@param LESIONDATAr: Intensity data
-@param LESIONr: Lesion mask
-@param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+Helper function to calculate relative feature values, robust for zeros. 
 """
 def relvalue(val1, val2):
     if(val1 == 0 and val2 == 0):
@@ -2287,20 +2280,14 @@ def relvalue(val1, val2):
     else:
         return abs(val1)/((val1+val2)/2.0)
 
-
 """
-<<TODO: write header>>
+Signal to noise ratio measurement features.
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
+@param WGr: Background region mask
 @param resolution: data resolution in mm [x,y,z]
-@returns:
-  contrast: GLCM contrast
-  dissimilarity: GLCM dissimilarity
-  homogeneity: GLCM homogeneity
-  ASM: GLCM ASM
-  energy: GLCM energy
-  correlation: GLCM correlation
+@returns: Please see corresponding names variable
 """
 def casefun_SNR(LESIONDATAr, LESIONr, WGr, resolution, params):
     ROIdata = LESIONDATAr[LESIONr[0] > 0]
