@@ -1017,7 +1017,7 @@ Smoothing of 3D mesh with external Meshlab tool (http://www.meshlab.net/).
 """
 def Meshlab_smooth(in_file, out_file, binary_path="C:/Program Files/VCG/Meshlab/meshlabserver", cfg_path=" -s ./meshlab_smooth.mlx"):
     # Add input mesh
-    command = bianry_path+" -i " + in_file
+    command = binary_path+" -i " + in_file
     # Add the filter script
     command += " -s " + cfg_path
     # Add the output filename and output flags

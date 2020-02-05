@@ -145,34 +145,64 @@ def find_bounded_subregion2D(slice2D):
 
 # Resolve non-zero subregion in the image
 def find_bounded_subregion3D2D(img):
-    x_lo = 0
-    for x in range(img.shape[0]):
-        if np.max(img[x, :, :]) > 0:
-            x_lo = x-1
-            if(x_lo<0):
-                x_lo = 0
+    if len(img.shape)>2:
+        x_lo = 0
+        for x in range(img.shape[0]):
+            if np.max(img[x, :, :]) > 0:
+                x_lo = x-1
+                if(x_lo<0):
+                    x_lo = 0
+                break
+        x_hi = 0
+        for x in range(img.shape[0]-1,-1,-1):
+            if np.max(img[x, :, :]) > 0:
+                x_hi = x+1
+            if(x_hi>img.shape[0]-1):
+                    x_hi = img.shape[0]-1
             break
-    x_hi = 0
-    for x in range(img.shape[0]-1,-1,-1):
-        if np.max(img[x, :, :]) > 0:
-           x_hi = x+1
-           if(x_hi>img.shape[0]-1):
-                x_hi = img.shape[0]-1
-           break
-    y_lo = 0
-    for y in range(img.shape[1]):
-        if np.max(img[:, y, :]) > 0:
-            y_lo = y-1
-            if(y_lo<0):
-                y_lo = 0
+        y_lo = 0
+        for y in range(img.shape[1]):
+            if np.max(img[:, y, :]) > 0:
+                y_lo = y-1
+                if(y_lo<0):
+                    y_lo = 0
+                break
+        y_hi = 0
+        for y in range(img.shape[1]-1,-1,-1):
+            if np.max(img[:, y, :]) > 0:
+                y_hi = y+1
+                if(y_hi>img.shape[1]-1):
+                    y_hi = img.shape[1]-1
+                break
+    else:
+        x_lo = 0
+        for x in range(img.shape[0]):
+            if np.max(img[x, :]) > 0:
+                x_lo = x-1
+                if(x_lo<0):
+                    x_lo = 0
+                break
+        x_hi = 0
+        for x in range(img.shape[0]-1,-1,-1):
+            if np.max(img[x, :]) > 0:
+                x_hi = x+1
+            if(x_hi>img.shape[0]-1):
+                    x_hi = img.shape[0]-1
             break
-    y_hi = 0
-    for y in range(img.shape[1]-1,-1,-1):
-        if np.max(img[:, y, :]) > 0:
-            y_hi = y+1
-            if(y_hi>img.shape[1]-1):
-                y_hi = img.shape[1]-1
-            break
+        y_lo = 0
+        for y in range(img.shape[1]):
+            if np.max(img[:, y]) > 0:
+                y_lo = y-1
+                if(y_lo<0):
+                    y_lo = 0
+                break
+        y_hi = 0
+        for y in range(img.shape[1]-1,-1,-1):
+            if np.max(img[:, y]) > 0:
+                y_hi = y+1
+                if(y_hi>img.shape[1]-1):
+                    y_hi = img.shape[1]-1
+                break
     return x_lo, x_hi, y_lo, y_hi
 
 
@@ -185,16 +215,34 @@ def sliding_window(image, stepSize, windowSize):
 
 
 def reslice_array(data, orig_resolution, new_resolution, int_order):
-    zooms = orig_resolution
-    new_zooms = (new_resolution[0], new_resolution[1], new_resolution[2])
-    affine = np.eye(4)
-    affine[0,0] = orig_resolution[0]
-    affine[1,1] = orig_resolution[1]
-    affine[2,2] = orig_resolution[2]
-    data2, affine2 = reslice(data, affine, zooms, new_zooms, order=int_order)
-    data3 = np.zeros((data2.shape[1], data2.shape[0], data2.shape[2]))
-    for zi in range(data3.shape[2]):
-        data3[:, :, zi] = np.rot90(data2[:, :, zi], k=3)
+    if len(data.shape) > 2:
+        zooms = orig_resolution
+        new_zooms = (new_resolution[0], new_resolution[1], new_resolution[2])
+        affine = np.eye(4)
+        affine[0,0] = orig_resolution[0]
+        affine[1,1] = orig_resolution[1]
+        affine[2,2] = orig_resolution[2]
+        data2, affine2 = reslice(data, affine, zooms, new_zooms, order=int_order)
+        data3 = np.zeros((data2.shape[1], data2.shape[0], data2.shape[2]))
+        for zi in range(data3.shape[2]):
+            data3[:, :, zi] = np.rot90(data2[:, :, zi], k=3)
+    else:
+        zooms = orig_resolution
+        new_zooms = (new_resolution[0], new_resolution[1], new_resolution[2])
+        affine = np.eye(4)
+        affine[0,0] = orig_resolution[0]
+        affine[1,1] = orig_resolution[1]
+        affine[2,2] = orig_resolution[2]
+
+        data_temp = np.zeros([data.shape[0], data.shape[1], 3])
+        data_temp[:, :, 0] = data[:, :]
+        data_temp[:, :, 1] = data[:, :]
+        data_temp[:, :, 2] = data[:, :]
+        data2, affine2 = reslice(data_temp, affine, zooms, new_zooms, order=int_order)
+        data2 = data2[:, :, 1]
+        data3 = np.zeros((data2.shape[1], data2.shape[0]))
+        data3[:, :] = np.rot90(data2[:, :])
+
     return data3, affine2
 
 
@@ -329,27 +377,38 @@ def wavelet_2D_slice4(slicedata, waveletname):
         output[xmid, ymid, 3] = np.mean(np.abs(coeffs[3]))
         output[xmid, ymid, 4] = np.mean(np.abs(coeffs[4]))
         output[xmid, ymid, 5] = np.mean(np.abs(coeffs[4][0][0]))
-        output[xmid, ymid, 6] = np.mean(np.abs(coeffs[4][0][1]))
+        output[xmid, ymid, 5] = np.mean(np.abs(coeffs[4][0][0]))
         output[xmid, ymid, 7] = np.mean(np.abs(coeffs[4][1][0]))
-        output[xmid, ymid, 8] = np.mean(np.abs(coeffs[4][1][1]))
         output[xmid, ymid, 9] = np.mean(np.abs(coeffs[4][2][0]))
-        output[xmid, ymid, 10] = np.mean(np.abs(coeffs[4][2][1]))
+        if len(coeffs[4][0]) > 1:
+            output[xmid, ymid, 6] = np.mean(np.abs(coeffs[4][0][1]))
+            output[xmid, ymid, 6] = np.mean(np.abs(coeffs[4][0][1]))
+            output[xmid, ymid, 8] = np.mean(np.abs(coeffs[4][1][1]))
+            output[xmid, ymid, 10] = np.mean(np.abs(coeffs[4][2][1]))
     return output
 
 
 def wavelet_2D(data, roidata, waveletname):
 
-    # print('data.shape:' + str(data.shape))
-    outdata = np.zeros([data.shape[0], data.shape[1], data.shape[2], 11])
-    for slice_i in range(data.shape[2]):
-        if np.max(roidata[:,:,slice_i]) == 0:
-            # print('Skipped [outside ROI] ' + str(slice_i+1) + '/' + str(data.shape[2]))    
-            continue
-        slicedata = data[:, :, slice_i]
-        output = wavelet_2D_slice4(slicedata, waveletname)
-        outdata[:, :, slice_i, :] = output
-        # print('Filtered ' + str(slice_i+1) + '/' + str(data.shape[2]))
-    # print('outdata.shape:' + str(outdata.shape))
+    if len(data.shape) > 2:
+        # print('data.shape:' + str(data.shape))
+        outdata = np.zeros([data.shape[0], data.shape[1], data.shape[2], 11])
+        for slice_i in range(data.shape[2]):
+            if np.max(roidata[:,:,slice_i]) == 0:
+                # print('Skipped [outside ROI] ' + str(slice_i+1) + '/' + str(data.shape[2]))    
+                continue
+            slicedata = data[:, :, slice_i]
+            output = wavelet_2D_slice4(slicedata, waveletname)
+            outdata[:, :, slice_i, :] = output
+            # print('Filtered ' + str(slice_i+1) + '/' + str(data.shape[2]))
+        # print('outdata.shape:' + str(outdata.shape))
+    else:
+        outdata = np.zeros([data.shape[0], data.shape[1], 1, 11])
+        if not (np.max(roidata[:,:]) == 0):
+            slicedata = data[:, :]
+            output = wavelet_2D_slice4(slicedata, waveletname)
+            outdata[:, :, 0, :] = output
+
     return outdata
 
 
@@ -362,9 +421,17 @@ def casefun_3D_2D_Wavelet(LESIONDATAr, LESIONr, WGr, resolution, params):
     res_f = params[1]
 
     x_lo, x_hi, y_lo, y_hi = find_bounded_subregion2DWG(WGr, 10)
-    LESIONDATArs = LESIONDATAr[x_lo:x_hi, y_lo:y_hi, :]
-    LESIONrs_temp = LESIONr[0][x_lo:x_hi, y_lo:y_hi, :]
-    WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi, :]
+
+    if len(LESIONDATAr.shape) > 2:
+        slices = LESIONDATAr.shape[2]
+        LESIONDATArs = LESIONDATAr[x_lo:x_hi, y_lo:y_hi, :]
+        LESIONrs_temp = LESIONr[0][x_lo:x_hi, y_lo:y_hi, :]
+        WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi, :]
+    else:
+        slices = 1
+        LESIONDATArs = LESIONDATAr[x_lo:x_hi, y_lo:y_hi]
+        LESIONrs_temp = LESIONr[0][x_lo:x_hi, y_lo:y_hi]
+        WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi]
 
     # Create masks and output data to desired resolution, intensity data is resliced later for non-zero only
     min_res = np.max(resolution)
@@ -855,7 +922,11 @@ def subfun_3D_2D_gabor_filter(data, LESIONr, WGr, params):
     outdata = np.zeros_like(data)
     d = params[1]
     radians = [x*np.pi/d*0.5 for x in range(d+1)]
-    for slice_i in range(data.shape[2]):
+    if len(data.shape) > 2:
+        slices = data.shape[2]
+    else:
+        slices = 1
+    for slice_i in range(slices):
         if len(data.shape) > 3:
             for t in range(data.shape[3]):
                 slicedata = data[:, :, slice_i, t]
@@ -865,13 +936,19 @@ def subfun_3D_2D_gabor_filter(data, LESIONr, WGr, params):
                     filt_reals[:, :, r_i] = filt_real
                 outdata[:, :, slice_i, t] = np.mean(filt_reals,2)
         else:
-            slicedata = data[:, :, slice_i]
+            if slices == 1:
+                slicedata = data[:, :]
+            else:
+                slicedata = data[:, :, slice_i]
             filt_reals = np.zeros([data.shape[0], data.shape[1], len(radians)])
             for r_i in range(len(radians)):
                 filt_real, filt_imag = skimage.filters.gabor(slicedata, frequency=params[0], theta=radians[r_i], n_stds=params[2])
                 filt_reals[:, :, r_i] = filt_real
-            outdata[:, :, slice_i] = np.mean(filt_reals, 2)
-            if 'write_visualization' in params[-1]:
+            if slices == 1:
+                outdata[:, :] = np.mean(filt_reals, 2)
+            else:
+                outdata[:, :, slice_i] = np.mean(filt_reals, 2)
+            if (type(params)==list) and (len(params)>1) and (not type(params[-1])==int) and ('write_visualization' in params[-1]):
                 if not params[0] == 1.0:
                     continue
                 if not params[1] == 2:
@@ -963,8 +1040,8 @@ def casefun_3D_2D_stat1_names_generator(param_strs):
     names = []
     for name in casefun_3D_2D_stat1_names:
         suffix = ''
-        for param in params:
-            suffix += ('_%s' % param_strs)
+        for param in param_strs:
+            suffix += ('_%s' % param)
         names.append('UTU3D2D%s_%s' % (suffix, name))
     return names
 
@@ -993,12 +1070,23 @@ def casefun_3D_2D_Harris(LESIONDATAr, LESIONr, WGr, resolution, params):
     Densities_ROI_mean = []
     Densities_WG_mean = []
     Densities_ROI_ratio = []
-    for slice_i in range(LESIONDATAr.shape[2]):
-        LS = LESIONr[0][:,:,slice_i]
-        WG = WGr[:,:,slice_i]
+    if(len(LESIONDATAr.shape)>2):
+        slices = LESIONDATAr.shape[2]
+    else:
+        slices = 1
+    for slice_i in range(slices):
+        if(slices==1):
+            LS = LESIONr[0][:,:]
+            WG = WGr[:,:]
+        else:
+            LS = LESIONr[0][:,:,slice_i]
+            WG = WGr[:,:,slice_i]
         if(np.max(LS) == 0 and np.max(WG) == 0):
             continue
-        cvimg = make_cv2_slice2D(LESIONDATAr[:, :, slice_i])
+        if(slices==1):
+            cvimg = make_cv2_slice2D(LESIONDATAr[:, :])
+        else:
+            cvimg = make_cv2_slice2D(LESIONDATAr[:, :, slice_i])
         edgemap = abs(cv2.cornerHarris(cvimg, blockSize, ksize, k))
         ROIdata = copy.deepcopy(edgemap)
         ROIdata[LS == 0] = 0
@@ -1120,13 +1208,25 @@ def casefun_3D_2D_Harris_WG(LESIONDATAr, LESIONr, WGr, resolution, params):
     Densities_ROI_mean = []
     Densities_WG_mean = []
     Densities_ROI_ratio = []
-    for slice_i in range(LESIONDATAr.shape[2]):
-        if(np.max(WGr[:,:,slice_i]) == 0):
-            continue
-        cvimg = make_cv2_slice2D(LESIONDATAr[:, :, slice_i])
+    if len(LESIONDATAr.shape) > 2:
+        slices = LESIONDATAr.shape[2]
+    else:
+        slices = 1
+    for slice_i in range(slices):
+        if slices == 1:
+            if(np.max(WGr[:,:]) == 0):
+                continue
+            cvimg = make_cv2_slice2D(LESIONDATAr[:, :])
+        else:
+            if(np.max(WGr[:,:,slice_i]) == 0):
+                continue
+            cvimg = make_cv2_slice2D(LESIONDATAr[:, :, slice_i])
         edgemap = abs(cv2.cornerHarris(cvimg, blockSize, ksize, k))
         ROIdata = copy.deepcopy(edgemap)
-        ROIdata[WGr[:,:,slice_i] == 0] = 0
+        if slices == 1:
+            ROIdata[WGr[:,:] == 0] = 0
+        else:
+            ROIdata[WGr[:,:,slice_i] == 0] = 0
         locs_ROI = peak_local_max(ROIdata, min_distance=1, threshold_abs=0.0)
         No_corners_ROI += len(locs_ROI)
         if locs_ROI.shape[0] > 3:
@@ -1200,11 +1300,21 @@ def casefun_3D_2D_ShiTomasi(LESIONDATAr, LESIONr, WGr, resolution, params):
     Densities_ROI_mean = []
     Densities_WG_mean = []
     Densities_ROI_ratio = []
-    for slice_i in range(LESIONDATAr.shape[2]):
-        if(np.max(LESIONr[0][:,:,slice_i]) == 0 and np.max(WGr[:,:,slice_i]) ==0):
-            continue
-        cvimg = make_cv2_slice2D(LESIONDATAr[:, :, slice_i])
-        cvROImask = make_cv2_slice2D(LESIONr[0][:,:,slice_i])
+    if len(LESIONDATAr.shape)>2:
+        slices = LESIONDATAr.shape[2]
+    else:
+        slices = 1
+    for slice_i in range(slices):
+        if slices == 1:
+            if(np.max(LESIONr[0][:,:]) == 0 and np.max(WGr[:,:]) ==0):
+                continue
+            cvimg = make_cv2_slice2D(LESIONDATAr[:, :])
+            cvROImask = make_cv2_slice2D(LESIONr[0][:,:])
+        else:
+            if(np.max(LESIONr[0][:,:,slice_i]) == 0 and np.max(WGr[:,:,slice_i]) ==0):
+                continue
+            cvimg = make_cv2_slice2D(LESIONDATAr[:, :, slice_i])
+            cvROImask = make_cv2_slice2D(LESIONr[0][:,:,slice_i])
         locs_ROI = cv2.goodFeaturesToTrack(cvimg,maxCorners, qualityLevel, minDistance, mask=cvROImask)
         locs_ROI = np.squeeze(locs_ROI)
         if locs_ROI is None or len(locs_ROI.shape) == 0:
@@ -1220,8 +1330,12 @@ def casefun_3D_2D_ShiTomasi(LESIONDATAr, LESIONr, WGr, resolution, params):
               ROIx.append(p[0])
               ROIy.append(p[1])
         No_corners_ROI += len(ROIx)
-        sliceWGdata = copy.deepcopy(WGr[:,:,slice_i])
-        sliceWGdata[LESIONr[0][:,:,slice_i] > 0] = 0
+        if slices == 1:
+            sliceWGdata = copy.deepcopy(WGr[:,:])
+            sliceWGdata[LESIONr[0][:,:] > 0] = 0
+        else:
+            sliceWGdata = copy.deepcopy(WGr[:,:,slice_i])
+            sliceWGdata[LESIONr[0][:,:,slice_i] > 0] = 0
         cvWGmask = make_cv2_slice2D(sliceWGdata)
         locs_WG = cv2.goodFeaturesToTrack(cvimg,maxCorners, qualityLevel, minDistance, mask=cvWGmask)
         locs_WG = np.squeeze(locs_WG)
@@ -1377,14 +1491,27 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, WGr, resolution, fun2D, para
     WGdensity = []
     blobs = 0
     WGblobs = 0
-    for slice_i in range(LESIONDATAr.shape[2]):
-        if(np.max(LESIONr[0][:,:,slice_i]) == 0 or np.max(WGr[:,:,slice_i]) ==0):
-            continue
-        slice2Ddata = LESIONDATAr[:, :, slice_i]
+    if len(LESIONDATAr.shape)>2:
+        slices = LESIONDATAr.shape[2]
+    else:
+        slices = 1
+    for slice_i in range(slices):
+        if slices == 1:
+            if(np.max(LESIONr[0][:,:]) == 0 or np.max(WGr[:,:]) ==0):
+                continue
+            slice2Ddata = LESIONDATAr[:, :]
+        else:
+            if(np.max(LESIONr[0][:,:,slice_i]) == 0 or np.max(WGr[:,:,slice_i]) ==0):
+                continue
+            slice2Ddata = LESIONDATAr[:, :, slice_i]
         x_lo, x_hi, y_lo, y_hi = find_bounded_subregion2D(slice2Ddata)
         slice2Ddata = slice2Ddata[x_lo:x_hi, y_lo:y_hi]
-        slice2D_ROI = LESIONr[0][x_lo:x_hi, y_lo:y_hi, slice_i]
-        slice2D_WG = WGr[x_lo:x_hi, y_lo:y_hi, slice_i]
+        if slices == 1:
+            slice2D_ROI = LESIONr[0][x_lo:x_hi, y_lo:y_hi]
+            slice2D_WG = WGr[x_lo:x_hi, y_lo:y_hi]
+        else:
+            slice2D_ROI = LESIONr[0][x_lo:x_hi, y_lo:y_hi, slice_i]
+            slice2D_WG = WGr[x_lo:x_hi, y_lo:y_hi, slice_i]
 
         # Resize to 1x1 mm space
         cvimg = cv2.resize(slice2Ddata, None, fx = resolution[0], fy = resolution[1], interpolation = cv2.INTER_LANCZOS4)
@@ -1392,9 +1519,9 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, WGr, resolution, fun2D, para
         cvROI = cv2.resize(slice2D_ROI, None, fx = resolution[0], fy = resolution[1], interpolation = cv2.INTER_NEAREST)
         slice2D = fun2D(cvimg, params)
 
-        if 'write_visualization' in params[-1]:
-            LESIONDATAr_cvimg = make_cv2_slice2D(LESIONDATAr[:,:,z]).copy()
-            LESIONr_cvimg = make_cv2_slice2D(LESIONr[:,:,z]).copy()
+        if (type(params)==list) and (len(params)>1) and (not type(params[-1])==int) and ('write_visualization' in params[-1]):
+            LESIONDATAr_cvimg = make_cv2_slice2D(LESIONDATAr[:,:,slice_i]).copy()
+            LESIONr_cvimg = make_cv2_slice2D(LESIONr[:,:,slice_i]).copy()
             basename = params[-1]['name'] + '_2D_curvature_' + str(params[:-1]).replace(' ','_') + '_slice' + str(z)
             visualizations.write_slice2D(cvimg, params[-1]['write_visualization'] + os.sep + basename + '_data.tiff')
             visualizations.write_slice2D_ROI(LESIONDATAr_cvimg, LESIONr_cvimg, params[-1]['write_visualization'] + os.sep + basename + '_lesion.tiff', 0.4)
@@ -1596,14 +1723,25 @@ def casefun_3D_2D_objectprops_WG(LESIONDATAr, LESIONr, WGr, resolution, fun2D, p
     perimeter = []
     density = []
     blobs = 0
-    for slice_i in range(LESIONDATAr.shape[2]):
-        if(np.max(WGr[:,:,slice_i]) ==0):
-            continue
-        slice2Ddata = LESIONDATAr[:, :, slice_i]
+    if len(LESIONDATAr.shape) > 2:
+        slices = LESIONDATAr.shape[2]
+    else:
+        slices = 1
+    for slice_i in range(slices):
+        if slices == 1:
+            if(np.max(WGr[:,:]) ==0):
+                continue
+            slice2Ddata = LESIONDATAr[:, :]
+        else:
+            if(np.max(WGr[:,:,slice_i]) ==0):
+                continue
+            slice2Ddata = LESIONDATAr[:, :, slice_i]
         x_lo, x_hi, y_lo, y_hi = find_bounded_subregion2D(slice2Ddata)
         slice2Ddata = slice2Ddata[x_lo:x_hi, y_lo:y_hi]
-        slice2D_ROI = WGr[x_lo:x_hi, y_lo:y_hi, slice_i]
-
+        if slices == 1:
+            slice2D_ROI = WGr[x_lo:x_hi, y_lo:y_hi]
+        else:
+            slice2D_ROI = WGr[x_lo:x_hi, y_lo:y_hi, slice_i]
         # Resize to 1x1 mm space
         cvimg = cv2.resize(slice2Ddata, None, fx = resolution[0], fy = resolution[1], interpolation = cv2.INTER_LANCZOS4)
         cvROI = cv2.resize(slice2D_ROI, None, fx = resolution[0], fy = resolution[1], interpolation = cv2.INTER_NEAREST)
@@ -1822,26 +1960,51 @@ def casefun_3D_2D_Laws(LESIONDATAr, LESIONr, WGr, resolution, params):
 
     x_lo, x_hi, y_lo, y_hi = find_bounded_subregion3D2D(LESIONDATAr)
     # print('bounded_subregion3D2D:' + str((x_lo, x_hi, y_lo, y_hi)))
-    LESIONDATArs = LESIONDATAr[x_lo:x_hi, y_lo:y_hi, :]
-    LESIONrs_temp = LESIONr[0][x_lo:x_hi, y_lo:y_hi, :]
-    WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi, :]
-
-    # Create masks and output data to desired resolution, intensity data is resliced later for non-zero only
-    slice2Ddata = LESIONDATArs[:, :, 0]
+    if len(LESIONDATAr.shape) > 2:
+        slices = LESIONDATAr.shape[2]
+        LESIONDATArs = LESIONDATAr[x_lo:x_hi, y_lo:y_hi, :]
+        LESIONrs_temp = LESIONr[0][x_lo:x_hi, y_lo:y_hi, :]
+        WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi, :]
+        # Create masks and output data to desired resolution, intensity data is resliced later for non-zero only
+        slice2Ddata = LESIONDATArs[:, :, 0]
+    else:
+        slices = 1
+        LESIONDATArs = LESIONDATAr[x_lo:x_hi, y_lo:y_hi]
+        LESIONrs_temp = LESIONr[0][x_lo:x_hi, y_lo:y_hi]
+        WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi]
+        # Create masks and output data to desired resolution, intensity data is resliced later for non-zero only
+        slice2Ddata = LESIONDATArs[:, :]
     cvimg = cv2.resize(slice2Ddata, None, fx = resolution[0]*res_f, fy = resolution[1]*res_f, interpolation = cv2.INTER_NEAREST)
-    LESIONrs = np.zeros([cvimg.shape[0], cvimg.shape[1], LESIONDATAr.shape[2]])
+    if slices == 1:
+        LESIONrs = np.zeros([cvimg.shape[0], cvimg.shape[1]])
+    else:
+        LESIONrs = np.zeros([cvimg.shape[0], cvimg.shape[1], LESIONDATAr.shape[2]])
     WGrs = np.zeros_like(LESIONrs)
     accepted_slices = 0
-    for slice_i in range(LESIONrs.shape[2]):
-        if(np.max(LESIONrs_temp[:,:,slice_i]) == 0 and np.max(WGrs_temp[:,:,slice_i]) ==0):
-            continue
+    for slice_i in range(slices):
+        if slices == 1:
+            if(np.max(LESIONrs_temp[:,:]) == 0 and np.max(WGrs_temp[:,:]) ==0):
+                continue
+        else:
+            if(np.max(LESIONrs_temp[:,:,slice_i]) == 0 and np.max(WGrs_temp[:,:,slice_i]) ==0):
+                continue
         accepted_slices += 1
-        slice2Ddata = LESIONrs_temp[:, :, slice_i]
+        if slices == 1:
+            slice2Ddata = LESIONrs_temp[:, :]
+        else:
+            slice2Ddata = LESIONrs_temp[:, :, slice_i]
         LESIONcvimg = cv2.resize(slice2Ddata, None, fx = resolution[0]*res_f, fy = resolution[1]*res_f, interpolation = cv2.INTER_NEAREST)
-        LESIONrs[:,:,slice_i] = LESIONcvimg
-        slice2Ddata = WGrs_temp[:, :, slice_i]
+        if slices == 1:
+            LESIONrs[:,:] = LESIONcvimg
+            slice2Ddata = WGrs_temp[:, :]
+        else:
+            LESIONrs[:,:,slice_i] = LESIONcvimg
+            slice2Ddata = WGrs_temp[:, :, slice_i]
         WGcvimg = cv2.resize(slice2Ddata, None, fx = resolution[0]*res_f, fy = resolution[1]*res_f, interpolation = cv2.INTER_NEAREST)
-        WGrs[:,:,slice_i] = WGcvimg
+        if slices == 1:
+            WGrs[:,:] = WGcvimg
+        else:
+            WGrs[:,:,slice_i] = WGcvimg
     outdata_1 = np.zeros_like(LESIONrs)
     outdata_2 = np.zeros_like(LESIONrs)
     outdata_3 = np.zeros_like(LESIONrs)
@@ -1857,10 +2020,15 @@ def casefun_3D_2D_Laws(LESIONDATAr, LESIONr, WGr, resolution, params):
 
     s = 5
     mid = int(np.floor(s/2.0))
-    for slice_i in range(LESIONDATArs.shape[2]):
-        if(np.max(LESIONrs[:,:,slice_i]) == 0 and np.max(WGrs[:,:,slice_i]) ==0):
-            continue
-        slice2Ddata = LESIONDATArs[:, :, slice_i]
+    for slice_i in range(slices):
+        if slices == 1:
+            if(np.max(LESIONrs[:,:]) == 0 and np.max(WGrs[:,:]) ==0):
+                continue
+            slice2Ddata = LESIONDATArs[:, :]
+        else:
+            if(np.max(LESIONrs[:,:,slice_i]) == 0 and np.max(WGrs[:,:,slice_i]) ==0):
+                continue
+            slice2Ddata = LESIONDATArs[:, :, slice_i]
         cvimg = cv2.resize(slice2Ddata, None, fx = resolution[0]*res_f, fy = resolution[1]*res_f, interpolation = cv2.INTER_LANCZOS4)
         for (x, y, window) in sliding_window(cvimg, 1, (s, s)):
             window = np.subtract(window, np.mean(window))
@@ -1899,17 +2067,26 @@ def casefun_3D_2D_Laws(LESIONDATAr, LESIONr, WGr, resolution, params):
                xmid = outdata_1.shape[0]-1
             if ymid >= outdata_1.shape[1]:
                ymid = outdata_1.shape[1]-1
-            outdata_1[xmid, ymid, slice_i] = Laws_1
-            outdata_2[xmid, ymid, slice_i] = Laws_2
-            outdata_3[xmid, ymid, slice_i] = Laws_3
-            outdata_4[xmid, ymid, slice_i] = Laws_4
-            outdata_5[xmid, ymid, slice_i] = Laws_5
-            outdata_6[xmid, ymid, slice_i] = Laws_6
-            outdata_7[xmid, ymid, slice_i] = Laws_7
-            outdata_8[xmid, ymid, slice_i] = Laws_8
-            outdata_9[xmid, ymid, slice_i] = Laws_9
-        # print(('%d/%d Laws' % (slice_i, LESIONDATArs.shape[2])))
-
+            if slices == 1:
+                outdata_1[xmid, ymid] = Laws_1
+                outdata_2[xmid, ymid] = Laws_2
+                outdata_3[xmid, ymid] = Laws_3
+                outdata_4[xmid, ymid] = Laws_4
+                outdata_5[xmid, ymid] = Laws_5
+                outdata_6[xmid, ymid] = Laws_6
+                outdata_7[xmid, ymid] = Laws_7
+                outdata_8[xmid, ymid] = Laws_8
+                outdata_9[xmid, ymid] = Laws_9
+            else:
+                outdata_1[xmid, ymid, slice_i] = Laws_1
+                outdata_2[xmid, ymid, slice_i] = Laws_2
+                outdata_3[xmid, ymid, slice_i] = Laws_3
+                outdata_4[xmid, ymid, slice_i] = Laws_4
+                outdata_5[xmid, ymid, slice_i] = Laws_5
+                outdata_6[xmid, ymid, slice_i] = Laws_6
+                outdata_7[xmid, ymid, slice_i] = Laws_7
+                outdata_8[xmid, ymid, slice_i] = Laws_8
+                outdata_9[xmid, ymid, slice_i] = Laws_9
     ret = []
     ret = append_Laws_results(outdata_1, LESIONrs, WGrs, ret)
     ret = append_Laws_results(outdata_2, LESIONrs, WGrs, ret)
@@ -1920,7 +2097,6 @@ def casefun_3D_2D_Laws(LESIONDATAr, LESIONr, WGr, resolution, params):
     ret = append_Laws_results(outdata_7, LESIONrs, WGrs, ret)
     ret = append_Laws_results(outdata_8, LESIONrs, WGrs, ret)
     ret = append_Laws_results(outdata_9, LESIONrs, WGrs, ret)
-
     return ret
 
 """
@@ -1936,7 +2112,7 @@ def casefun_3D_2D_FFT2D_names_generator(params):
     start_FWHM = params[1]
     end_FWHM = params[2]
     step_FWHM = params[3]
-    thresholds_FWHM = np.linspace(start_FWHM, end_FWHM, step_FWHM)
+    thresholds_FWHM = [float(x) for x in np.linspace(int(start_FWHM), int(end_FWHM), int(step_FWHM))]
     # FWHM = 2*sigma*sqrt(2*ln(2))=2.35*sigma
     # more accurately 2.3548200450309493
     names = []
@@ -1952,7 +2128,7 @@ def casefun_3D_2D_FFT2D_names_generator_WG(params):
     start_FWHM = params[1]
     end_FWHM = params[2]
     step_FWHM = params[3]
-    thresholds_FWHM = np.linspace(start_FWHM, end_FWHM, step_FWHM)
+    thresholds_FWHM = [float(x) for x in np.linspace(int(start_FWHM), int(end_FWHM), int(step_FWHM))]
     # FWHM = 2*sigma*sqrt(2*ln(2))=2.35*sigma
     # more accurately 2.3548200450309493
     names = []
@@ -2036,17 +2212,25 @@ def casefun_3D_2D_FFT2D(LESIONDATAr, LESIONr, WGr, resolution, params):
     start_FWHM = params[1]
     end_FWHM = params[2]
     step_FWHM = params[3]
-    thresholds_FWHM = np.linspace(start_FWHM, end_FWHM, step_FWHM)
+    thresholds_FWHM = [float(x) for x in np.linspace(int(start_FWHM), int(end_FWHM), int(step_FWHM))]
 
     # print(np.max(LESIONDATAr))
     x_lo, x_hi, y_lo, y_hi = find_bounded_subregion3D2D(LESIONDATAr)
     # print((x_lo, x_hi, y_lo, y_hi))
-    LESIONDATArs_temp = LESIONDATAr[x_lo:x_hi, y_lo:y_hi, :]
-    LESIONrs_temp = LESIONr[0][x_lo:x_hi, y_lo:y_hi, :]
-    WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi, :]
-
-    # Create masks and output data to desired resolution, starting with 1mm x 1mm resolution
-    slice2Ddata = LESIONDATArs_temp[:, :, 0]
+    if len(LESIONDATAr.shape) > 2:
+        slices = LESIONDATAr.shape[2]
+        LESIONDATArs_temp = LESIONDATAr[x_lo:x_hi, y_lo:y_hi, :]
+        LESIONrs_temp = LESIONr[0][x_lo:x_hi, y_lo:y_hi, :]
+        WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi, :]
+        # Create masks and output data to desired resolution, starting with 1mm x 1mm resolution
+        slice2Ddata = LESIONDATArs_temp[:, :, 0]
+    else:
+        slices = 1
+        LESIONDATArs_temp = LESIONDATAr[x_lo:x_hi, y_lo:y_hi]
+        LESIONrs_temp = LESIONr[0][x_lo:x_hi, y_lo:y_hi]
+        WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi]
+        # Create masks and output data to desired resolution, starting with 1mm x 1mm resolution
+        slice2Ddata = LESIONDATArs_temp[:, :]
     # print(resolution)
     # print(res_f)
     # print(slice2Ddata.shape)
@@ -2071,21 +2255,34 @@ def casefun_3D_2D_FFT2D(LESIONDATAr, LESIONr, WGr, resolution, params):
     pad_x = out_dim-cvimg.shape[0]
     pad_y = out_dim-cvimg.shape[1]
     # print((out_dim, pad_x, pad_y))
-    LESIONrs = np.zeros([out_dim, out_dim, LESIONDATAr.shape[2]])
+    if slices > 1:
+        LESIONrs = np.zeros([out_dim, out_dim, LESIONDATAr.shape[2]])
+    else:
+        LESIONrs = np.zeros([out_dim, out_dim, 1])
     WGrs = np.zeros_like(LESIONrs)
     LESIONDATArs = np.zeros_like(LESIONrs)
-    for slice_i in range(LESIONrs.shape[2]):
-        slice2Ddata = LESIONrs_temp[:, :, slice_i]
+
+    for slice_i in range(slices):
+        if slices > 1:
+            slice2Ddata = LESIONrs_temp[:, :, slice_i]
+        else:
+            slice2Ddata = LESIONrs_temp[:, :]
         LESIONcvimg = cv2.resize(slice2Ddata, None, fx = resolution[0]*res_f, fy = resolution[1]*res_f, interpolation = cv2.INTER_NEAREST)
         # print(LESIONcvimg.shape)
         # print(LESIONrs.shape)
         LESIONrs[pad_x:pad_x+LESIONcvimg.shape[0],pad_y:pad_y+LESIONcvimg.shape[1],slice_i] = LESIONcvimg
-        slice2Ddata = WGrs_temp[:, :, slice_i]
+        if slices > 1:
+            slice2Ddata = WGrs_temp[:, :, slice_i]
+        else:
+            slice2Ddata = WGrs_temp[:, :]
         WGcvimg = cv2.resize(slice2Ddata, None, fx = resolution[0]*res_f, fy = resolution[1]*res_f, interpolation = cv2.INTER_NEAREST)
         WGrs[pad_x:pad_x+WGcvimg.shape[0],pad_y:pad_y+WGcvimg.shape[1],slice_i] = WGcvimg
-        slice2Ddata = LESIONDATArs_temp[:, :, slice_i]
+        if slices > 1:
+            slice2Ddata = LESIONDATArs_temp[:, :, slice_i]
+        else:
+            slice2Ddata = LESIONDATArs_temp[:, :]
         DATAcvimg = cv2.resize(slice2Ddata, None, fx = resolution[0]*res_f, fy = resolution[1]*res_f, interpolation = cv2.INTER_LANCZOS4)
-        LESIONDATArs[pad_x:pad_x+DATAcvimg.shape[0],pad_y:pad_y+DATAcvimg.shape[1],slice_i] = DATAcvimg
+        LESIONDATArs[pad_x:pad_x+DATAcvimg.shape[0], pad_y:pad_y+DATAcvimg.shape[1], slice_i] = DATAcvimg
     outdata = []
     for threshold_FWHM in thresholds_FWHM:
         outdata.append({'FWHM':threshold_FWHM, 'data_lo':np.zeros_like(LESIONrs), 'data_hi':np.zeros_like(LESIONrs)})
@@ -2153,7 +2350,7 @@ def casefun_3D_2D_FFT2D_WG(LESIONDATAr, LESIONr, WGr, resolution, params):
     start_FWHM = params[1]
     end_FWHM = params[2]
     step_FWHM = params[3]
-    thresholds_FWHM = np.linspace(start_FWHM, end_FWHM, step_FWHM)
+    thresholds_FWHM = [float(x) for x in np.linspace(int(start_FWHM), int(end_FWHM), int(step_FWHM))]
 
     # print(np.max(LESIONDATAr))
     x_lo, x_hi, y_lo, y_hi = find_bounded_subregion3D2D(LESIONDATAr)
