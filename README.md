@@ -12,6 +12,9 @@ Required packages with installation insructions:
 - numba (optional for GPU speed-up): conda install numba
 - skimage: conda install skimage
 - cv2: pip install opencv
+For Pyradiomics wrapper:
+- pyradiomics: pip install pyradiomics
+- SimpleITK: conda install -c simpleitk simpleitk
 
 
     This program is free software: you can redistribute it and/or modify
