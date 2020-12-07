@@ -7,6 +7,12 @@ For further information about the project, please see related ISMRM 2019 abstrac
 
 H Merisaari, R Shiradkar, Ji Toivonen, A Hiremath, M Khorrami, IM Perez, T Pahikkala, P Taimen, J Verho, PJ Boström, H Aronen, A Madabhushi, I Jambor, Repeatability of radiomics features for prostate cancer diffusion weighted imaging obtained using b-values up to 2000 s/mm2, 27th Annual Meeting & Exhibition ISMRM, May 11-16 2019, Montréal, QC, Canada, #7461
 
+Required packages with installation insructions:
+- pyzernikemoment: pip install pyzernikemoment
+- numba (optional for GPU speed-up): conda install numba
+- skimage: conda install skimage
+- cv2: pip install opencv
+
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
