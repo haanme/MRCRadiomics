@@ -21,4 +21,4 @@ H Merisaari, R Shiradkar, Ji Toivonen, A Hiremath, M Khorrami, IM Perez, T Pahik
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
     
-    (c) Harri Merisaari 2018-2019
+    (c) Harri Merisaari 2018-2021
