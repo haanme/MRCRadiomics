@@ -1,5 +1,9 @@
 # ProstateFeatures
-Feature extraction algorithms for prostate. If you use this work in publication, please cite:
+Feature extraction algorithms for prostate created at MRCTurku http://mrc.utu.fi/. 
+<br><img src="http://mrc.utu.fi/mrc/static/resources/html/images/mrc/logo_mrc_dark_cyan.PNG" alt="MRCTurku logo"><br>
+
+If you use this work in publication, please cite:
+
 
 Merisaari, H, Taimen, P, Shiradkar, R, et al. Repeatability of radiomics and machine learning for DWI: Short‐term repeatability study of 112 patients with prostate cancer. Magn Reson Med. 2019; 00: 1– 17. https://doi.org/10.1002/mrm.28058
 
