@@ -1,4 +1,4 @@
-# ProstateFeatures
+# MRCTurku Radiomic Feature Extraction
 Feature extraction algorithms for prostate created at MRCTurku http://mrc.utu.fi/. 
 <br><img src="http://mrc.utu.fi/mrc/static/resources/html/images/mrc/logo_mrc_dark_cyan.PNG" alt="MRCTurku logo"><br>
 
