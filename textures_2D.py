@@ -95,25 +95,25 @@ def make_cv2_slice2D(slice2D):
 
 
 # Resolve non-zero subregion in the image
-def find_bounded_subregion2DWG(WGr, offset):
+def find_bounded_subregion2DBG(BG_roi, offset):
     x_lo = 0
-    for x in range(WGr.shape[0]):
-        if np.max(WGr[x, :]) > 0:
+    for x in range(BG_roi.shape[0]):
+        if np.max(BG_roi[x, :]) > 0:
            x_lo = x-offset
            break
-    x_hi = 0
-    for x in range(WGr.shape[0]-1,-1,-1):
-        if np.max(WGr[x, :]) > 0:
+    x_hi = BG_roi.shape[0]-1
+    for x in range(BG_roi.shape[0]-1,-1,-1):
+        if np.max(BG_roi[x, :]) > 0:
            x_hi = x+offset
            break
     y_lo = 0
-    for y in range(WGr.shape[1]):
-        if np.max(WGr[:, y]) > 0:
+    for y in range(BG_roi.shape[1]):
+        if np.max(BG_roi[:, y]) > 0:
            y_lo = y-offset
            break
-    y_hi = 0
-    for y in range(WGr.shape[1]-1,-1,-1):
-        if np.max(WGr[:, y]) > 0:
+    y_hi = BG_roi.shape[1]-1
+    for y in range(BG_roi.shape[1]-1,-1,-1):
+        if np.max(BG_roi[:, y]) > 0:
            y_hi = y+offset
            break
     return x_lo, x_hi, y_lo, y_hi
@@ -125,7 +125,7 @@ def find_bounded_subregion2D(slice2D):
         if np.max(slice2D[x, :]) > 0:
            x_lo = x
            break
-    x_hi = 0
+    x_hi = BG_roi.shape[0]-1
     for x in range(slice2D.shape[0]-1,-1,-1):
         if np.max(slice2D[x, :]) > 0:
            x_hi = x
@@ -135,7 +135,7 @@ def find_bounded_subregion2D(slice2D):
         if np.max(slice2D[:, y]) > 0:
            y_lo = y
            break
-    y_hi = 0
+    y_hi = BG_roi.shape[1]-1
     for y in range(slice2D.shape[1]-1,-1,-1):
         if np.max(slice2D[:, y]) > 0:
            y_hi = y
@@ -153,7 +153,7 @@ def find_bounded_subregion3D2D(img):
                 if(x_lo<0):
                     x_lo = 0
                 break
-        x_hi = 0
+        x_hi = BG_roi.shape[0]-1
         for x in range(img.shape[0]-1,-1,-1):
             if np.max(img[x, :, :]) > 0:
                 x_hi = x+1
@@ -167,7 +167,7 @@ def find_bounded_subregion3D2D(img):
                 if(y_lo<0):
                     y_lo = 0
                 break
-        y_hi = 0
+        y_hi = BG_roi.shape[1]-1
         for y in range(img.shape[1]-1,-1,-1):
             if np.max(img[:, y, :]) > 0:
                 y_hi = y+1
@@ -182,7 +182,7 @@ def find_bounded_subregion3D2D(img):
                 if(x_lo<0):
                     x_lo = 0
                 break
-        x_hi = 0
+        x_hi = BG_roi.shape[0]-1
         for x in range(img.shape[0]-1,-1,-1):
             if np.max(img[x, :]) > 0:
                 x_hi = x+1
@@ -196,7 +196,7 @@ def find_bounded_subregion3D2D(img):
                 if(y_lo<0):
                     y_lo = 0
                 break
-        y_hi = 0
+        y_hi = BG_roi.shape[1]-1
         for y in range(img.shape[1]-1,-1,-1):
             if np.max(img[:, y]) > 0:
                 y_hi = y+1
@@ -307,7 +307,7 @@ def zernike_2D(data, params, roidata):
     return [outdata]
 
 
-def casefun_3D_2D_Zernike(LESIONDATAr, LESIONr, WGr, resolution, s, n, m):
+def casefun_3D_2D_Zernike(LESIONDATAr, LESIONr, BG_roi, resolution, s, n, m):
 
     if np.max(LESIONr[0]) == 0:
         return float('nan'), float('nan'), float('nan'), float('nan'), float('nan'), float('nan'), float('nan'), float('nan'), float('nan')    
@@ -329,32 +329,32 @@ def casefun_3D_2D_Zernike(LESIONDATAr, LESIONr, WGr, resolution, s, n, m):
     return mean, median, p25, p75, skewness, kurtosis, SD, rng, CV
 
 casefun_3D_2D_Zernike_9_8_8_names = ('Z9_8_8_mean', 'Z9_8_8_median', 'Z9_8_8_25percentile', 'Z9_8_8_75percentile', 'Z9_8_8_skewness', 'Z9_8_8_kurtosis', 'Z9_8_8_SD', 'Z9_8_8_range', 'Z9_8_8_CV')
-def casefun_3D_2D_Zernike_9_8_8(LESIONDATAr, LESIONr, WGr, resolution):
-    return casefun_3D_2D_Zernike(LESIONDATAr, LESIONr, WGr, resolution, 9, 8, 8)
+def casefun_3D_2D_Zernike_9_8_8(LESIONDATAr, LESIONr, BG_roi, resolution):
+    return casefun_3D_2D_Zernike(LESIONDATAr, LESIONr, BG_roi, resolution, 9, 8, 8)
 
 casefun_3D_2D_Zernike_15_5_5_names = ('Z15_5_5_mean', 'Z15_5_5_median', 'Z15_5_5_25percentile', 'Z15_5_5_75percentile', 'Z15_5_5_skewness', 'Z15_5_5_kurtosis', 'Z15_5_5_SD', 'Z15_5_5_range', 'Z15_5_5_CV')
-def casefun_3D_2D_Zernike_15_5_5(LESIONDATAr, LESIONr, WGr, resolution):
-    return casefun_3D_2D_Zernike(LESIONDATAr, LESIONr, WGr, resolution, 15, 5, 5)
+def casefun_3D_2D_Zernike_15_5_5(LESIONDATAr, LESIONr, BG_roi, resolution):
+    return casefun_3D_2D_Zernike(LESIONDATAr, LESIONr, BG_roi, resolution, 15, 5, 5)
 
 casefun_3D_2D_Zernike_15_6_6_names = ('Z15_6_6_mean', 'Z15_6_6_median', 'Z15_6_6_25percentile', 'Z15_6_6_75percentile', 'Z15_6_6_skewness', 'Z15_6_6_kurtosis', 'Z15_6_6_SD', 'Z15_6_6_range', 'Z15_6_6_CV')
-def casefun_3D_2D_Zernike_15_6_6(LESIONDATAr, LESIONr, WGr, resolution):
-    return casefun_3D_2D_Zernike(LESIONDATAr, LESIONr, WGr, resolution, 15, 6, 6)
+def casefun_3D_2D_Zernike_15_6_6(LESIONDATAr, LESIONr, BG_roi, resolution):
+    return casefun_3D_2D_Zernike(LESIONDATAr, LESIONr, BG_roi, resolution, 15, 6, 6)
 
 casefun_3D_2D_Zernike_17_6_6_names = ('Z17_6_6_mean', 'Z17_6_6_median', 'Z17_6_6_25percentile', 'Z17_6_6_75percentile', 'Z17_6_6_skewness', 'Z17_6_6_kurtosis', 'Z17_6_6_SD', 'Z17_6_6_range', 'Z17_6_6_CV')
-def casefun_3D_2D_Zernike_17_6_6(LESIONDATAr, LESIONr, WGr, resolution):
-    return casefun_3D_2D_Zernike(LESIONDATAr, LESIONr, WGr, resolution, 17, 6, 6)
+def casefun_3D_2D_Zernike_17_6_6(LESIONDATAr, LESIONr, BG_roi, resolution):
+    return casefun_3D_2D_Zernike(LESIONDATAr, LESIONr, BG_roi, resolution, 17, 6, 6)
 
 casefun_3D_2D_Zernike_19_6_6_names = ('Z19_6_6_mean', 'Z19_6_6_median', 'Z19_6_6_25percentile', 'Z19_6_6_75percentile', 'Z19_6_6_skewness', 'Z19_6_6_kurtosis', 'Z19_6_6_SD', 'Z19_6_6_range', 'Z19_6_6_CV')
-def casefun_3D_2D_Zernike_19_6_6(LESIONDATAr, LESIONr, WGr, resolution):
-    return casefun_3D_2D_Zernike(LESIONDATAr, LESIONr, WGr, resolution, 19, 6, 6)
+def casefun_3D_2D_Zernike_19_6_6(LESIONDATAr, LESIONr, BG_roi, resolution):
+    return casefun_3D_2D_Zernike(LESIONDATAr, LESIONr, BG_roi, resolution, 19, 6, 6)
 
 casefun_3D_2D_Zernike_21_8_8_names = ('Z21_8_8_mean', 'Z21_8_8_median', 'Z21_8_8_25percentile', 'Z21_8_8_75percentile', 'Z21_8_8_skewness', 'Z21_8_8_kurtosis', 'Z21_8_8_SD', 'Z21_8_8_range', 'Z21_8_8_CV')
-def casefun_3D_2D_Zernike_21_8_8(LESIONDATAr, LESIONr, WGr, resolution):
-    return casefun_3D_2D_Zernike(LESIONDATAr, LESIONr, WGr, resolution, 21, 8, 8)
+def casefun_3D_2D_Zernike_21_8_8(LESIONDATAr, LESIONr, BG_roi, resolution):
+    return casefun_3D_2D_Zernike(LESIONDATAr, LESIONr, BG_roi, resolution, 21, 8, 8)
 
 casefun_3D_2D_Zernike_25_12_12_names = ('Z25_12_12_mean', 'Z25_12_12_median', 'Z25_12_12_25percentile', 'Z25_12_12_75percentile', 'Z25_12_12_skewness', 'Z25_12_12_kurtosis', 'Z25_12_12_SD', 'Z25_12_12_range', 'Z25_12_12_CV')
-def casefun_3D_2D_Zernike_25_12_12(LESIONDATAr, LESIONr, WGr, resolution):
-    return casefun_3D_2D_Zernike(LESIONDATAr, LESIONr, WGr, resolution, 25, 12, 12)
+def casefun_3D_2D_Zernike_25_12_12(LESIONDATAr, LESIONr, BG_roi, resolution):
+    return casefun_3D_2D_Zernike(LESIONDATAr, LESIONr, BG_roi, resolution, 25, 12, 12)
 
 
 def wavelet_2D_slice4(slicedata, waveletname):
@@ -412,7 +412,7 @@ def wavelet_2D(data, roidata, waveletname):
     return outdata
 
 
-def casefun_3D_2D_Wavelet(LESIONDATAr, LESIONr, WGr, resolution, params):
+def casefun_3D_2D_Wavelet(LESIONDATAr, LESIONr, BG_roi, resolution, params):
 
     # resolution factor affecting laws feature sampling ratio
     # 1: original resolution
@@ -420,24 +420,24 @@ def casefun_3D_2D_Wavelet(LESIONDATAr, LESIONr, WGr, resolution, params):
     # >1: downsampling
     res_f = params[1]
 
-    x_lo, x_hi, y_lo, y_hi = find_bounded_subregion2DWG(WGr, 10)
+    x_lo, x_hi, y_lo, y_hi = find_bounded_subregion2DBG(BG_roi, 10)
 
     if len(LESIONDATAr.shape) > 2:
         slices = LESIONDATAr.shape[2]
         LESIONDATArs = LESIONDATAr[x_lo:x_hi, y_lo:y_hi, :]
         LESIONrs_temp = LESIONr[0][x_lo:x_hi, y_lo:y_hi, :]
-        WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi, :]
+        BG_rois_temp = BG_roi[x_lo:x_hi, y_lo:y_hi, :]
     else:
         slices = 1
         LESIONDATArs = LESIONDATAr[x_lo:x_hi, y_lo:y_hi]
         LESIONrs_temp = LESIONr[0][x_lo:x_hi, y_lo:y_hi]
-        WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi]
+        BG_rois_temp = BG_roi[x_lo:x_hi, y_lo:y_hi]
 
     # Create masks and output data to desired resolution, intensity data is resliced later for non-zero only
     min_res = np.max(resolution)
     new_res = [min_res*res_f, min_res*res_f, min_res*res_f]
     LESIONrs_temp, affineLESIONrs_temp = reslice_array(LESIONrs_temp, resolution, new_res, 0)
-    WGrs_temp, affineWGrs_temp = reslice_array(WGrs_temp, resolution, new_res, 0)
+    BG_rois_temp, affineBG_rois_temp = reslice_array(BG_rois_temp, resolution, new_res, 0)
     LESIONDATArs, affineLESIONDATArs = reslice_array(LESIONDATArs, resolution, new_res, 1)   
 
     if np.max(LESIONr[0]) == 0:
@@ -448,26 +448,26 @@ def casefun_3D_2D_Wavelet(LESIONDATAr, LESIONr, WGr, resolution, params):
     for c_i in range(outdata.shape[3]):
         cframe = outdata[:, :, :, c_i]
         ROIdata = cframe[LESIONr[0] > 0]
-        WGdata = cframe[WGr > 0]
+        BGdata = cframe[BG_roi > 0]
 
         median = np.median(ROIdata)
         skewness = scipy.stats.skew(ROIdata)
         rng = np.max(ROIdata)-np.min(ROIdata)
-        WGmedian = np.median(WGdata)
-        WGskewness = scipy.stats.skew(WGdata)
-        WGrng = np.max(WGdata)-np.min(WGdata)
-        WGrmedian = abs(median)/((median+WGmedian)/2.0)
-        WGrskewness = abs(skewness)/((skewness+WGskewness)/2.0)
-        WGrrng = abs(rng)/((rng+WGrng)/2.0)
+        BGmedian = np.median(BGdata)
+        BGskewness = scipy.stats.skew(BGdata)
+        BG_roing = np.max(BGdata)-np.min(BGdata)
+        BG_roimedian = abs(median)/((median+BGmedian)/2.0)
+        BG_roiskewness = abs(skewness)/((skewness+BGskewness)/2.0)
+        BG_roirng = abs(rng)/((rng+BG_roing)/2.0)
         results.append(median)
         results.append(skewness)
         results.append(rng)
-        results.append(WGmedian)
-        results.append(WGskewness)
-        results.append(WGrng)
-        results.append(WGrmedian)
-        results.append(WGrskewness)
-        results.append(WGrrng)
+        results.append(BGmedian)
+        results.append(BGskewness)
+        results.append(BG_roing)
+        results.append(BG_roimedian)
+        results.append(BG_roiskewness)
+        results.append(BG_roirng)
     return results
 
 
@@ -479,9 +479,9 @@ def casefun_3D_2D_Wavelet_names_generator(params):
         for name in casefun_3D_2D_Wavelet_names:
             names.append('UTUW%s_f%3.2f_%s_%s' % (params[0], params[1], name, cname))
         for name in casefun_3D_2D_Wavelet_names:
-            names.append('UTUW%s_f%3.2f_WG%s_%s' % (params[0], params[1], name, cname))
+            names.append('UTUW%s_f%3.2f_BG%s_%s' % (params[0], params[1], name, cname))
         for name in casefun_3D_2D_Wavelet_names:
-            names.append('UTUW%s_f%3.2f_WGr%s_%s' % (params[0], params[1], name, cname))
+            names.append('UTUW%s_f%3.2f_BG_roi%s_%s' % (params[0], params[1], name, cname))
     return names
 
 
@@ -779,7 +779,7 @@ Hu, M.K., 1962. Visual pattern recognition by moment invariants. IRE transaction
 casefun_3D_2D_Hu_moments_rawintensity_names = []
 for name in contour2D_names:
     casefun_3D_2D_Hu_moments_rawintensity_names.append('2D_curvature_raw_intensity_' + name)
-def casefun_3D_2D_Hu_moments_rawintensity(LESIONDATAr, LESIONr, WGr, resolution, params):
+def casefun_3D_2D_Hu_moments_rawintensity(LESIONDATAr, LESIONr, BG_roi, resolution, params):
     if np.max(LESIONDATAr) == 0:
         return [float('nan') for x in casefun_3D_2D_Hu_moments_rawintensity_names]
     labelimage = copy.deepcopy(LESIONDATAr)
@@ -789,7 +789,7 @@ def casefun_3D_2D_Hu_moments_rawintensity(LESIONDATAr, LESIONr, WGr, resolution,
 casefun_3D_2D_Hu_moments_gradient_names = []
 for name in contour2D_names:
     casefun_3D_2D_Hu_moments_gradient_names.append('2D_curvature_gradient_' + name)
-def casefun_3D_2D_Hu_moments_gradient(LESIONDATAr, LESIONr, WGr, resolution, params):
+def casefun_3D_2D_Hu_moments_gradient(LESIONDATAr, LESIONr, BG_roi, resolution, params):
     if np.max(LESIONDATAr) == 0:
         return [float('nan') for x in casefun_3D_2D_Hu_moments_gradient_names]
     x_lo, x_hi, y_lo, y_hi = find_bounded_subregion3D2D(LESIONDATAr)
@@ -813,7 +813,7 @@ for name in contour2D_names:
 casefun_3D_2D_Hu_moments_4bins_names = []
 for name in contour2D_names:
     casefun_3D_2D_Hu_moments_4bins_names.append('2D_curvature_4_bins_histogram_' + name)
-def casefun_3D_2D_Hu_moments_bins(LESIONDATAr, LESIONr, WGr, resolution, params):
+def casefun_3D_2D_Hu_moments_bins(LESIONDATAr, LESIONr, BG_roi, resolution, params):
     no_bins=params[0]
     if np.max(LESIONDATAr) == 0:
         return [float('nan') for x in casefun_3D_2D_Hu_moments_2bins_names]
@@ -828,8 +828,8 @@ def casefun_3D_2D_Hu_moments_bins(LESIONDATAr, LESIONr, WGr, resolution, params)
     labelimage[LESIONrs == 0] = 0
     return subfun_3D_2D_Hu_moments(copy.deepcopy(LESIONDATArs), copy.deepcopy(LESIONrs), labelimage, resolution, ['bins']+params)
 
-subfun_3D_2D_local_binary_pattern_names = ['mean', 'median', 'p25', 'p75', 'skewness', 'kurtosis', 'SD', 'IQR', 'meanWG', 'medianWG', 'Cmedian', 'Cmean', 'CNR']
-def subfun_3D_2D_local_binary_pattern(LESIONDATAr, LESIONr, WGr, params):
+subfun_3D_2D_local_binary_pattern_names = ['mean', 'median', 'p25', 'p75', 'skewness', 'kurtosis', 'SD', 'IQR', 'meanBG', 'medianBG', 'Cmedian', 'Cmean', 'CNR']
+def subfun_3D_2D_local_binary_pattern(LESIONDATAr, LESIONr, BG_roi, params):
     """
     [R387388]	Multiresolution Gray-Scale and Rotation Invariant Texture Classification with Local Binary Patterns. Timo Ojala, Matti Pietikainen, Topi Maenpaa. http://www.rafbis.it/biplab15/images/stories/docenti/Danielriccio/Articoliriferimento/LBP.pdf, 2002.
     [R388388]	(1, 2) Face recognition with local binary patterns. Timo Ahonen, Abdenour Hadid, Matti Pietikainen, http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.214.6851, 2004.
@@ -850,13 +850,13 @@ def subfun_3D_2D_local_binary_pattern(LESIONDATAr, LESIONr, WGr, params):
     ROIdata = outdata[LESIONr[0] > 0]
     if (len(ROIdata)) == 0:
         return float('nan'), float('nan'), float('nan'), float('nan'), float('nan'), float('nan'), float('nan'), float('nan'), float('nan'), float('nan'), float('nan'), float('nan'), float('nan')    
-    WGdata = outdata[WGr > 0]
+    BGdata = outdata[BG_roi > 0]
     mean = np.mean(ROIdata)
     median = np.median(ROIdata)
-    meanWG = np.mean(WGdata)
-    medianWG = np.median(WGdata)
+    meanBG = np.mean(BGdata)
+    medianBG = np.median(BGdata)
     SD = np.std(ROIdata)
-    SDWG = np.std(ROIdata)
+    SDBG = np.std(ROIdata)
     p25 = np.percentile(ROIdata, 25)
     p75 = np.percentile(ROIdata, 75)
     skewness = scipy.stats.skew(ROIdata)
@@ -867,51 +867,51 @@ def subfun_3D_2D_local_binary_pattern(LESIONDATAr, LESIONr, WGr, params):
         CV = SD/mean
     else:
         CV = 0.0
-    Cmedian = median-medianWG
-    Cmean = mean-meanWG
-    CNR = abs(Cmean)/((SD+SDWG)/2.0)
-    return mean, median, p25, p75, skewness, kurtosis, SD, IQR, meanWG, medianWG, Cmedian, Cmean, CNR
+    Cmedian = median-medianBG
+    Cmean = mean-meanBG
+    CNR = abs(Cmean)/((SD+SDBG)/2.0)
+    return mean, median, p25, p75, skewness, kurtosis, SD, IQR, meanBG, medianBG, Cmedian, Cmean, CNR
 
 
 casefun_3D_2D_local_binary_pattern_41_names = []
 for name in subfun_3D_2D_local_binary_pattern_names:
     casefun_3D_2D_local_binary_pattern_41_names.append('LPB41_' + name)
-def casefun_3D_2D_local_binary_pattern_41(LESIONDATAr, LESIONr, WGr, resolution):
-    return subfun_3D_2D_local_binary_pattern(LESIONDATAr, LESIONr, WGr, [4, 1])
+def casefun_3D_2D_local_binary_pattern_41(LESIONDATAr, LESIONr, BG_roi, resolution):
+    return subfun_3D_2D_local_binary_pattern(LESIONDATAr, LESIONr, BG_roi, [4, 1])
 
 casefun_3D_2D_local_binary_pattern_81_names = []
 for name in subfun_3D_2D_local_binary_pattern_names:
     casefun_3D_2D_local_binary_pattern_81_names.append('LPB81_' + name)
-def casefun_3D_2D_local_binary_pattern_81(LESIONDATAr, LESIONr, WGr, resolution):
-    return subfun_3D_2D_local_binary_pattern(LESIONDATAr, LESIONr, WGr, [8, 1])
+def casefun_3D_2D_local_binary_pattern_81(LESIONDATAr, LESIONr, BG_roi, resolution):
+    return subfun_3D_2D_local_binary_pattern(LESIONDATAr, LESIONr, BG_roi, [8, 1])
 
 casefun_3D_2D_local_binary_pattern_42_names = []
 for name in subfun_3D_2D_local_binary_pattern_names:
     casefun_3D_2D_local_binary_pattern_42_names.append('LPB42_' + name)
-def casefun_3D_2D_local_binary_pattern_42(LESIONDATAr, LESIONr, WGr, resolution):
-    return subfun_3D_2D_local_binary_pattern(LESIONDATAr, LESIONr, WGr, [4, 2])
+def casefun_3D_2D_local_binary_pattern_42(LESIONDATAr, LESIONr, BG_roi, resolution):
+    return subfun_3D_2D_local_binary_pattern(LESIONDATAr, LESIONr, BG_roi, [4, 2])
 
 casefun_3D_2D_local_binary_pattern_82_names = []
 for name in subfun_3D_2D_local_binary_pattern_names:
     casefun_3D_2D_local_binary_pattern_82_names.append('LPB82_' + name)
-def casefun_3D_2D_local_binary_pattern_82(LESIONDATAr, LESIONr, WGr, resolution):
-    return subfun_3D_2D_local_binary_pattern(LESIONDATAr, LESIONr, WGr, [8, 2])
+def casefun_3D_2D_local_binary_pattern_82(LESIONDATAr, LESIONr, BG_roi, resolution):
+    return subfun_3D_2D_local_binary_pattern(LESIONDATAr, LESIONr, BG_roi, [8, 2])
 
 casefun_3D_2D_local_binary_pattern_43_names = []
 for name in subfun_3D_2D_local_binary_pattern_names:
     casefun_3D_2D_local_binary_pattern_43_names.append('LPB43_' + name)
-def casefun_3D_2D_local_binary_pattern_43(LESIONDATAr, LESIONr, WGr, resolution):
-    return subfun_3D_2D_local_binary_pattern(LESIONDATAr, LESIONr, WGr, [4, 3])
+def casefun_3D_2D_local_binary_pattern_43(LESIONDATAr, LESIONr, BG_roi, resolution):
+    return subfun_3D_2D_local_binary_pattern(LESIONDATAr, LESIONr, BG_roi, [4, 3])
 
 casefun_3D_2D_local_binary_pattern_83_names = []
 for name in subfun_3D_2D_local_binary_pattern_names:
     casefun_3D_2D_local_binary_pattern_83_names.append('LPB83_' + name)
-def casefun_3D_2D_local_binary_pattern_83(LESIONDATAr, LESIONr, WGr, resolution):
-    return subfun_3D_2D_local_binary_pattern(LESIONDATAr, LESIONr, WGr, [8, 3])
+def casefun_3D_2D_local_binary_pattern_83(LESIONDATAr, LESIONr, BG_roi, resolution):
+    return subfun_3D_2D_local_binary_pattern(LESIONDATAr, LESIONr, BG_roi, [8, 3])
 
 
-subfun_3D_2D_gabor_filter_names = ['mean', 'median', 'p25', 'p75', 'skewness', 'kurtosis', 'SD', 'IQR', 'meanWG', 'medianWG', 'Cmedian', 'Cmean', 'CNR']
-def subfun_3D_2D_gabor_filter(data, LESIONr, WGr, params):
+subfun_3D_2D_gabor_filter_names = ['mean', 'median', 'p25', 'p75', 'skewness', 'kurtosis', 'SD', 'IQR', 'meanBG', 'medianBG', 'Cmedian', 'Cmean', 'CNR']
+def subfun_3D_2D_gabor_filter(data, LESIONr, BG_roi, params):
     """
     2D Gabor filter using skimage python package
     params[0] frequency of filter at index 0
@@ -957,7 +957,7 @@ def subfun_3D_2D_gabor_filter(data, LESIONr, WGr, params):
                     continue
                 LESIONDATAr_cvimg = make_cv2_slice2D(slicedata).copy()
                 LESIONr_cvimg = make_cv2_slice2D(LESIONr[0][:,:,slice_i]).copy()
-                WGr_cvimg = make_cv2_slice2D(WGr[:,:,slice_i]).copy()
+                BG_roi_cvimg = make_cv2_slice2D(BG_roi[:,:,slice_i]).copy()
                 outdata_cvimg = make_cv2_slice2D(outdata[:, :, slice_i]).copy()
                 if(np.max(LESIONr_cvimg)==0):
                     continue
@@ -965,16 +965,16 @@ def subfun_3D_2D_gabor_filter(data, LESIONr, WGr, params):
                 visualizations.write_slice2D(LESIONDATAr_cvimg, params[-1]['write_visualization'] + os.sep + basename + '_data.tiff')
                 visualizations.write_slice2D_ROI(LESIONDATAr_cvimg, LESIONr_cvimg, params[-1]['write_visualization'] + os.sep + basename + '_lesion.tiff', 0.4)
                 visualizations.write_slice2D_ROI_color(LESIONDATAr_cvimg, LESIONr_cvimg, outdata_cvimg, params[-1]['write_visualization'] + os.sep + basename + '_overlay.tiff', 0.8)
-                visualizations.write_slice2D_ROI_color(LESIONDATAr_cvimg, WGr_cvimg, outdata_cvimg, params[-1]['write_visualization'] + os.sep + basename + '_WGoverlay.tiff', 0.7)
+                visualizations.write_slice2D_ROI_color(LESIONDATAr_cvimg, BG_roi_cvimg, outdata_cvimg, params[-1]['write_visualization'] + os.sep + basename + '_BGoverlay.tiff', 0.7)
 
     ROIdata = outdata[LESIONr[0] > 0]
-    WGdata = outdata[WGr > 0]
+    BGdata = outdata[BG_roi > 0]
     mean = np.mean(ROIdata)
     median = np.median(ROIdata)
-    meanWG = np.mean(WGdata)
-    medianWG = np.median(WGdata)
+    meanBG = np.mean(BGdata)
+    medianBG = np.median(BGdata)
     SD = np.std(ROIdata)
-    SDWG = np.std(ROIdata)
+    SDBG = np.std(ROIdata)
     p25 = np.percentile(ROIdata, 25)
     p75 = np.percentile(ROIdata, 75)
     skewness = scipy.stats.skew(ROIdata)
@@ -985,10 +985,10 @@ def subfun_3D_2D_gabor_filter(data, LESIONr, WGr, params):
         CV = SD/mean
     else:
         CV = 0.0
-    Cmedian = median-medianWG
-    Cmean = mean-meanWG
-    CNR = abs(Cmean)/((SD+SDWG)/2.0)
-    return mean, median, p25, p75, skewness, kurtosis, SD, IQR, meanWG, medianWG, Cmedian, Cmean, CNR
+    Cmedian = median-medianBG
+    Cmean = mean-meanBG
+    CNR = abs(Cmean)/((SD+SDBG)/2.0)
+    return mean, median, p25, p75, skewness, kurtosis, SD, IQR, meanBG, medianBG, Cmedian, Cmean, CNR
 
 
 def casefun_3D_2D_gabor_filter_name_generator(params):
@@ -998,12 +998,12 @@ def casefun_3D_2D_gabor_filter_name_generator(params):
     return names
 
 
-def casefun_3D_2D_gabor_filter(LESIONDATAr, LESIONr, WGr, resolution, params):
-    return subfun_3D_2D_gabor_filter(LESIONDATAr, LESIONr, WGr, params)
+def casefun_3D_2D_gabor_filter(LESIONDATAr, LESIONr, BG_roi, resolution, params):
+    return subfun_3D_2D_gabor_filter(LESIONDATAr, LESIONr, BG_roi, params)
 
 
 # Generic 2D filters applied to 3D
-def subfun_3D_2D_stat1(LESIONDATAr, LESIONr, WGr, fun2D, params):
+def subfun_3D_2D_stat1(LESIONDATAr, LESIONr, BG_roi, fun2D, params):
     # Number of circularly symmetric neighbour set points (quantization of the angular space)
     angles = params[0]
     # Radius of circle (spatial resolution of the operator)
@@ -1013,13 +1013,13 @@ def subfun_3D_2D_stat1(LESIONDATAr, LESIONr, WGr, fun2D, params):
         slicedata = LESIONDATAr[:, :, slice_i]
         outdata[:, :, slice_i] = fun2D(slicedata, params)
     ROIdata = outdata[LESIONr[0] > 0]
-    WGdata = outdata[WGr > 0]
+    BGdata = outdata[BG_roi > 0]
     mean = np.mean(ROIdata)
     median = np.median(ROIdata)
-    meanWG = np.mean(WGdata)
-    medianWG = np.median(WGdata)
+    meanBG = np.mean(BGdata)
+    medianBG = np.median(BGdata)
     SD = np.std(ROIdata)
-    SDWG = np.std(ROIdata)
+    SDBG = np.std(ROIdata)
     p25 = np.percentile(ROIdata, 25)
     p75 = np.percentile(ROIdata, 75)
     skewness = scipy.stats.skew(ROIdata)
@@ -1030,12 +1030,12 @@ def subfun_3D_2D_stat1(LESIONDATAr, LESIONr, WGr, fun2D, params):
         CV = SD/mean
     else:
         CV = 0.0
-    Cmedian = median-medianWG
-    Cmean = mean-meanWG
-    CNR = abs(Cmean)/((SD+SDWG)/2.0)
-    return mean, median, p25, p75, skewness, kurtosis, SD, IQR, meanWG, medianWG, Cmedian, Cmean, CNR
+    Cmedian = median-medianBG
+    Cmean = mean-meanBG
+    CNR = abs(Cmean)/((SD+SDBG)/2.0)
+    return mean, median, p25, p75, skewness, kurtosis, SD, IQR, meanBG, medianBG, Cmedian, Cmean, CNR
 
-casefun_3D_2D_stat1_names = ['mean', 'median', 'p25', 'p75', 'skewness', 'kurtosis', 'SD', 'IQR', 'meanWG', 'medianWG', 'Cmedian', 'Cmean', 'CNR']
+casefun_3D_2D_stat1_names = ['mean', 'median', 'p25', 'p75', 'skewness', 'kurtosis', 'SD', 'IQR', 'meanBG', 'medianBG', 'Cmedian', 'Cmean', 'CNR']
 def casefun_3D_2D_stat1_names_generator(param_strs):
     names = []
     for name in casefun_3D_2D_stat1_names:
@@ -1052,23 +1052,23 @@ blockSize - Neighborhood size (see the details on cornerEigenValsAndVecs()).
 ksize - Aperture parameter for the Sobel() operator.
 k - Harris detector free parameter.
 """
-subfun_3D_2D_Harris_names = ('No_corners_ROI', 'No_corners_WG', 'No_corners_ratio', 'Corner_density_primary', 'Corner_density_secondary', 'Corner_density_mean', 'Corner_density_ratio', 'Corner_density_ratio_overall')
+subfun_3D_2D_Harris_names = ('No_corners_ROI', 'No_corners_BG', 'No_corners_ratio', 'Corner_density_primary', 'Corner_density_secondary', 'Corner_density_mean', 'Corner_density_ratio', 'Corner_density_ratio_overall')
 def casefun_3D_2D_Harris_name_generator(params):
     names = []
     for name in subfun_3D_2D_Harris_names:
         names.append('UTUHarris_b%d_ks%d_k%3.2f_%s' % (params[0], params[1], params[2], name))
     return names
-def casefun_3D_2D_Harris(LESIONDATAr, LESIONr, WGr, resolution, params):
+def casefun_3D_2D_Harris(LESIONDATAr, LESIONr, BG_roi, resolution, params):
     blockSize = int(np.round(params[0]/np.mean([resolution[0], resolution[1]])))
     # print('Harris effective block size:' + str(blockSize))
     ksize = params[1]
     k = params[2]
     No_corners_ROI = 0
-    No_corners_WG = 0
+    No_corners_BG = 0
     Densities_ROI_primary = []
     Densities_ROI_secondary = []
     Densities_ROI_mean = []
-    Densities_WG_mean = []
+    Densities_BG_mean = []
     Densities_ROI_ratio = []
     if(len(LESIONDATAr.shape)>2):
         slices = LESIONDATAr.shape[2]
@@ -1077,11 +1077,11 @@ def casefun_3D_2D_Harris(LESIONDATAr, LESIONr, WGr, resolution, params):
     for slice_i in range(slices):
         if(slices==1):
             LS = LESIONr[0][:,:]
-            WG = WGr[:,:]
+            BG = BG_roi[:,:]
         else:
             LS = LESIONr[0][:,:,slice_i]
-            WG = WGr[:,:,slice_i]
-        if(np.max(LS) == 0 and np.max(WG) == 0):
+            BG = BG_roi[:,:,slice_i]
+        if(np.max(LS) == 0 and np.max(BG) == 0):
             continue
         if(slices==1):
             cvimg = make_cv2_slice2D(LESIONDATAr[:, :])
@@ -1092,19 +1092,19 @@ def casefun_3D_2D_Harris(LESIONDATAr, LESIONr, WGr, resolution, params):
         ROIdata[LS == 0] = 0
         locs_ROI = peak_local_max(ROIdata, min_distance=1, threshold_abs=0.0)
         No_corners_ROI += len(locs_ROI)
-        WGdata = copy.deepcopy(edgemap)
-        WGdata[WG == 0] = 0
-        WGdata[LS > 0] = 0
-        locs_WG = peak_local_max(WGdata, min_distance=1)
-        No_corners_WG += len(locs_WG)
+        BGdata = copy.deepcopy(edgemap)
+        BGdata[BG == 0] = 0
+        BGdata[LS > 0] = 0
+        locs_BG = peak_local_max(BGdata, min_distance=1)
+        No_corners_BG += len(locs_BG)
         if locs_ROI.shape[0] > 3:
            ROI_density = 1
         else:
            ROI_density = 0
-        if locs_WG.shape[0] > 3:
-           WG_density = 1
+        if locs_BG.shape[0] > 3:
+           BG_density = 1
         else:
-           WG_density = 0
+           BG_density = 0
         if ROI_density == 1:
            x = []
            y = []
@@ -1120,43 +1120,43 @@ def casefun_3D_2D_Harris(LESIONDATAr, LESIONr, WGr, resolution, params):
                ROI_axis_loc = (kernel[1,0], kernel[0,1])
            except:
                ROI_density = 0
-        if WG_density == 1:
+        if BG_density == 1:
            x = []
            y = []
-           for p in locs_WG:
+           for p in locs_BG:
               x.append(p[0])
               y.append(p[1])
            try:
               kernel = stats.gaussian_kde(np.vstack([x,y]))
               kernel = kernel.covariance*kernel.factor
               covs = sorted([kernel[0,0], kernel[1,1]], reverse=True)
-              WG_axis_a = covs[0]
-              WG_axis_b = covs[1]
-              WG_axis_loc = (kernel[1,0], kernel[0,1])
+              BG_axis_a = covs[0]
+              BG_axis_b = covs[1]
+              BG_axis_loc = (kernel[1,0], kernel[0,1])
            except:
-               WG_density = 0
-        if WG_density == 1 and ROI_density == 1:
+               BG_density = 0
+        if BG_density == 1 and ROI_density == 1:
            Densities_ROI_primary.append(ROI_axis_a)
            Densities_ROI_secondary.append(ROI_axis_b)
            Densities_ROI_mean.append(np.mean([ROI_axis_a, ROI_axis_b]))
-           Densities_WG_mean.append(np.mean([WG_axis_a, WG_axis_b]))
-           Densities_ROI_ratio.append(np.mean([ROI_axis_a, ROI_axis_b])/np.mean([WG_axis_a, WG_axis_b]))
+           Densities_BG_mean.append(np.mean([BG_axis_a, BG_axis_b]))
+           Densities_ROI_ratio.append(np.mean([ROI_axis_a, ROI_axis_b])/np.mean([BG_axis_a, BG_axis_b]))
         elif ROI_density == 1:
            Densities_ROI_primary.append(ROI_axis_a)
            Densities_ROI_secondary.append(ROI_axis_b)
            Densities_ROI_mean.append(np.mean([ROI_axis_a, ROI_axis_b]))
-           Densities_WG_mean.append(0)
+           Densities_BG_mean.append(0)
            Densities_ROI_ratio.append(1)
-        elif WG_density == 1:
-           Densities_WG_mean.append(np.mean([WG_axis_a, WG_axis_b]))
+        elif BG_density == 1:
+           Densities_BG_mean.append(np.mean([BG_axis_a, BG_axis_b]))
         else:
            Densities_ROI_primary.append(0)
            Densities_ROI_secondary.append(0)
            Densities_ROI_mean.append(0)
-           Densities_WG_mean.append(0)
+           Densities_BG_mean.append(0)
            Densities_ROI_ratio.append(0)
-    if No_corners_WG > 0:
-       No_corners_ratio = float(No_corners_ROI)/float(No_corners_WG)
+    if No_corners_BG > 0:
+       No_corners_ratio = float(No_corners_ROI)/float(No_corners_BG)
     else:
        No_corners_ratio = 0
 
@@ -1175,14 +1175,14 @@ def casefun_3D_2D_Harris(LESIONDATAr, LESIONr, WGr, resolution, params):
        Corner_density_ratio_overall = 0
     else:
        Corner_density_mean = np.mean(Densities_ROI_mean)
-       Corner_density_ratio_overall = Corner_density_mean/(Corner_density_mean+np.mean(Densities_WG_mean))
+       Corner_density_ratio_overall = Corner_density_mean/(Corner_density_mean+np.mean(Densities_BG_mean))
 
     if len(Densities_ROI_ratio) == 0:
        Corner_density_ratio = 0
     else:
        Corner_density_ratio = np.mean(Densities_ROI_ratio)
 
-    return No_corners_ROI, No_corners_WG, No_corners_ratio, Corner_density_primary, Corner_density_secondary, Corner_density_mean, Corner_density_ratio, Corner_density_ratio_overall
+    return No_corners_ROI, No_corners_BG, No_corners_ratio, Corner_density_primary, Corner_density_secondary, Corner_density_mean, Corner_density_ratio, Corner_density_ratio_overall
 
 """
 Harris corner detection
@@ -1191,13 +1191,13 @@ blockSize - Neighborhood size (see the details on cornerEigenValsAndVecs()).
 ksize - Aperture parameter for the Sobel() operator.
 k - Harris detector free parameter.
 """
-subfun_3D_2D_Harris_names_WG = ('No_corners_ROI', 'Corner_density_primary', 'Corner_density_secondary', 'Corner_density_mean')
-def casefun_3D_2D_Harris_name_generator_WG(params):
+subfun_3D_2D_Harris_names_BG = ('No_corners_ROI', 'Corner_density_primary', 'Corner_density_secondary', 'Corner_density_mean')
+def casefun_3D_2D_Harris_name_generator_BG(params):
     names = []
-    for name in subfun_3D_2D_Harris_names_WG:
-        names.append('WGUTUHarris_b%d_ks%d_k%3.2f_%s' % (params[0], params[1], params[2], name))
+    for name in subfun_3D_2D_Harris_names_BG:
+        names.append('BGUTUHarris_b%d_ks%d_k%3.2f_%s' % (params[0], params[1], params[2], name))
     return names
-def casefun_3D_2D_Harris_WG(LESIONDATAr, LESIONr, WGr, resolution, params):
+def casefun_3D_2D_Harris_BG(LESIONDATAr, LESIONr, BG_roi, resolution, params):
     blockSize = int(np.round(params[0]/np.mean([resolution[0], resolution[1]])))
     # print('Harris effective block size:' + str(blockSize))
     ksize = params[1]
@@ -1206,7 +1206,7 @@ def casefun_3D_2D_Harris_WG(LESIONDATAr, LESIONr, WGr, resolution, params):
     Densities_ROI_primary = []
     Densities_ROI_secondary = []
     Densities_ROI_mean = []
-    Densities_WG_mean = []
+    Densities_BG_mean = []
     Densities_ROI_ratio = []
     if len(LESIONDATAr.shape) > 2:
         slices = LESIONDATAr.shape[2]
@@ -1214,19 +1214,19 @@ def casefun_3D_2D_Harris_WG(LESIONDATAr, LESIONr, WGr, resolution, params):
         slices = 1
     for slice_i in range(slices):
         if slices == 1:
-            if(np.max(WGr[:,:]) == 0):
+            if(np.max(BG_roi[:,:]) == 0):
                 continue
             cvimg = make_cv2_slice2D(LESIONDATAr[:, :])
         else:
-            if(np.max(WGr[:,:,slice_i]) == 0):
+            if(np.max(BG_roi[:,:,slice_i]) == 0):
                 continue
             cvimg = make_cv2_slice2D(LESIONDATAr[:, :, slice_i])
         edgemap = abs(cv2.cornerHarris(cvimg, blockSize, ksize, k))
         ROIdata = copy.deepcopy(edgemap)
         if slices == 1:
-            ROIdata[WGr[:,:] == 0] = 0
+            ROIdata[BG_roi[:,:] == 0] = 0
         else:
-            ROIdata[WGr[:,:,slice_i] == 0] = 0
+            ROIdata[BG_roi[:,:,slice_i] == 0] = 0
         locs_ROI = peak_local_max(ROIdata, min_distance=1, threshold_abs=0.0)
         No_corners_ROI += len(locs_ROI)
         if locs_ROI.shape[0] > 3:
@@ -1251,13 +1251,13 @@ def casefun_3D_2D_Harris_WG(LESIONDATAr, LESIONr, WGr, resolution, params):
            Densities_ROI_primary.append(ROI_axis_a)
            Densities_ROI_secondary.append(ROI_axis_b)
            Densities_ROI_mean.append(np.mean([ROI_axis_a, ROI_axis_b]))
-           Densities_WG_mean.append(0)
+           Densities_BG_mean.append(0)
            Densities_ROI_ratio.append(1)
         else:
            Densities_ROI_primary.append(0)
            Densities_ROI_secondary.append(0)
            Densities_ROI_mean.append(0)
-           Densities_WG_mean.append(0)
+           Densities_BG_mean.append(0)
            Densities_ROI_ratio.append(0)
     if len(Densities_ROI_primary) == 0:
        Corner_density_primary = 0
@@ -1283,22 +1283,22 @@ maxCorners Maximum number of corners to return. If there are more corners than a
 qualityLevel Parameter characterizing the minimal accepted quality of image corners. The parameter value is multiplied by the best corner quality measure, which is the minimal eigenvalue (see cornerMinEigenVal() ) or the Harris function response (see cornerHarris() ). The corners with the quality measure less than the product are rejected. For example, if the best corner has the quality measure = 1500, and the qualityLevel=0.01 , then all the corners with the quality measure less than 15 are rejected.
 minDistance Minimum possible Euclidean distance between the returned corners.
 """
-subfun_3D_2D_ShiTomasi_names = ('No_corners_ROI', 'No_corners_WG', 'No_corners_ratio', 'Corner_density_primary', 'Corner_density_secondary', 'Corner_density_mean', 'Corner_density_ratio', 'Corner_density_ratio_overall')
+subfun_3D_2D_ShiTomasi_names = ('No_corners_ROI', 'No_corners_BG', 'No_corners_ratio', 'Corner_density_primary', 'Corner_density_secondary', 'Corner_density_mean', 'Corner_density_ratio', 'Corner_density_ratio_overall')
 def casefun_3D_2D_ShiTomasi_name_generator(params):
     names = []
     for name in subfun_3D_2D_Harris_names:
         names.append('UTUShiTomasi_b%d_ks%4.3f_k%3.2f_%s' % (params[0], params[1], params[2], name))
     return names
-def casefun_3D_2D_ShiTomasi(LESIONDATAr, LESIONr, WGr, resolution, params):
+def casefun_3D_2D_ShiTomasi(LESIONDATAr, LESIONr, BG_roi, resolution, params):
     maxCorners = params[0]
     qualityLevel = params[1]
     minDistance = params[2]/np.mean([resolution[0], resolution[1]])
     No_corners_ROI = 0
-    No_corners_WG = 0
+    No_corners_BG = 0
     Densities_ROI_primary = []
     Densities_ROI_secondary = []
     Densities_ROI_mean = []
-    Densities_WG_mean = []
+    Densities_BG_mean = []
     Densities_ROI_ratio = []
     if len(LESIONDATAr.shape)>2:
         slices = LESIONDATAr.shape[2]
@@ -1306,12 +1306,12 @@ def casefun_3D_2D_ShiTomasi(LESIONDATAr, LESIONr, WGr, resolution, params):
         slices = 1
     for slice_i in range(slices):
         if slices == 1:
-            if(np.max(LESIONr[0][:,:]) == 0 and np.max(WGr[:,:]) ==0):
+            if(np.max(LESIONr[0][:,:]) == 0 and np.max(BG_roi[:,:]) ==0):
                 continue
             cvimg = make_cv2_slice2D(LESIONDATAr[:, :])
             cvROImask = make_cv2_slice2D(LESIONr[0][:,:])
         else:
-            if(np.max(LESIONr[0][:,:,slice_i]) == 0 and np.max(WGr[:,:,slice_i]) ==0):
+            if(np.max(LESIONr[0][:,:,slice_i]) == 0 and np.max(BG_roi[:,:,slice_i]) ==0):
                 continue
             cvimg = make_cv2_slice2D(LESIONDATAr[:, :, slice_i])
             cvROImask = make_cv2_slice2D(LESIONr[0][:,:,slice_i])
@@ -1331,68 +1331,68 @@ def casefun_3D_2D_ShiTomasi(LESIONDATAr, LESIONr, WGr, resolution, params):
               ROIy.append(p[1])
         No_corners_ROI += len(ROIx)
         if slices == 1:
-            sliceWGdata = copy.deepcopy(WGr[:,:])
-            sliceWGdata[LESIONr[0][:,:] > 0] = 0
+            sliceBGdata = copy.deepcopy(BG_roi[:,:])
+            sliceBGdata[LESIONr[0][:,:] > 0] = 0
         else:
-            sliceWGdata = copy.deepcopy(WGr[:,:,slice_i])
-            sliceWGdata[LESIONr[0][:,:,slice_i] > 0] = 0
-        cvWGmask = make_cv2_slice2D(sliceWGdata)
-        locs_WG = cv2.goodFeaturesToTrack(cvimg,maxCorners, qualityLevel, minDistance, mask=cvWGmask)
-        locs_WG = np.squeeze(locs_WG)
-        if locs_WG is None or len(locs_WG.shape) == 0:
-           WGx = []
-           WGy = []
-        elif len(locs_WG.shape) == 1:
-           WGx = [locs_WG[0]]
-           WGy = [locs_WG[1]]
+            sliceBGdata = copy.deepcopy(BG_roi[:,:,slice_i])
+            sliceBGdata[LESIONr[0][:,:,slice_i] > 0] = 0
+        cvBGmask = make_cv2_slice2D(sliceBGdata)
+        locs_BG = cv2.goodFeaturesToTrack(cvimg,maxCorners, qualityLevel, minDistance, mask=cvBGmask)
+        locs_BG = np.squeeze(locs_BG)
+        if locs_BG is None or len(locs_BG.shape) == 0:
+           BGx = []
+           BGy = []
+        elif len(locs_BG.shape) == 1:
+           BGx = [locs_BG[0]]
+           BGy = [locs_BG[1]]
         else:
-           WGx = []
-           WGy = []
-           for p in locs_WG:
-              WGx.append(p[0])
-              WGy.append(p[1])
-        No_corners_WG += len(WGx)
-        if len(ROIx) > 3:
+           BGx = []
+           BGy = []
+           for p in locs_BG:
+              BGx.append(p[0])
+              BGy.append(p[1])
+        No_corners_BG += len(BGx)
+        if len(ROIx) > 3 and len(np.unique(ROIx)) > 1 and len(np.unique(ROIy)) > 1:
            kernel = stats.gaussian_kde(np.vstack([ROIx,ROIy]))
            kernel = kernel.covariance*kernel.factor
            covs = sorted([kernel[0,0], kernel[1,1]], reverse=True)
            ROI_axis_a = covs[0]
            ROI_axis_b = covs[1]
            ROI_axis_loc = (kernel[1,0], kernel[0,1])
-        if len(WGx) > 3:
-           kernel = stats.gaussian_kde(np.vstack([WGx,WGy]))
+        if len(WGx) > 3 and len(np.unique(WGx)) > 1 and len(np.unique(WGy)) > 1:
+           kernel = stats.gaussian_kde(np.vstack([BGx,BGy]))
            kernel = kernel.covariance*kernel.factor
            covs = sorted([kernel[0,0], kernel[1,1]], reverse=True)
-           WG_axis_a = covs[0]
-           WG_axis_b = covs[1]
-           WG_axis_loc = (kernel[1,0], kernel[0,1])
-        if len(WGx) > 3 and len(ROIx) > 3:
+           BG_axis_a = covs[0]
+           BG_axis_b = covs[1]
+           BG_axis_loc = (kernel[1,0], kernel[0,1])
+        if len(WGx) > 3 and len(ROIx) > 3 and len(np.unique(ROIx)) > 1 and len(np.unique(ROIy)) > 1 and len(np.unique(WGx)) > 1 and len(np.unique(WGy)) > 1:
            Densities_ROI_primary.append(ROI_axis_a)
            Densities_ROI_secondary.append(ROI_axis_b)
            Densities_ROI_mean.append(np.mean([ROI_axis_a, ROI_axis_b]))
-           Densities_WG_mean.append(np.mean([WG_axis_a, WG_axis_b]))
-           Densities_ROI_ratio.append(np.mean([ROI_axis_a, ROI_axis_b])/np.mean([WG_axis_a, WG_axis_b]))
-        elif len(ROIx) > 3:
+           Densities_BG_mean.append(np.mean([BG_axis_a, BG_axis_b]))
+           Densities_ROI_ratio.append(np.mean([ROI_axis_a, ROI_axis_b])/np.mean([BG_axis_a, BG_axis_b]))
+        elif len(ROIx) > 3 and len(np.unique(ROIx)) > 1 and len(np.unique(ROIy)) > 1:
            Densities_ROI_primary.append(ROI_axis_a)
            Densities_ROI_secondary.append(ROI_axis_b)
            Densities_ROI_mean.append(np.mean([ROI_axis_a, ROI_axis_b]))
-           Densities_WG_mean.append(0)
+           Densities_BG_mean.append(0)
            Densities_ROI_ratio.append(1)
-        elif len(WGx) > 3:
-           Densities_WG_mean.append(np.mean([WG_axis_a, WG_axis_b]))
+        elif len(WGx) > 3 and len(np.unique(WGx)) > 1 and len(np.unique(WGy)) > 1:
+           Densities_BG_mean.append(np.mean([BG_axis_a, BG_axis_b]))
         else:
            Densities_ROI_primary.append(0)
            Densities_ROI_secondary.append(0)
            Densities_ROI_mean.append(0)
-           Densities_WG_mean.append(0)
+           Densities_BG_mean.append(0)
            Densities_ROI_ratio.append(0)
-    if No_corners_WG > 0:
-       No_corners_ratio = float(No_corners_ROI)/float(No_corners_WG)
+    if No_corners_BG > 0:
+       No_corners_ratio = float(No_corners_ROI)/float(No_corners_BG)
     else:
        No_corners_ratio = 0
        
-    if No_corners_WG > 0:
-       No_corners_ratio = float(No_corners_ROI)/float(No_corners_WG)
+    if No_corners_BG > 0:
+       No_corners_ratio = float(No_corners_ROI)/float(No_corners_BG)
     else:
        No_corners_ratio = 0
 
@@ -1411,14 +1411,14 @@ def casefun_3D_2D_ShiTomasi(LESIONDATAr, LESIONr, WGr, resolution, params):
        Corner_density_ratio_overall = 0
     else:
        Corner_density_mean = np.mean(Densities_ROI_mean)
-       Corner_density_ratio_overall = Corner_density_mean/(Corner_density_mean+np.mean(Densities_WG_mean))
+       Corner_density_ratio_overall = Corner_density_mean/(Corner_density_mean+np.mean(Densities_BG_mean))
 
     if len(Densities_ROI_ratio) == 0:
        Corner_density_ratio = 0
     else:
        Corner_density_ratio = np.mean(Densities_ROI_ratio)
 
-    return No_corners_ROI, No_corners_WG, No_corners_ratio, Corner_density_primary, Corner_density_secondary, Corner_density_mean, Corner_density_ratio, Corner_density_ratio_overall
+    return No_corners_ROI, No_corners_BG, No_corners_ratio, Corner_density_primary, Corner_density_secondary, Corner_density_mean, Corner_density_ratio, Corner_density_ratio_overall
 
 """
 Collection of edge detectors
@@ -1451,7 +1451,7 @@ def casefun_3D_2D_objectprops_name_generator(filtername, param_strs):
         else:
             names.append('UTU3D2D%s_objprops_%s' % (filtername, name))
     return names
-subfun_3D_2D_objectprops_names_WG = ('Area_mean_mm2', 'Area_median_mm2', 'Area_SD_mm2', 'Area_IQR_mm2', 
+subfun_3D_2D_objectprops_names_BG = ('Area_mean_mm2', 'Area_median_mm2', 'Area_SD_mm2', 'Area_IQR_mm2', 
                                   'Ecc_mean', 'Ecc_median', 'Ecc_SD', 'Ecc_IQR', 
                                   'Ax1len_mean_mm', 'Ax1len_median_mm', 'Ax1len_SD_mm', 'Ax1len_IQR_mm', 
                                   'Ax2len_mean_mm', 'Ax2len_median_mm', 'Ax2len_SD_mm', 'Ax2len_IQR_mm', 
@@ -1459,19 +1459,19 @@ subfun_3D_2D_objectprops_names_WG = ('Area_mean_mm2', 'Area_median_mm2', 'Area_S
                                   'Ori_SD', 'Ori_IQR', 
                                   'Per_mean_mm', 'Per_median_mm', 'Per_SD_mm', 'Per_IQR_mm', 
                                   'Den_mean', 'Den_median', 'N_objs')
-def casefun_3D_2D_objectprops_name_generator_WG(filtername, param_strs):
+def casefun_3D_2D_objectprops_name_generator_BG(filtername, param_strs):
     names = []
-    for name in subfun_3D_2D_objectprops_names_WG:
+    for name in subfun_3D_2D_objectprops_names_BG:
         if len(param_strs) > 0:
             suffix = ''
             for param in param_strs:
                 suffix += ('_%s' % param_strs)
-            names.append('WGUTU3D2D%s_%s_objprops_%s' % (filtername, suffix, name))
+            names.append('BGUTU3D2D%s_%s_objprops_%s' % (filtername, suffix, name))
         else:
-            names.append('WGUTU3D2D%s_objprops_%s' % (filtername, name))
+            names.append('BGUTU3D2D%s_objprops_%s' % (filtername, name))
     return names
 
-def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, WGr, resolution, fun2D, params):
+def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, BG_roi, resolution, fun2D, params):
 
     area = []
     eccentricity = []
@@ -1481,41 +1481,41 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, WGr, resolution, fun2D, para
     orientation = []
     perimeter = []
     density = []
-    WGarea = []
-    WGeccentricity = []
-    WGmajor_axis_length = []
-    WGmean_intensity = []
-    WGminor_axis_length = []
-    WGorientation = []
-    WGperimeter = []
-    WGdensity = []
+    BGarea = []
+    BGeccentricity = []
+    BGmajor_axis_length = []
+    BGmean_intensity = []
+    BGminor_axis_length = []
+    BGorientation = []
+    BGperimeter = []
+    BGdensity = []
     blobs = 0
-    WGblobs = 0
+    BGblobs = 0
     if len(LESIONDATAr.shape)>2:
         slices = LESIONDATAr.shape[2]
     else:
         slices = 1
     for slice_i in range(slices):
         if slices == 1:
-            if(np.max(LESIONr[0][:,:]) == 0 or np.max(WGr[:,:]) ==0):
+            if(np.max(LESIONr[0][:,:]) == 0 or np.max(BG_roi[:,:]) ==0):
                 continue
             slice2Ddata = LESIONDATAr[:, :]
         else:
-            if(np.max(LESIONr[0][:,:,slice_i]) == 0 or np.max(WGr[:,:,slice_i]) ==0):
+            if(np.max(LESIONr[0][:,:,slice_i]) == 0 or np.max(BG_roi[:,:,slice_i]) ==0):
                 continue
             slice2Ddata = LESIONDATAr[:, :, slice_i]
         x_lo, x_hi, y_lo, y_hi = find_bounded_subregion2D(slice2Ddata)
         slice2Ddata = slice2Ddata[x_lo:x_hi, y_lo:y_hi]
         if slices == 1:
             slice2D_ROI = LESIONr[0][x_lo:x_hi, y_lo:y_hi]
-            slice2D_WG = WGr[x_lo:x_hi, y_lo:y_hi]
+            slice2D_BG = BG_roi[x_lo:x_hi, y_lo:y_hi]
         else:
             slice2D_ROI = LESIONr[0][x_lo:x_hi, y_lo:y_hi, slice_i]
-            slice2D_WG = WGr[x_lo:x_hi, y_lo:y_hi, slice_i]
+            slice2D_BG = BG_roi[x_lo:x_hi, y_lo:y_hi, slice_i]
 
         # Resize to 1x1 mm space
         cvimg = cv2.resize(slice2Ddata, None, fx = resolution[0], fy = resolution[1], interpolation = cv2.INTER_LANCZOS4)
-        cvWG = cv2.resize(slice2D_WG, None, fx = resolution[0], fy = resolution[1], interpolation = cv2.INTER_NEAREST)
+        cvBG = cv2.resize(slice2D_BG, None, fx = resolution[0], fy = resolution[1], interpolation = cv2.INTER_NEAREST)
         cvROI = cv2.resize(slice2D_ROI, None, fx = resolution[0], fy = resolution[1], interpolation = cv2.INTER_NEAREST)
         slice2D = fun2D(cvimg, params)
 
@@ -1529,16 +1529,16 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, WGr, resolution, fun2D, para
 
         sliceROI = copy.deepcopy(slice2D)
         sliceROI[cvROI == 0] = 0
-        sliceWG = copy.deepcopy(slice2D)
-        sliceWG[cvWG == 0] = 0
-        sliceWG[cvROI > 0] = 0
+        sliceBG = copy.deepcopy(slice2D)
+        sliceBG[cvBG == 0] = 0
+        sliceBG[cvROI > 0] = 0
 
         # label non-zero regions
         all_labels_ROI = measure.label(sliceROI)
-        all_labels_WG = measure.label(sliceWG)
+        all_labels_BG = measure.label(sliceBG)
         # calculate region properties
         regions_ROI = regionprops(all_labels_ROI, intensity_image=cvimg, cache=True)
-        regions_WG = regionprops(all_labels_WG, intensity_image=cvimg, cache=True)
+        regions_BG = regionprops(all_labels_BG, intensity_image=cvimg, cache=True)
         centroid_x = []
         centroid_y = []
         blobs += len(regions_ROI)
@@ -1559,21 +1559,21 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, WGr, resolution, fun2D, para
 
         centroid_x = []
         centroid_y = []
-        WGblobs += len(regions_WG)
-        for region in regions_WG:
-            WGarea.append(region.area)
+        BGblobs += len(regions_BG)
+        for region in regions_BG:
+            BGarea.append(region.area)
             centroid_x.append(region.centroid[0])
             centroid_y.append(region.centroid[1])
-            WGeccentricity.append(region.eccentricity)
-            WGmajor_axis_length.append(region.major_axis_length)
-            WGmean_intensity.append(region.mean_intensity)
-            WGminor_axis_length.append(region.minor_axis_length)
-            WGorientation.append(region.orientation)
-            WGperimeter.append(region.perimeter)
+            BGeccentricity.append(region.eccentricity)
+            BGmajor_axis_length.append(region.major_axis_length)
+            BGmean_intensity.append(region.mean_intensity)
+            BGminor_axis_length.append(region.minor_axis_length)
+            BGorientation.append(region.orientation)
+            BGperimeter.append(region.perimeter)
         if len(centroid_x) > 3 and (len(np.unique(centroid_x)) > 1) and (len(np.unique(centroid_y)) > 1):
             kernel = stats.gaussian_kde(np.vstack([centroid_x,centroid_y]))
             kernel = kernel.covariance*kernel.factor
-            WGdensity.append(np.mean([kernel[0,0], kernel[1,1]]))
+            BGdensity.append(np.mean([kernel[0,0], kernel[1,1]]))
 
     ret = []
     meanarea = np.mean(area)
@@ -1585,7 +1585,7 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, WGr, resolution, fun2D, para
     if meanarea == 0:
         ret.append(0)
     else:
-        ret.append(meanarea/(meanarea+np.mean(WGarea)))
+        ret.append(meanarea/(meanarea+np.mean(BGarea)))
 
     if(len(eccentricity)==0):
         meaneccentricity = 0
@@ -1602,7 +1602,7 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, WGr, resolution, fun2D, para
     if meaneccentricity == 0:
         ret.append(0)
     else:
-        ret.append(meaneccentricity/(meaneccentricity+np.mean(WGeccentricity)))
+        ret.append(meaneccentricity/(meaneccentricity+np.mean(BGeccentricity)))
         
     if(len(major_axis_length)==0):
         meanmajor_axis_length = 0
@@ -1619,7 +1619,7 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, WGr, resolution, fun2D, para
     if meanmajor_axis_length == 0:
         ret.append(0)
     else:
-        ret.append(meanmajor_axis_length/(meanmajor_axis_length+np.mean(WGmajor_axis_length)))
+        ret.append(meanmajor_axis_length/(meanmajor_axis_length+np.mean(BGmajor_axis_length)))
 
     if(len(minor_axis_length)==0):
         meanminor_axis_length = 0
@@ -1636,7 +1636,7 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, WGr, resolution, fun2D, para
     if meanminor_axis_length == 0:
         ret.append(0)
     else:
-        ret.append(meanminor_axis_length/(meanminor_axis_length+np.mean(WGminor_axis_length)))
+        ret.append(meanminor_axis_length/(meanminor_axis_length+np.mean(BGminor_axis_length)))
 
     if(len(mean_intensity)==0):
         mean_mean_intensity = 0
@@ -1653,7 +1653,7 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, WGr, resolution, fun2D, para
     if mean_mean_intensity == 0:
         ret.append(0)
     else:
-        ret.append(mean_mean_intensity/(mean_mean_intensity+np.mean(WGmean_intensity)))
+        ret.append(mean_mean_intensity/(mean_mean_intensity+np.mean(BGmean_intensity)))
 
     if(len(orientation)==0):
         ret.append(0)
@@ -1664,7 +1664,7 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, WGr, resolution, fun2D, para
         ret.append(np.std(orientation))
         ret.append(iqr(orientation))
         meanorientation = np.mean(orientation)
-        ret.append(meanorientation/(meanorientation+np.mean(WGorientation)))
+        ret.append(meanorientation/(meanorientation+np.mean(BGorientation)))
 
     if(len(perimeter)==0):
         meanperimeter = 0
@@ -1681,7 +1681,7 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, WGr, resolution, fun2D, para
     if meanperimeter == 0:
         ret.append(0)
     else:
-        ret.append(meanperimeter/(meanperimeter+np.mean(WGperimeter)))
+        ret.append(meanperimeter/(meanperimeter+np.mean(BGperimeter)))
 
     if len(density) == 0:
         ret.append(0)
@@ -1694,25 +1694,22 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, WGr, resolution, fun2D, para
         ret.append(meandensity)
         ret.append(np.median(density))
         # print(np.median(density))
-        if len(WGdensity) == 0:
+        if len(BGdensity) == 0:
             ret.append(0)
         else:
-            ret.append(meandensity/(meandensity+np.mean(WGdensity)))
-            # print(WGdensity)
-            # print(np.mean(WGdensity))
-            # print(meandensity/(meandensity+np.mean(WGdensity)))
+            ret.append(meandensity/(meandensity+np.mean(BGdensity)))
 
     if blobs == 0:
         ret.append(0)
         ret.append(0)
     else:
         ret.append(blobs)
-        ret.append(blobs/(blobs+WGblobs))
+        ret.append(blobs/(blobs+BGblobs))
 
     return ret
 
 
-def casefun_3D_2D_objectprops_WG(LESIONDATAr, LESIONr, WGr, resolution, fun2D, params):
+def casefun_3D_2D_objectprops_BG(LESIONDATAr, LESIONr, BG_roi, resolution, fun2D, params):
 
     area = []
     eccentricity = []
@@ -1729,19 +1726,19 @@ def casefun_3D_2D_objectprops_WG(LESIONDATAr, LESIONr, WGr, resolution, fun2D, p
         slices = 1
     for slice_i in range(slices):
         if slices == 1:
-            if(np.max(WGr[:,:]) ==0):
+            if(np.max(BG_roi[:,:]) ==0):
                 continue
             slice2Ddata = LESIONDATAr[:, :]
         else:
-            if(np.max(WGr[:,:,slice_i]) ==0):
+            if(np.max(BG_roi[:,:,slice_i]) ==0):
                 continue
             slice2Ddata = LESIONDATAr[:, :, slice_i]
         x_lo, x_hi, y_lo, y_hi = find_bounded_subregion2D(slice2Ddata)
         slice2Ddata = slice2Ddata[x_lo:x_hi, y_lo:y_hi]
         if slices == 1:
-            slice2D_ROI = WGr[x_lo:x_hi, y_lo:y_hi]
+            slice2D_ROI = BG_roi[x_lo:x_hi, y_lo:y_hi]
         else:
-            slice2D_ROI = WGr[x_lo:x_hi, y_lo:y_hi, slice_i]
+            slice2D_ROI = BG_roi[x_lo:x_hi, y_lo:y_hi, slice_i]
         # Resize to 1x1 mm space
         cvimg = cv2.resize(slice2Ddata, None, fx = resolution[0], fy = resolution[1], interpolation = cv2.INTER_LANCZOS4)
         cvROI = cv2.resize(slice2D_ROI, None, fx = resolution[0], fy = resolution[1], interpolation = cv2.INTER_NEAREST)
@@ -1839,18 +1836,18 @@ def subfun_Frangi(slice2D, params):
     frangi_bin = np.zeros_like(edge_frangi)
     frangi_bin[edge_frangi >= val] = 1
     return frangi_bin
-def casefun_3D_2D_Frangi_objectprops(LESIONDATAr, LESIONr, WGr, resolution):
-    return casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, WGr, resolution, subfun_Frangi, [])
+def casefun_3D_2D_Frangi_objectprops(LESIONDATAr, LESIONr, BG_roi, resolution):
+    return casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, BG_roi, resolution, subfun_Frangi, [])
 
 def casefun_3D_2D_Hessian_objectprops_name_generator(params):
     names = []
     for name in subfun_3D_2D_objectprops_names:
         names.append('UTU3D2DHessian_%4.3f_%2.1f_objprops_%s' % (params[0], params[1], name))
     return names
-def casefun_3D_2D_Hessian_objectprops_name_generator_WG(params):
+def casefun_3D_2D_Hessian_objectprops_name_generator_BG(params):
     names = []
-    for name in subfun_3D_2D_objectprops_names_WG:
-        names.append('WGUTU3D2DHessian_%4.3f_%2.1f_objprops_%s' % (params[0], params[1], name))
+    for name in subfun_3D_2D_objectprops_names_BG:
+        names.append('BGUTU3D2DHessian_%4.3f_%2.1f_objprops_%s' % (params[0], params[1], name))
     return names    
 def subfun_Hessian(slice2D, params):
     """
@@ -1867,11 +1864,11 @@ def subfun_Hessian(slice2D, params):
     hessian_bin = np.zeros_like(edge_hessian)
     hessian_bin[edge_hessian >= val] = 1
     return hessian_bin
-def casefun_3D_2D_Hessian_objectprops(LESIONDATAr, LESIONr, WGr, resolution, params):
-    return casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, WGr, resolution, subfun_Hessian, params)
+def casefun_3D_2D_Hessian_objectprops(LESIONDATAr, LESIONr, BG_roi, resolution, params):
+    return casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, BG_roi, resolution, subfun_Hessian, params)
 
-def casefun_3D_2D_Hessian_objectprops_WG(LESIONDATAr, LESIONr, WGr, resolution, params):
-    return casefun_3D_2D_objectprops_WG(LESIONDATAr, LESIONr, WGr, resolution, subfun_Hessian, params)
+def casefun_3D_2D_Hessian_objectprops_BG(LESIONDATAr, LESIONr, BG_roi, resolution, params):
+    return casefun_3D_2D_objectprops_BG(LESIONDATAr, LESIONr, BG_roi, resolution, subfun_Hessian, params)
 
 
 casefun_3D_2D_Scharr_objectprops_names = casefun_3D_2D_objectprops_name_generator('Scharr', [])
@@ -1881,8 +1878,8 @@ def subfun_Scharr(slice2D, params):
     scharr_bin = np.zeros_like(edge_scharr)
     scharr_bin[edge_scharr > 0] = 1
     return scharr_bin
-def casefun_3D_2D_Scharr_objectprops(LESIONDATAr, LESIONr, WGr, resolution):
-    return casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, WGr, resolution, subfun_Scharr, [])
+def casefun_3D_2D_Scharr_objectprops(LESIONDATAr, LESIONr, BG_roi, resolution):
+    return casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, BG_roi, resolution, subfun_Scharr, [])
 
 """
 Laws texture features
@@ -1926,9 +1923,9 @@ R5S5 = np.outer(R5,S5)
 R5R5 = np.outer(R5,R5)
 R5W5 = np.outer(R5,W5)
 
-def append_Laws_results(outdata, LESIONrs, WGrs, ret):
+def append_Laws_results(outdata, LESIONrs, BG_rois, ret):
     ROIdata = outdata[LESIONrs > 0]
-    WGdata = outdata[WGrs > 0]
+    BGdata = outdata[BG_rois > 0]
     mean1 = np.mean(ROIdata)
     ret.append(np.mean(ROIdata))
     median1 = np.median(ROIdata)
@@ -1944,10 +1941,10 @@ def append_Laws_results(outdata, LESIONrs, WGrs, ret):
     if(mean1 == 0):
        ret.append(0)
     else:
-       ret.append(mean1/(mean1+np.mean(WGdata)))
+       ret.append(mean1/(mean1+np.mean(BGdata)))
     return ret
 
-def casefun_3D_2D_Laws(LESIONDATAr, LESIONr, WGr, resolution, params):
+def casefun_3D_2D_Laws(LESIONDATAr, LESIONr, BG_roi, resolution, params):
 
     # resolution factor affecting laws feature sampling ratio
     # 1: original resolution
@@ -1964,14 +1961,14 @@ def casefun_3D_2D_Laws(LESIONDATAr, LESIONr, WGr, resolution, params):
         slices = LESIONDATAr.shape[2]
         LESIONDATArs = LESIONDATAr[x_lo:x_hi, y_lo:y_hi, :]
         LESIONrs_temp = LESIONr[0][x_lo:x_hi, y_lo:y_hi, :]
-        WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi, :]
+        BG_rois_temp = BG_roi[x_lo:x_hi, y_lo:y_hi, :]
         # Create masks and output data to desired resolution, intensity data is resliced later for non-zero only
         slice2Ddata = LESIONDATArs[:, :, 0]
     else:
         slices = 1
         LESIONDATArs = LESIONDATAr[x_lo:x_hi, y_lo:y_hi]
         LESIONrs_temp = LESIONr[0][x_lo:x_hi, y_lo:y_hi]
-        WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi]
+        BG_rois_temp = BG_roi[x_lo:x_hi, y_lo:y_hi]
         # Create masks and output data to desired resolution, intensity data is resliced later for non-zero only
         slice2Ddata = LESIONDATArs[:, :]
     cvimg = cv2.resize(slice2Ddata, None, fx = resolution[0]*res_f, fy = resolution[1]*res_f, interpolation = cv2.INTER_NEAREST)
@@ -1979,14 +1976,14 @@ def casefun_3D_2D_Laws(LESIONDATAr, LESIONr, WGr, resolution, params):
         LESIONrs = np.zeros([cvimg.shape[0], cvimg.shape[1]])
     else:
         LESIONrs = np.zeros([cvimg.shape[0], cvimg.shape[1], LESIONDATAr.shape[2]])
-    WGrs = np.zeros_like(LESIONrs)
+    BG_rois = np.zeros_like(LESIONrs)
     accepted_slices = 0
     for slice_i in range(slices):
         if slices == 1:
-            if(np.max(LESIONrs_temp[:,:]) == 0 and np.max(WGrs_temp[:,:]) ==0):
+            if(np.max(LESIONrs_temp[:,:]) == 0 and np.max(BG_rois_temp[:,:]) ==0):
                 continue
         else:
-            if(np.max(LESIONrs_temp[:,:,slice_i]) == 0 and np.max(WGrs_temp[:,:,slice_i]) ==0):
+            if(np.max(LESIONrs_temp[:,:,slice_i]) == 0 and np.max(BG_rois_temp[:,:,slice_i]) ==0):
                 continue
         accepted_slices += 1
         if slices == 1:
@@ -1996,15 +1993,15 @@ def casefun_3D_2D_Laws(LESIONDATAr, LESIONr, WGr, resolution, params):
         LESIONcvimg = cv2.resize(slice2Ddata, None, fx = resolution[0]*res_f, fy = resolution[1]*res_f, interpolation = cv2.INTER_NEAREST)
         if slices == 1:
             LESIONrs[:,:] = LESIONcvimg
-            slice2Ddata = WGrs_temp[:, :]
+            slice2Ddata = BG_rois_temp[:, :]
         else:
             LESIONrs[:,:,slice_i] = LESIONcvimg
-            slice2Ddata = WGrs_temp[:, :, slice_i]
-        WGcvimg = cv2.resize(slice2Ddata, None, fx = resolution[0]*res_f, fy = resolution[1]*res_f, interpolation = cv2.INTER_NEAREST)
+            slice2Ddata = BG_rois_temp[:, :, slice_i]
+        BGcvimg = cv2.resize(slice2Ddata, None, fx = resolution[0]*res_f, fy = resolution[1]*res_f, interpolation = cv2.INTER_NEAREST)
         if slices == 1:
-            WGrs[:,:] = WGcvimg
+            BG_rois[:,:] = BGcvimg
         else:
-            WGrs[:,:,slice_i] = WGcvimg
+            BG_rois[:,:,slice_i] = BGcvimg
     outdata_1 = np.zeros_like(LESIONrs)
     outdata_2 = np.zeros_like(LESIONrs)
     outdata_3 = np.zeros_like(LESIONrs)
@@ -2022,11 +2019,11 @@ def casefun_3D_2D_Laws(LESIONDATAr, LESIONr, WGr, resolution, params):
     mid = int(np.floor(s/2.0))
     for slice_i in range(slices):
         if slices == 1:
-            if(np.max(LESIONrs[:,:]) == 0 and np.max(WGrs[:,:]) ==0):
+            if(np.max(LESIONrs[:,:]) == 0 and np.max(BG_rois[:,:]) ==0):
                 continue
             slice2Ddata = LESIONDATArs[:, :]
         else:
-            if(np.max(LESIONrs[:,:,slice_i]) == 0 and np.max(WGrs[:,:,slice_i]) ==0):
+            if(np.max(LESIONrs[:,:,slice_i]) == 0 and np.max(BG_rois[:,:,slice_i]) ==0):
                 continue
             slice2Ddata = LESIONDATArs[:, :, slice_i]
         cvimg = cv2.resize(slice2Ddata, None, fx = resolution[0]*res_f, fy = resolution[1]*res_f, interpolation = cv2.INTER_LANCZOS4)
@@ -2088,15 +2085,15 @@ def casefun_3D_2D_Laws(LESIONDATAr, LESIONr, WGr, resolution, params):
                 outdata_8[xmid, ymid, slice_i] = Laws_8
                 outdata_9[xmid, ymid, slice_i] = Laws_9
     ret = []
-    ret = append_Laws_results(outdata_1, LESIONrs, WGrs, ret)
-    ret = append_Laws_results(outdata_2, LESIONrs, WGrs, ret)
-    ret = append_Laws_results(outdata_3, LESIONrs, WGrs, ret)
-    ret = append_Laws_results(outdata_4, LESIONrs, WGrs, ret)
-    ret = append_Laws_results(outdata_5, LESIONrs, WGrs, ret)
-    ret = append_Laws_results(outdata_6, LESIONrs, WGrs, ret)
-    ret = append_Laws_results(outdata_7, LESIONrs, WGrs, ret)
-    ret = append_Laws_results(outdata_8, LESIONrs, WGrs, ret)
-    ret = append_Laws_results(outdata_9, LESIONrs, WGrs, ret)
+    ret = append_Laws_results(outdata_1, LESIONrs, BG_rois, ret)
+    ret = append_Laws_results(outdata_2, LESIONrs, BG_rois, ret)
+    ret = append_Laws_results(outdata_3, LESIONrs, BG_rois, ret)
+    ret = append_Laws_results(outdata_4, LESIONrs, BG_rois, ret)
+    ret = append_Laws_results(outdata_5, LESIONrs, BG_rois, ret)
+    ret = append_Laws_results(outdata_6, LESIONrs, BG_rois, ret)
+    ret = append_Laws_results(outdata_7, LESIONrs, BG_rois, ret)
+    ret = append_Laws_results(outdata_8, LESIONrs, BG_rois, ret)
+    ret = append_Laws_results(outdata_9, LESIONrs, BG_rois, ret)
     return ret
 
 """
@@ -2123,7 +2120,7 @@ def casefun_3D_2D_FFT2D_names_generator(params):
             names.append('UTU3D2DFFT2D_%s_f%2.1f_FWHM%3.2f_HP' % (name, res_f, threshold_FWHM))
     return names
 
-def casefun_3D_2D_FFT2D_names_generator_WG(params):
+def casefun_3D_2D_FFT2D_names_generator_BG(params):
     res_f = params[0]
     start_FWHM = params[1]
     end_FWHM = params[2]
@@ -2135,15 +2132,15 @@ def casefun_3D_2D_FFT2D_names_generator_WG(params):
     for threshold_FWHM in thresholds_FWHM:
         for name_i in range(len(casefun_3D_2D_FFT2D_names)-1):
             name = casefun_3D_2D_FFT2D_names[name_i]
-            names.append('WGUTU3D2DFFT2D_%s_f%2.1f_FWHM%3.2f_LP' % (name, res_f, threshold_FWHM))
+            names.append('BGUTU3D2DFFT2D_%s_f%2.1f_FWHM%3.2f_LP' % (name, res_f, threshold_FWHM))
         for name_i in range(len(casefun_3D_2D_FFT2D_names)-1):
             name = casefun_3D_2D_FFT2D_names[name_i]
-            names.append('WGUTU3D2DFFT2D_%s_f%2.1f_FWHM%3.2f_HP' % (name, res_f, threshold_FWHM))
+            names.append('BGUTU3D2DFFT2D_%s_f%2.1f_FWHM%3.2f_HP' % (name, res_f, threshold_FWHM))
     return names
 
-def append_FFT2D_results(outdata, LESIONrs, WGrs, ret):
+def append_FFT2D_results(outdata, LESIONrs, BG_rois, ret):
     ROIdata = outdata['data_lo'][LESIONrs > 0]
-    WGdata = outdata['data_lo'][WGrs > 0]
+    BGdata = outdata['data_lo'][BG_rois > 0]
     mean1 = np.mean(ROIdata)
     ret.append(np.mean(ROIdata))
     median1 = np.median(ROIdata)
@@ -2159,9 +2156,9 @@ def append_FFT2D_results(outdata, LESIONrs, WGrs, ret):
     if(mean1 == 0):
        ret.append(0)
     else:
-       ret.append(mean1/(mean1+np.mean(WGdata)))
+       ret.append(mean1/(mean1+np.mean(BGdata)))
     ROIdata = outdata['data_hi'][LESIONrs > 0]
-    WGdata = outdata['data_hi'][WGrs > 0]
+    BGdata = outdata['data_hi'][BG_rois > 0]
     mean1 = np.mean(ROIdata)
     ret.append(np.mean(ROIdata))
     median1 = np.median(ROIdata)
@@ -2177,7 +2174,7 @@ def append_FFT2D_results(outdata, LESIONrs, WGrs, ret):
     if(mean1 == 0):
        ret.append(0)
     else:
-       ret.append(mean1/(mean1+np.mean(WGdata)))
+       ret.append(mean1/(mean1+np.mean(BGdata)))
     return ret
 
 
@@ -2196,7 +2193,7 @@ def FWHM(X,Y):
     r1, r2 = spline.roots() # find the roots
     return r2-r1
 
-def casefun_3D_2D_FFT2D(LESIONDATAr, LESIONr, WGr, resolution, params):
+def casefun_3D_2D_FFT2D(LESIONDATAr, LESIONr, BG_roi, resolution, params):
 
     if np.max(LESIONDATAr) == 0 or np.max(LESIONr[0]) == 0:
         return [float('nan') for x in casefun_3D_2D_FFT2D_names_generator(params)]
@@ -2221,20 +2218,24 @@ def casefun_3D_2D_FFT2D(LESIONDATAr, LESIONr, WGr, resolution, params):
         slices = LESIONDATAr.shape[2]
         LESIONDATArs_temp = LESIONDATAr[x_lo:x_hi, y_lo:y_hi, :]
         LESIONrs_temp = LESIONr[0][x_lo:x_hi, y_lo:y_hi, :]
-        WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi, :]
+        BG_rois_temp = BG_roi[x_lo:x_hi, y_lo:y_hi, :]
         # Create masks and output data to desired resolution, starting with 1mm x 1mm resolution
         slice2Ddata = LESIONDATArs_temp[:, :, 0]
     else:
         slices = 1
         LESIONDATArs_temp = LESIONDATAr[x_lo:x_hi, y_lo:y_hi]
         LESIONrs_temp = LESIONr[0][x_lo:x_hi, y_lo:y_hi]
-        WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi]
+        BG_rois_temp = BG_roi[x_lo:x_hi, y_lo:y_hi]
         # Create masks and output data to desired resolution, starting with 1mm x 1mm resolution
         slice2Ddata = LESIONDATArs_temp[:, :]
     # print(resolution)
     # print(res_f)
     # print(slice2Ddata.shape)
-    cvimg = cv2.resize(slice2Ddata, None, fx = resolution[0]*res_f, fy = resolution[1]*res_f, interpolation = cv2.INTER_NEAREST)
+    try:
+        cvimg = cv2.resize(slice2Ddata, None, fx = resolution[0]*res_f, fy = resolution[1]*res_f, interpolation = cv2.INTER_NEAREST)
+    except:
+        print('FWHM estimation failed')
+        return [float('nan') for x in casefun_3D_2D_FFT2D_names_generator(params)]
     out_dim = np.max([cvimg.shape[0], cvimg.shape[1]])
     if np.mod(out_dim,2) == 0:
        out_dim += 1
@@ -2259,7 +2260,7 @@ def casefun_3D_2D_FFT2D(LESIONDATAr, LESIONr, WGr, resolution, params):
         LESIONrs = np.zeros([out_dim, out_dim, LESIONDATAr.shape[2]])
     else:
         LESIONrs = np.zeros([out_dim, out_dim, 1])
-    WGrs = np.zeros_like(LESIONrs)
+    BG_rois = np.zeros_like(LESIONrs)
     LESIONDATArs = np.zeros_like(LESIONrs)
 
     for slice_i in range(slices):
@@ -2272,11 +2273,11 @@ def casefun_3D_2D_FFT2D(LESIONDATAr, LESIONr, WGr, resolution, params):
         # print(LESIONrs.shape)
         LESIONrs[pad_x:pad_x+LESIONcvimg.shape[0],pad_y:pad_y+LESIONcvimg.shape[1],slice_i] = LESIONcvimg
         if slices > 1:
-            slice2Ddata = WGrs_temp[:, :, slice_i]
+            slice2Ddata = BG_rois_temp[:, :, slice_i]
         else:
-            slice2Ddata = WGrs_temp[:, :]
-        WGcvimg = cv2.resize(slice2Ddata, None, fx = resolution[0]*res_f, fy = resolution[1]*res_f, interpolation = cv2.INTER_NEAREST)
-        WGrs[pad_x:pad_x+WGcvimg.shape[0],pad_y:pad_y+WGcvimg.shape[1],slice_i] = WGcvimg
+            slice2Ddata = BG_rois_temp[:, :]
+        BGcvimg = cv2.resize(slice2Ddata, None, fx = resolution[0]*res_f, fy = resolution[1]*res_f, interpolation = cv2.INTER_NEAREST)
+        BG_rois[pad_x:pad_x+BGcvimg.shape[0],pad_y:pad_y+BGcvimg.shape[1],slice_i] = BGcvimg
         if slices > 1:
             slice2Ddata = LESIONDATArs_temp[:, :, slice_i]
         else:
@@ -2288,7 +2289,7 @@ def casefun_3D_2D_FFT2D(LESIONDATAr, LESIONr, WGr, resolution, params):
         outdata.append({'FWHM':threshold_FWHM, 'data_lo':np.zeros_like(LESIONrs), 'data_hi':np.zeros_like(LESIONrs)})
 
     for slice_i in range(LESIONDATArs.shape[2]):
-        if(np.max(LESIONrs[:,:,slice_i]) == 0 and np.max(WGrs[:,:,slice_i]) ==0):
+        if(np.max(LESIONrs[:,:,slice_i]) == 0 and np.max(BG_rois[:,:,slice_i]) ==0):
             continue
         img = LESIONDATArs[:, :, slice_i]
         for threshold_FWHM_i in range(len(thresholds_FWHM)):
@@ -2300,13 +2301,13 @@ def casefun_3D_2D_FFT2D(LESIONDATAr, LESIONr, WGr, resolution, params):
 
     ret = []
     for threshold_FWHM_i in range(len(thresholds_FWHM)):
-        ret = append_FFT2D_results(outdata[threshold_FWHM_i], LESIONrs, WGrs, ret)
+        ret = append_FFT2D_results(outdata[threshold_FWHM_i], LESIONrs, BG_rois, ret)
 
     return ret
 
 
-def append_FFT2D_results_WG(outdata, WGrs, ret):
-    ROIdata = outdata['data_lo'][WGrs > 0]
+def append_FFT2D_results_BG(outdata, BG_rois, ret):
+    ROIdata = outdata['data_lo'][BG_rois > 0]
     mean1 = np.mean(ROIdata)
     ret.append(np.mean(ROIdata))
     median1 = np.median(ROIdata)
@@ -2319,7 +2320,7 @@ def append_FFT2D_results_WG(outdata, WGrs, ret):
     ret.append(scipy.stats.kurtosis(ROIdata))
     ret.append(np.percentile(ROIdata, 25))
     ret.append(np.percentile(ROIdata, 75))
-    ROIdata = outdata['data_hi'][WGrs > 0]
+    ROIdata = outdata['data_hi'][BG_rois > 0]
     mean1 = np.mean(ROIdata)
     ret.append(np.mean(ROIdata))
     median1 = np.median(ROIdata)
@@ -2334,7 +2335,7 @@ def append_FFT2D_results_WG(outdata, WGrs, ret):
     ret.append(np.percentile(ROIdata, 75))
     return ret
 
-def casefun_3D_2D_FFT2D_WG(LESIONDATAr, LESIONr, WGr, resolution, params):
+def casefun_3D_2D_FFT2D_BG(LESIONDATAr, LESIONr, BG_roi, resolution, params):
 
     if np.max(LESIONDATAr) == 0:
         return [float('nan') for x in casefun_3D_2D_FFT2D_names_generator(params)]
@@ -2356,7 +2357,7 @@ def casefun_3D_2D_FFT2D_WG(LESIONDATAr, LESIONr, WGr, resolution, params):
     x_lo, x_hi, y_lo, y_hi = find_bounded_subregion3D2D(LESIONDATAr)
     # print((x_lo, x_hi, y_lo, y_hi))
     LESIONDATArs_temp = LESIONDATAr[x_lo:x_hi, y_lo:y_hi, :]
-    WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi, :]
+    BG_rois_temp = BG_roi[x_lo:x_hi, y_lo:y_hi, :]
 
     # Create masks and output data to desired resolution, starting with 1mm x 1mm resolution
     slice2Ddata = LESIONDATArs_temp[:, :, 0]
@@ -2384,21 +2385,21 @@ def casefun_3D_2D_FFT2D_WG(LESIONDATAr, LESIONr, WGr, resolution, params):
     pad_x = out_dim-cvimg.shape[0]
     pad_y = out_dim-cvimg.shape[1]
     # print((out_dim, pad_x, pad_y))
-    WGrs = np.zeros([out_dim, out_dim, LESIONDATAr.shape[2]])
-    LESIONDATArs = np.zeros_like(WGrs)
-    for slice_i in range(WGrs.shape[2]):
-        slice2Ddata = WGrs_temp[:, :, slice_i]
-        WGcvimg = cv2.resize(slice2Ddata, None, fx = resolution[0]*res_f, fy = resolution[1]*res_f, interpolation = cv2.INTER_NEAREST)
-        WGrs[pad_x:pad_x+WGcvimg.shape[0],pad_y:pad_y+WGcvimg.shape[1],slice_i] = WGcvimg
+    BG_rois = np.zeros([out_dim, out_dim, LESIONDATAr.shape[2]])
+    LESIONDATArs = np.zeros_like(BG_rois)
+    for slice_i in range(BG_rois.shape[2]):
+        slice2Ddata = BG_rois_temp[:, :, slice_i]
+        BGcvimg = cv2.resize(slice2Ddata, None, fx = resolution[0]*res_f, fy = resolution[1]*res_f, interpolation = cv2.INTER_NEAREST)
+        BG_rois[pad_x:pad_x+BGcvimg.shape[0],pad_y:pad_y+BGcvimg.shape[1],slice_i] = BGcvimg
         slice2Ddata = LESIONDATArs_temp[:, :, slice_i]
         DATAcvimg = cv2.resize(slice2Ddata, None, fx = resolution[0]*res_f, fy = resolution[1]*res_f, interpolation = cv2.INTER_LANCZOS4)
         LESIONDATArs[pad_x:pad_x+DATAcvimg.shape[0],pad_y:pad_y+DATAcvimg.shape[1],slice_i] = DATAcvimg
     outdata = []
     for threshold_FWHM in thresholds_FWHM:
-        outdata.append({'FWHM':threshold_FWHM, 'data_lo':np.zeros_like(WGrs), 'data_hi':np.zeros_like(WGrs)})
+        outdata.append({'FWHM':threshold_FWHM, 'data_lo':np.zeros_like(BG_rois), 'data_hi':np.zeros_like(BG_rois)})
 
     for slice_i in range(LESIONDATArs.shape[2]):
-        if(np.max(WGrs[:,:,slice_i]) ==0):
+        if(np.max(BG_rois[:,:,slice_i]) ==0):
             continue
         img = LESIONDATArs[:, :, slice_i]
         for threshold_FWHM_i in range(len(thresholds_FWHM)):
@@ -2410,6 +2411,6 @@ def casefun_3D_2D_FFT2D_WG(LESIONDATAr, LESIONr, WGr, resolution, params):
 
     ret = []
     for threshold_FWHM_i in range(len(thresholds_FWHM)):
-        ret = append_FFT2D_results_WG(outdata[threshold_FWHM_i], WGrs, ret)
+        ret = append_FFT2D_results_BG(outdata[threshold_FWHM_i], BG_rois, ret)
 
     return ret    
