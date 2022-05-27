@@ -611,12 +611,12 @@ SUBJECTS <-('--input' command line argument)
  +-1_L1 <- (optional '--case' command line argument, '1' case number, 'L1' lesion number)
  |  +-MODALITY.nii <-('--modality' command line argument)
  |  +-LS.nii
- |  +-PM.nii
+ |  +-BG.nii
  .     
  +-N_L1
     +-MODALITY.nii
     +-LS.nii
-    +-PM.nii
+    +-BG.nii
 """
 if __name__ == "__main__":
     # Parse input arguments into args structure

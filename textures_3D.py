@@ -305,7 +305,7 @@ def get_mesh_surface_features(tmw, verts, faces, Idata, resolution):
         r = np.sqrt(np.power(x, 2.0) + np.power(y, 2.0) + np.power(z, 2.0))
         t = np.arccos(z / r)
         s = np.arctan(y / x)
-        if (not np.isnan(c)):
+        if not np.isnan(c):
             c_all.append(c)
             c_all_vis.append(v_i)
             vertex_neighbors.append(tmw.vertex_neighbors[v_i])
@@ -642,36 +642,36 @@ def casefun_01_moments_relativeWG(LESIONDATAr, LESIONr, WGr, resolution):
     kurtosis = scipy.stats.kurtosis(ROIdata)
     SD = np.std(ROIdata)
     IQrange = iqr(ROIdata)
-    if (mean == 0):
+    if mean == 0:
         WGmean = 0
     else:
         WGmean = mean / (mean + np.mean(WGdata))
-    if (median == 0):
+    if median == 0:
         WGmedian = 0
     else:
         WGmedian = median / (median + np.median(WGdata))
-    if (p25 == 0):
+    if p25 == 0:
         WGp25 = 0
     else:
         WGp25 = p25 / (p25 + np.percentile(WGdata, 25))
-    if (p75 == 0):
+    if p75 == 0:
         WGp75 = 0
     else:
         WGp75 = p75 / (p75 + np.percentile(WGdata, 75))
     print(skewness)
-    if (skewness == 0):
+    if skewness == 0:
         WGskewness = 0
     else:
         WGskewness = skewness / (skewness + scipy.stats.skew(WGdata))
-    if (kurtosis == 0):
+    if kurtosis == 0:
         WGkurtosis = 0
     else:
         WGkurtosis = kurtosis / (kurtosis + scipy.stats.kurtosis(WGdata))
-    if (SD == 0):
+    if SD == 0:
         WGSD = 0
     else:
         WGSD = SD / (SD + np.std(WGdata))
-    if (IQrange == 0):
+    if IQrange == 0:
         WGIQrange = 0
     else:
         WGIQrange = IQrange / (IQrange + iqr(WGdata))
@@ -1732,7 +1732,7 @@ def sliding_window3D(image, mask, stepSize, windowSize):
                 continue
             for x in range(0, image.shape[0], stepSize):
                 # yield the current window
-                yield (x, y, z, image[x:x + windowSize[0], y:y + windowSize[1], z:z + windowSize[2]])
+                yield x, y, z, image[x:x + windowSize[0], y:y + windowSize[1], z:z + windowSize[2]]
         print(('%d/%d Laws' % (z, image.shape[2])))
 
 
@@ -1765,7 +1765,7 @@ def read_3DLaws_kernel(filename):
                 continue
             row = [x for x in row if x]
             # print(str(line_no) + ':' + str(row))
-            if (not row[0][0] == '-' and not row[0].isdigit()):
+            if not row[0][0] == '-' and not row[0].isdigit():
                 # print(str(line_no) + '[HEADER]:' + str(row))
                 kernels.append({'name': kernelcode, 'data': data})
                 kernelcode = row[0].strip()
@@ -1866,7 +1866,7 @@ Appends Laws feature values to the end of exiting list
 def append_Laws_results(outdata, LESIONrs, WGrs, ret):
     ROIdata = outdata[LESIONrs > 0]
     WGdata = outdata[WGrs > 0]
-    if (len(ROIdata) == 0):
+    if len(ROIdata) == 0:
         for x in casefun_3D_Laws_names:
             ret.append(float('nan'))
         return ret
@@ -1880,7 +1880,7 @@ def append_Laws_results(outdata, LESIONrs, WGrs, ret):
     ret.append(scipy.stats.kurtosis(ROIdata))
     ret.append(np.percentile(ROIdata, 25))
     ret.append(np.percentile(ROIdata, 75))
-    if (mean1 == 0):
+    if mean1 == 0:
         ret.append(0)
     else:
         ret.append(mean1 / (mean1 + np.mean(WGdata)))
@@ -1900,7 +1900,7 @@ Appends Laws feature values to the end of exiting list for background region
 
 def append_Laws_results_WG(outdata, LESIONrs, ret):
     ROIdata = outdata[LESIONrs > 0]
-    if (len(ROIdata) == 0):
+    if len(ROIdata) == 0:
         for x in casefun_3D_Laws_names:
             ret.append(float('nan'))
         return ret
@@ -2257,7 +2257,7 @@ Helper function to calculate relative feature values, robust for zeros.
 
 
 def relvalue(val1, val2):
-    if (val1 == 0 and val2 == 0):
+    if val1 == 0 and val2 == 0:
         return 1
     else:
         return abs(val1) / ((val1 + val2) / 2.0)
@@ -2438,35 +2438,35 @@ def casefun_01_Moments2(LESIONDATAr, LESIONr, WGr, resolution, params):
     wkurtosis = scipy.stats.kurtosis(WGdata)
     wSD = np.std(WGdata)
     wIQrange = iqr(WGdata)
-    if (mean == 0):
+    if mean == 0:
         relWGmean = 0
     else:
         relWGmean = mean / (mean + np.mean(WGdata))
-    if (median == 0):
+    if median == 0:
         relWGmedian = 0
     else:
         relWGmedian = median / (median + np.median(WGdata))
-    if (p25 == 0):
+    if p25 == 0:
         relWG25percentile = 0
     else:
         relWG25percentile = p25 / (p25 + np.percentile(WGdata, 25))
-    if (p75 == 0):
+    if p75 == 0:
         relWG75percentile = 0
     else:
         relWG75percentile = p75 / (p75 + np.percentile(WGdata, 75))
-    if (skewness == 0):
+    if skewness == 0:
         relWGskewness = 0
     else:
         relWGskewness = skewness / (skewness + scipy.stats.skew(WGdata))
-    if (kurtosis == 0):
+    if kurtosis == 0:
         relWGkurtosis = 0
     else:
         relWGkurtosis = kurtosis / (kurtosis + scipy.stats.kurtosis(WGdata))
-    if (SD == 0):
+    if SD == 0:
         relWGSD = 0
     else:
         relWGSD = SD / (SD + np.std(WGdata))
-    if (IQR == 0):
+    if IQR == 0:
         WGIQR = 0
     else:
         WGIQR = IQR / (IQR + iqr(WGdata))
