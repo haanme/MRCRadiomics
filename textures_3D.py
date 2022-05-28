@@ -37,6 +37,7 @@ from scipy.interpolate import UnivariateSpline
 from skimage import feature
 import copy
 from scipy import stats
+import numpy as np
 
 numba_found = False
 try:
@@ -148,14 +149,14 @@ Levelset coordinates
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
-@param WGr: Background region mask
+@param BGr: Background region mask
 @param resolution: data resolution in mm [x,y,z]
 @returns: [median of curvatures,, standard deviation of curvatures]
 """
 casefun_levelset_names = ('Levelset_median', 'Levelset_std')
 
 
-def casefun_levelset(LESIONDATAr, LESIONr, WGr, resolution):
+def casefun_levelset(LESIONDATAr, LESIONr, BGr, resolution):
     Curvatures2 = []
     for z in range(LESIONr[0].shape[2]):
         ROI_img = np.squeeze(LESIONr[0][:, :, z])
@@ -329,7 +330,7 @@ def get_mesh_surface_features(tmw, verts, faces, Idata, resolution):
         # Divide into
         for Ng_i in range(len(Ng_verts)):
             Ng = Ng_verts[Ng_i]
-            if not Ng in c_all:
+            if Ng not in c_all:
                 continue
             i = c_all[Ng]
             j = c_all[v_i]
@@ -384,13 +385,13 @@ Get 3D Gray Level Co-occurrence Matrix features
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
-@param WGr: background mask
+@param BGr: background mask
 @param resolution: data resolution in mm [x,y,z]
 @returns: Please see casefun_3D_GLCM_names
 """
 
 
-def casefun_3D_GLCM(LESIONDATAr, LESIONr, WGr, resolution):
+def casefun_3D_GLCM(LESIONDATAr, LESIONr, BGr, resolution):
     ROIdata = LESIONDATAr[LESIONr[0] > 0]
     verts_all, faces_all = create_mesh_smooth(LESIONDATAr, LESIONr[1], 0.5, resolution, 'L1')
     if len(verts_all) == 0:
@@ -469,31 +470,31 @@ All measurs are median estimates in background region
   energyV: volume GLCM energy
   correlationV: volume GLCM correlation
 """
-casefun_3D_GLCM_names_WG = (
-'WGmedian_contrastS', 'WGmedian_dissimilarityS', 'WGmedian_homogeneityS', 'WGmedian_ASMS', 'WGmedian_energyS',
-'WGmedian_correlationS', 'WGmedian_contrastV', 'WGmedian_dissimilarityV', 'WGmedian_homogeneityV', 'WGmedian_ASMV',
-'WGmedian_energyV', 'WGmedian_correlationV')
+casefun_3D_GLCM_names_BG = (
+'BGmedian_contrastS', 'BGmedian_dissimilarityS', 'BGmedian_homogeneityS', 'BGmedian_ASMS', 'BGmedian_energyS',
+'BGmedian_correlationS', 'BGmedian_contrastV', 'BGmedian_dissimilarityV', 'BGmedian_homogeneityV', 'BGmedian_ASMV',
+'BGmedian_energyV', 'BGmedian_correlationV')
 
 """
 Get 3D Gray Level Co-occurrence Matrix fro background region
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: not in use
-@param WGr: background mask
+@param BGr: background mask
 @param resolution: data resolution in mm [x,y,z]
-@returns: Please see casefun_3D_GLCM_names_WG
+@returns: Please see casefun_3D_GLCM_names_BG
 """
 
 
-def casefun_3D_GLCM_WG(LESIONDATAr, LESIONr, WGr, resolution):
-    verts_all, faces_all = create_mesh_smooth(LESIONDATAr, WGr, 0.5, resolution, 'WG')
+def casefun_3D_GLCM_BG(LESIONDATAr, LESIONr, BGr, resolution):
+    verts_all, faces_all = create_mesh_smooth(LESIONDATAr, BGr, 0.5, resolution, 'BG')
     if len(verts_all) == 0:
         return 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     tm = trimesh.base.Trimesh(vertices=verts_all, faces=faces_all)
     contrastS_all, dissimilarityS_all, homogeneityS_all, ASMS_all, energyS_all, correlationS_all = get_mesh_surface_features(
         tm, verts_all, faces_all, LESIONDATAr, resolution)
     contrastV_all, dissimilarityV_all, homogeneityV_all, ASMV_all, energyV_all, correlationV_all = get_3D_GLCM(
-        LESIONDATAr, WGr, resolution)
+        LESIONDATAr, BGr, resolution)
 
     contrastS = np.median(contrastS_all)
     dissimilarityS = np.median(dissimilarityS_all)
@@ -532,13 +533,13 @@ Statistical moments of intensity values inside lesion
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
-@param WGr: background mask
+@param BGr: background mask
 @param resolution: data resolution in mm [x,y,z]
 @returns: Please see casefun_01_moments_names
 """
 
 
-def casefun_01_moments(LESIONDATAr, LESIONr, WGr, resolution):
+def casefun_01_moments(LESIONDATAr, LESIONr, BGr, resolution):
     ROIdata = LESIONDATAr[LESIONr[0] > 0]
     mean = np.mean(ROIdata)
     median = np.median(ROIdata)
@@ -571,32 +572,32 @@ Names for statistical moments of intensity values inside whole organ
   wIQrange: range of organ
   volume: volume of organ
 """
-casefun_01_moments_WG_names = (
-'WGmean', 'WGmedian', 'WG25percentile', 'WG75percentile', 'WGskewness', 'WGkurtosis', 'WGSD', 'WGIQR', 'WGml')
+casefun_01_moments_BG_names = (
+'BGmean', 'BGmedian', 'BG25percentile', 'BG75percentile', 'BGskewness', 'BGkurtosis', 'BGSD', 'BGIQR', 'BGml')
 
 """
 Statistical moments of intensity values inside whole organ
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
-@param WGr: background mask
+@param BGr: background mask
 @param resolution: data resolution in mm [x,y,z]
 @returns: Please see
 """
 
 
-def casefun_01_moments_WG(LESIONDATAr, LESIONr, WGr, resolution):
-    WGdata = LESIONDATAr[WGr > 0]
-    volume = len(WGdata) * (0.001 * resolution[0] * resolution[1] * resolution[2])
+def casefun_01_moments_BG(LESIONDATAr, LESIONr, BGr, resolution):
+    BGdata = LESIONDATAr[BGr > 0]
+    volume = len(BGdata) * (0.001 * resolution[0] * resolution[1] * resolution[2])
     print((resolution, volume))
-    wmean = np.mean(WGdata)
-    wmedian = np.median(WGdata)
-    wp25 = np.percentile(WGdata, 25)
-    wp75 = np.percentile(WGdata, 75)
-    wskewness = scipy.stats.skew(WGdata)
-    wkurtosis = scipy.stats.kurtosis(WGdata)
-    wSD = np.std(WGdata)
-    wIQrange = iqr(WGdata)
+    wmean = np.mean(BGdata)
+    wmedian = np.median(BGdata)
+    wp25 = np.percentile(BGdata, 25)
+    wp75 = np.percentile(BGdata, 75)
+    wskewness = scipy.stats.skew(BGdata)
+    wkurtosis = scipy.stats.kurtosis(BGdata)
+    wSD = np.std(BGdata)
+    wIQrange = iqr(BGdata)
 
     return wmean, wmedian, wp25, wp75, wskewness, wkurtosis, wSD, wIQrange, volume
 
@@ -604,34 +605,34 @@ def casefun_01_moments_WG(LESIONDATAr, LESIONr, WGr, resolution):
 """
 Names for first order statistics of raw intensity using background region.
 
-  relWGmean: Relative mean intensity to background
-  relWGmedian: Relative mean intensity to background
-  relWG25percentile: : Relative 25% percentile to background
-  relWG75percentile: : Relative 75% percentile to background
-  relWGskewness: : Relative skewness to background
-  relWGkurtosis: : Relative kurtosity to background
-  relWGSD: : Relative standard deviation to background
-  WGIQR: : Relative iterquatile range to background
+  relBGmean: Relative mean intensity to background
+  relBGmedian: Relative mean intensity to background
+  relBG25percentile: : Relative 25% percentile to background
+  relBG75percentile: : Relative 75% percentile to background
+  relBGskewness: : Relative skewness to background
+  relBGkurtosis: : Relative kurtosity to background
+  relBGSD: : Relative standard deviation to background
+  BGIQR: : Relative iterquatile range to background
 """
-casefun_01_moments_relativeWG_names = (
-'relWGmean', 'relWGmedian', 'relWG25percentile', 'relWG75percentile', 'relWGskewness', 'relWGkurtosis', 'relWGSD',
-'WGIQR')
+casefun_01_moments_relativeBG_names = (
+'relBGmean', 'relBGmedian', 'relBG25percentile', 'relBG75percentile', 'relBGskewness', 'relBGkurtosis', 'relBGSD',
+'BGIQR')
 
 """
 First order statistics of raw intensity using background region.
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
-@param WGr: background mask
+@param BGr: background mask
 @param resolution: data resolution in mm [x,y,z]
-@returns: Please see casefun_01_moments_relativeWG_names
+@returns: Please see casefun_01_moments_relativeBG_names
 """
 
 
-def casefun_01_moments_relativeWG(LESIONDATAr, LESIONr, WGr, resolution):
+def casefun_01_moments_relativeBG(LESIONDATAr, LESIONr, BGr, resolution):
     ROIdata = LESIONDATAr[LESIONr[0] > 0]
-    WGdata = LESIONDATAr[WGr > 0]
-    volume = len(WGdata) * (0.001 * resolution[0] * resolution[1] * resolution[2])
+    BGdata = LESIONDATAr[BGr > 0]
+    volume = len(BGdata) * (0.001 * resolution[0] * resolution[1] * resolution[2])
     print((resolution, volume))
     mean = np.mean(ROIdata)
     median = np.median(ROIdata)
@@ -643,40 +644,40 @@ def casefun_01_moments_relativeWG(LESIONDATAr, LESIONr, WGr, resolution):
     SD = np.std(ROIdata)
     IQrange = iqr(ROIdata)
     if mean == 0:
-        WGmean = 0
+        BGmean = 0
     else:
-        WGmean = mean / (mean + np.mean(WGdata))
+        BGmean = mean / (mean + np.mean(BGdata))
     if median == 0:
-        WGmedian = 0
+        BGmedian = 0
     else:
-        WGmedian = median / (median + np.median(WGdata))
+        BGmedian = median / (median + np.median(BGdata))
     if p25 == 0:
-        WGp25 = 0
+        BGp25 = 0
     else:
-        WGp25 = p25 / (p25 + np.percentile(WGdata, 25))
+        BGp25 = p25 / (p25 + np.percentile(BGdata, 25))
     if p75 == 0:
-        WGp75 = 0
+        BGp75 = 0
     else:
-        WGp75 = p75 / (p75 + np.percentile(WGdata, 75))
+        BGp75 = p75 / (p75 + np.percentile(BGdata, 75))
     print(skewness)
     if skewness == 0:
-        WGskewness = 0
+        BGskewness = 0
     else:
-        WGskewness = skewness / (skewness + scipy.stats.skew(WGdata))
+        BGskewness = skewness / (skewness + scipy.stats.skew(BGdata))
     if kurtosis == 0:
-        WGkurtosis = 0
+        BGkurtosis = 0
     else:
-        WGkurtosis = kurtosis / (kurtosis + scipy.stats.kurtosis(WGdata))
+        BGkurtosis = kurtosis / (kurtosis + scipy.stats.kurtosis(BGdata))
     if SD == 0:
-        WGSD = 0
+        BGSD = 0
     else:
-        WGSD = SD / (SD + np.std(WGdata))
+        BGSD = SD / (SD + np.std(BGdata))
     if IQrange == 0:
-        WGIQrange = 0
+        BGIQrange = 0
     else:
-        WGIQrange = IQrange / (IQrange + iqr(WGdata))
+        BGIQrange = IQrange / (IQrange + iqr(BGdata))
 
-    return WGmean, WGmedian, WGp25, WGp75, WGskewness, WGkurtosis, WGSD, WGIQrange
+    return BGmean, BGmedian, BGp25, BGp75, BGskewness, BGkurtosis, BGSD, BGIQrange
 
 
 """
@@ -684,16 +685,16 @@ Data from largest found slice in the lesion
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
-@param WGr: background mask
+@param BGr: background mask
 @param resolution: data resolution in mm [x,y,z]
 @param amount: not in use
 @returns:
   ROIdata: ROI data
-  WGdata: background data
+  BGdata: background data
 """
 
 
-def Moment2_fun_largest_slice(LESIONDATAr, LESIONr, WGr, resolution, amount):
+def Moment2_fun_largest_slice(LESIONDATAr, LESIONr, BGr, resolution, amount):
     volumes = []
     indexes = []
     max_vol = -1
@@ -709,10 +710,10 @@ def Moment2_fun_largest_slice(LESIONDATAr, LESIONr, WGr, resolution, amount):
                 max_idx = z
     eroded = copy.deepcopy(LESIONr[0][:, :, max_idx])
     ROIdata = LESIONDATAr[:, :, max_idx][eroded > 0]
-    WGr = WGr[:, :, max_idx]
-    WGr[eroded > 0] = 0
-    WGdata = LESIONDATAr[:, :, max_idx][WGr > 0]
-    return ROIdata, WGdata
+    BGr = BGr[:, :, max_idx]
+    BGr[eroded > 0] = 0
+    BGdata = LESIONDATAr[:, :, max_idx][BGr > 0]
+    return ROIdata, BGdata
 
 
 """
@@ -722,16 +723,16 @@ smoothing.
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
-@param WGr: background mask
+@param BGr: background mask
 @param resolution: data resolution in mm [x,y,z]
 @param amount: not in use
 @returns:
   ROIdata: ROI data
-  WGdata: background data
+  BGdata: background data
 """
 
 
-def Moment2_fun_largest_slice3x3(LESIONDATAr, LESIONr, WGr, resolution, amount):
+def Moment2_fun_largest_slice3x3(LESIONDATAr, LESIONr, BGr, resolution, amount):
     volumes = []
     indexes = []
     max_vol = -1
@@ -756,7 +757,7 @@ def Moment2_fun_largest_slice3x3(LESIONDATAr, LESIONr, WGr, resolution, amount):
             NG.append((x, y))
 
     ROIdata = LESIONDATAr[:, :, max_idx][eroded > 0]
-    WGdata = LESIONDATAr[:, :, max_idx][WGr[:, :, max_idx] > 0]
+    BGdata = LESIONDATAr[:, :, max_idx][BGr[:, :, max_idx] > 0]
 
     min_val = np.max(ROIdata)
     min_coords = [-1, -1]
@@ -777,10 +778,10 @@ def Moment2_fun_largest_slice3x3(LESIONDATAr, LESIONr, WGr, resolution, amount):
             eroded[min_coords[0] + x, min_coords[1] + y] = 1
 
     ROIdata = LESIONDATAr[:, :, max_idx][eroded > 0]
-    WGr = WGr[:, :, max_idx]
-    WGr[eroded > 0] = 0
-    WGdata = LESIONDATAr[:, :, max_idx][WGr > 0]
-    return ROIdata, WGdata
+    BGr = BGr[:, :, max_idx]
+    BGr[eroded > 0] = 0
+    BGdata = LESIONDATAr[:, :, max_idx][BGr > 0]
+    return ROIdata, BGdata
 
 
 """
@@ -789,16 +790,16 @@ is considered
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
-@param WGr: background mask
+@param BGr: background mask
 @param resolution: data resolution in mm [x,y,z]
 @param amount: coefficient for thresholding of KDE distribution
 @returns:
   ROIdata: ROI data
-  WGdata: background data
+  BGdata: background data
 """
 
 
-def Moment2_fun_largest_sliceKDE(LESIONDATAr, LESIONr, WGr, resolution, amount):
+def Moment2_fun_largest_sliceKDE(LESIONDATAr, LESIONr, BGr, resolution, amount):
     volumes = []
     indexes = []
     max_vol = -1
@@ -846,10 +847,10 @@ def Moment2_fun_largest_sliceKDE(LESIONDATAr, LESIONr, WGr, resolution, amount):
         if values[c_i] > th:
             KDEregion[centroid_xy[0][c_i], centroid_xy[1][c_i]] = 1
     ROIdata = LESIONDATAr[:, :, max_idx][KDEregion > 0]
-    WGr_idx = WGr[:, :, max_idx]
-    WGr_idx[KDEregion > 0] = 0
-    WGdata = LESIONDATAr[:, :, max_idx][WGr_idx > 0]
-    return ROIdata, WGdata
+    BGr_idx = BGr[:, :, max_idx]
+    BGr_idx[KDEregion > 0] = 0
+    BGdata = LESIONDATAr[:, :, max_idx][BGr_idx > 0]
+    return ROIdata, BGdata
 
 
 """
@@ -863,18 +864,18 @@ Statistical descriptors for background region
     kurtosis
     SD
     IQR
-    relWGmean: Relatine mean to background
-    relWGmedian: Relatine median to background
-    relWG25percentile: Relatine 25% percentile to background
-    relWG75percentile: Relatine 75% percentile to background
-    relWGskewness: Relatine skewness to background
-    relWGkurtosis: Relatine kurtosis to background
-    relWGSD: Relatine standard deviation to background
-    WGIQR: Relatine interquartile range to background
+    relBGmean: Relatine mean to background
+    relBGmedian: Relatine median to background
+    relBG25percentile: Relatine 25% percentile to background
+    relBG75percentile: Relatine 75% percentile to background
+    relBGskewness: Relatine skewness to background
+    relBGkurtosis: Relatine kurtosis to background
+    relBGSD: Relatine standard deviation to background
+    BGIQR: Relatine interquartile range to background
 """
-casefun_01_moments2_WG_names = ('mean', 'median', '25percentile', '75percentile', 'skewness', 'kurtosis', 'SD', 'IQR',
-                                'relWGmean', 'relWGmedian', 'relWG25percentile', 'relWG75percentile', 'relWGskewness',
-                                'relWGkurtosis', 'relWGSD', 'WGIQR')
+casefun_01_moments2_BG_names = ('mean', 'median', '25percentile', '75percentile', 'skewness', 'kurtosis', 'SD', 'IQR',
+                                'relBGmean', 'relBGmedian', 'relBG25percentile', 'relBG75percentile', 'relBGskewness',
+                                'relBGkurtosis', 'relBGSD', 'BGIQR')
 
 """
 Resolve 3D Gray Level Co-occurrence Matrix feature names
@@ -886,7 +887,7 @@ Resolve 3D Gray Level Co-occurrence Matrix feature names
 
 def casefun_01_moments2_name_generator(params):
     names = []
-    for name in casefun_01_moments2_WG_names:
+    for name in casefun_01_moments2_BG_names:
         names.append('UTUMoments2_%2.1f_%s_%s' % (params[0], params[1], name))
     return names
 
@@ -976,7 +977,7 @@ def write_plyfile(verts, faces, Idata, resolution, plyfilename):
         np.array(faces_for_ply, dtype=[('vertex_indices', 'i4', (3,)), ('red', 'u1'), ('green', 'u1'), ('blue', 'u1')]),
         'face')
     # Write object with own stream halndling to force flush before function exits
-    pdata=PlyData([elv, elf], text=True)
+    pdata = PlyData([elv, elf], text=True)
     stream = open(plyfilename, 'wb')
     try:
         stream.write(pdata.header.encode('ascii'))
@@ -993,7 +994,7 @@ Creates 3D mesh from binary segmentation file suign Marching Cubes algorithm.
 This implementation uses skimage.measure .masching_cubes_lewiner function.
 
 @param data: Binary mask data
-@param l: Intensity threshold value for segmentation
+@param threshold: Intensity threshold value for segmentation
 @param resolution: Data resolution in mm [x,y,z]
 @returns:
   verts: Mesh vertices
@@ -1003,9 +1004,8 @@ This implementation uses skimage.measure .masching_cubes_lewiner function.
 """
 
 
-def create_mesh(data, l, resolution):
-    verts, faces, normals, values = measure.marching_cubes_lewiner(data, level=l, spacing=(
-    resolution[0], resolution[1], resolution[2]))
+def create_mesh(data, threshold, resolution):
+    verts, faces, normals, values = measure.marching_cubes(data, level=threshold, spacing=(resolution[0], resolution[1], resolution[2]))
     min_loc = [data.shape[0], data.shape[1], data.shape[2]]
     max_loc = [0, 0, 0]
     verts_for_ply = []
@@ -1059,7 +1059,7 @@ Creates smoothed mesh for shape feature estimations
 
 @param Idata: Intensity data
 @param data: Data for mesh definition
-@param l: Intensity threshold for mesh definition
+@param threshold: Intensity threshold for mesh definition
 @param resolution: data resolution in mm [x,y,z]
 @param name: Name for debug use, in local temporary directory
 @returns:
@@ -1068,10 +1068,9 @@ Creates smoothed mesh for shape feature estimations
 """
 
 
-def create_mesh_smooth(Idata, data, l, resolution, name):
+def create_mesh_smooth(Idata, data, threshold, resolution, name):
     print(resolution)
-    verts, faces, normals, values = measure.marching_cubes_lewiner(data, level=l, spacing=(
-    resolution[0], resolution[1], resolution[2]))
+    verts, faces, normals, values = measure.marching_cubes(data, level=threshold, spacing=(resolution[0], resolution[1], resolution[2]))
     min_loc = [data.shape[0], data.shape[1], data.shape[2]]
     max_loc = [0, 0, 0]
     for vert in verts:
@@ -1105,7 +1104,7 @@ def create_mesh_smooth(Idata, data, l, resolution, name):
         faces.append(np.asarray(face))
     faces = np.asarray(faces)
     if not os.path.isdir('./temp'):
-       os.mkdir('./temp')
+        os.mkdir('./temp')
     write_plyfile(verts, faces, Idata, resolution, './temp/' + name + 'temp_' + tempname + '_preprocessed.ply')
     if os.path.exists(plyfilename):
         try:
@@ -1131,7 +1130,6 @@ Bresenham's algorithm, subfunction for poitn set normalization.
 @param slope: Points in N-D space
 @returns: Normalized points
 """
-import numpy as np
 
 
 def _bresenhamline_nslope(slope):
@@ -1190,7 +1188,7 @@ Creates smooth 3D mesh which is fitted to image gradients.
 
 @param Idata: Intensity data
 @param data: Data for mesh definition
-@param l: Intensity threshold for mesh definition
+@param threshold: Intensity threshold for mesh definition
 @param resolution: data resolution in mm [x,y,z]
 @param name: Name for debug use, in local temporary directory
 @returns:
@@ -1199,10 +1197,9 @@ Creates smooth 3D mesh which is fitted to image gradients.
 """
 
 
-def create_mesh_smooth_fit_to_gradient(Idata, data, l, resolution, name):
+def create_mesh_smooth_fit_to_gradient(Idata, data, threshold, resolution, name):
     print(resolution)
-    verts, faces, normals, values = measure.marching_cubes_lewiner(data, level=l, spacing=(
-    resolution[0], resolution[1], resolution[2]))
+    verts, faces, normals, values = measure.marching_cubes(data, level=threshold, spacing=(resolution[0], resolution[1], resolution[2]))
     if len(verts) == 0:
         return verts, faces
 
@@ -1275,7 +1272,7 @@ def create_mesh_smooth_fit_to_gradient(Idata, data, l, resolution, name):
             vy = Gdata_y[int(points[p_i][0]), int(points[p_i][1]), int(points[p_i][2])]
             vz = Gdata_z[int(points[p_i][0]), int(points[p_i][1]), int(points[p_i][2])]
             Gvalues.append(np.mean([abs(vx), abs(vy), abs(vz)]))
-        Gvalues = Gvalues / np.sum(Gvalues)
+        Gvalues = [x / np.sum(Gvalues) for x in Gvalues]
         # print(Gvalues)
         wpoint = [0, 0, 0]
         for p_i in range(len(points)):
@@ -1323,32 +1320,32 @@ Some features use Trimesh package (https://trimsh.org/trimesh.html).
     distance_median: median distance to the Center of Mass
     CSM_mean_curvature: Cohen-Steiner and Morvan mean curvature
     CSM_Gaus_mean_curvature: Gaussian curvature mean angle
-    WGdistROI_median: Median distance to background surface
-    WGdistROI_SD: Standard deviation fo distances to background surface
-    WGdistROI_skewness: Skewness of distances to background surface
-    WGdistROI_kurtosis: Kurtosity of distances to background surface
+    BGdistROI_median: Median distance to background surface
+    BGdistROI_SD: Standard deviation fo distances to background surface
+    BGdistROI_skewness: Skewness of distances to background surface
+    BGdistROI_kurtosis: Kurtosity of distances to background surface
 """
 casefun_3D_shape_names = (
 'sarea3D', 'relsarea3D', 'tm_area_faces', 'tm_relarea_faces', 'mean_angles', 'median_angles', 'SD_angles',
-'distance_mean', 'distance_median', 'CSM_mean_curvature', 'CSM_Gaus_mean_curvature', 'WGdistROI_median', 'WGdistROI_SD',
-'WGdistROI_skewness', 'WGdistROI_kurtosis')
+'distance_mean', 'distance_median', 'CSM_mean_curvature', 'CSM_Gaus_mean_curvature', 'BGdistROI_median', 'BGdistROI_SD',
+'BGdistROI_skewness', 'BGdistROI_kurtosis')
 
 """
 Colletion of 3D shape features. 
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
-@param WGr: Background region mask
+@param BGr: Background region mask
 @param resolution: data resolution in mm [x,y,z]
 @returns: Please see casefun_3D_shape_names
 """
 
 
-def casefun_3D_shape(LESIONDATAr, LESIONr, WGr, resolution):
+def casefun_3D_shape(LESIONDATAr, LESIONr, BGr, resolution):
     ROIdata = LESIONDATAr[LESIONr[0] > 0]
-    WGdata = LESIONDATAr[WGr > 0]
+    BGdata = LESIONDATAr[BGr > 0]
     print((len(ROIdata), np.min(ROIdata), np.max(ROIdata)))
-    print((len(WGdata), np.min(WGdata), np.max(WGdata)))
+    print((len(BGdata), np.min(BGdata), np.max(BGdata)))
 
     # try:
     verts, faces, normals, values = create_mesh(LESIONr[0], 0.5, resolution)
@@ -1357,14 +1354,14 @@ def casefun_3D_shape(LESIONDATAr, LESIONr, WGr, resolution):
     #    return 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     sarea = skimage.measure.mesh_surface_area(verts, faces)
     # try:
-    vertsw, facesw, normalsw, valuesw = create_mesh(WGr, 0.5, resolution)
+    vertsw, facesw, normalsw, valuesw = create_mesh(BGr, 0.5, resolution)
     # except:
-    #    print('failed to create WG')
+    #    print('failed to create BG')
     #    return 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     sareaw = skimage.measure.mesh_surface_area(vertsw, facesw)
     tm = trimesh.base.Trimesh(vertices=verts, faces=faces, face_normals=normals)
     tmw = trimesh.base.Trimesh(vertices=vertsw, faces=facesw, face_normals=normalsw)
-    angles = trimesh.curvature.face_angles(tm)
+    angles = trimesh.base.curvature.face_angles_sparse(tm)
     angles = angles.data
     mean_angles = np.mean(angles)
     median_angles = np.median(angles)
@@ -1376,10 +1373,10 @@ def casefun_3D_shape(LESIONDATAr, LESIONr, WGr, resolution):
             np.sqrt(np.power(v[0] - CoM[0], 2.0) + np.power(v[1] - CoM[1], 2.0) + np.power(v[2] - CoM[2], 2.0)))
     distance_mean = np.mean(distances)
     distance_median = np.median(distances)
-    CSM_mean_curvature = trimesh.curvature.discrete_mean_curvature_measure(tm, [CoM], np.max(distances))
-    CSM_Gaus_mean_curvature = trimesh.curvature.discrete_gaussian_curvature_measure(tm, [CoM], np.max(distances))
+    CSM_mean_curvature = trimesh.base.curvature.discrete_mean_curvature_measure(tm, [CoM], np.max(distances))
+    CSM_Gaus_mean_curvature = trimesh.base.curvature.discrete_gaussian_curvature_measure(tm, [CoM], np.max(distances))
     # Distance to whole gland
-    closest, distancew, triangle_id = trimesh.proximity.closest_point(tm, tmw.vertices)
+    closest, distancew, triangle_id = trimesh.base.proximity.closest_point(tm, tmw.vertices)
     w1 = np.median(distancew)
     w2 = np.std(distancew)
     w3 = scipy.stats.skew(distancew)
@@ -1387,40 +1384,40 @@ def casefun_3D_shape(LESIONDATAr, LESIONr, WGr, resolution):
 
     return sarea, sarea / sareaw, np.median(tm.area_faces), np.median(tm.area_faces) / len(
         ROIdata), mean_angles, median_angles, SD_angles, distance_mean, distance_median, CSM_mean_curvature[0], \
-           CSM_Gaus_mean_curvature[0], w1, w2, w3, w4
+        CSM_Gaus_mean_curvature[0], w1, w2, w3, w4
 
 
 """
 Colletion of 3D shape feature names for background shape. 
 Some features use Trimesh package (https://trimsh.org/trimesh.html).
 
-    WGsarea3D: background 3D surface area
-    WGtm_area_faces: trimesh package faces area for backround
-    WGdistance_mean: mean distance to the Center of Mass of background
-    WGdistance_median: median distance to the Center of Mass of background
-    WGCSM_mean_curvature: Cohen-Steiner and Morvan mean curvature of background surface
+    BGsarea3D: background 3D surface area
+    BGtm_area_faces: trimesh package faces area for backround
+    BGdistance_mean: mean distance to the Center of Mass of background
+    BGdistance_median: median distance to the Center of Mass of background
+    BGCSM_mean_curvature: Cohen-Steiner and Morvan mean curvature of background surface
     CSM_Gaus_mean_curvature: Gaussian curvature mean angle of background surface
 """
-casefun_3D_shape_names_WG = (
-'WGsarea3D', 'WGtm_area_faces', 'WGdistance_mean', 'WGdistance_median', 'WGCSM_mean_curvature',
-'WGCSM_Gaus_mean_curvature')
+casefun_3D_shape_names_BG = (
+'BGsarea3D', 'BGtm_area_faces', 'BGdistance_mean', 'BGdistance_median', 'BGCSM_mean_curvature',
+'BGCSM_Gaus_mean_curvature')
 
 """
 Colletion of 3D shape features for background shape only
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
-@param WGr: Background region mask
+@param BGr: Background region mask
 @param resolution: data resolution in mm [x,y,z]
-@returns: Please see casefun_3D_shape_names_WG
+@returns: Please see casefun_3D_shape_names_BG
 """
 
 
-def casefun_3D_shape_WG(LESIONDATAr, LESIONr, WGr, resolution):
-    WGdata = LESIONDATAr[WGr > 0]
-    print((len(WGdata), np.min(WGdata), np.max(WGdata)))
+def casefun_3D_shape_BG(LESIONDATAr, LESIONr, BGr, resolution):
+    BGdata = LESIONDATAr[BGr > 0]
+    print((len(BGdata), np.min(BGdata), np.max(BGdata)))
 
-    vertsw, facesw, normalsw, valuesw = create_mesh(WGr, 0.5, resolution)
+    vertsw, facesw, normalsw, valuesw = create_mesh(BGr, 0.5, resolution)
     sareaw = skimage.measure.mesh_surface_area(vertsw, facesw)
     tmw = trimesh.base.Trimesh(vertices=vertsw, faces=facesw, face_normals=normalsw)
     CoM = tmw.center_mass
@@ -1430,10 +1427,9 @@ def casefun_3D_shape_WG(LESIONDATAr, LESIONr, WGr, resolution):
             np.sqrt(np.power(v[0] - CoM[0], 2.0) + np.power(v[1] - CoM[1], 2.0) + np.power(v[2] - CoM[2], 2.0)))
     distance_mean = np.mean(distances)
     distance_median = np.median(distances)
-    CSM_mean_curvature = trimesh.curvature.discrete_mean_curvature_measure(tmw, [CoM], np.max(distances))
-    CSM_Gaus_mean_curvature = trimesh.curvature.discrete_gaussian_curvature_measure(tmw, [CoM], np.max(distances))
-    return sareaw, np.median(tmw.area_faces), distance_mean, distance_median, CSM_mean_curvature[0], \
-           CSM_Gaus_mean_curvature[0]
+    CSM_mean_curvature = trimesh.base.curvature.discrete_mean_curvature_measure(tmw, [CoM], np.max(distances))
+    CSM_Gaus_mean_curvature = trimesh.base.curvature.discrete_gaussian_curvature_measure(tmw, [CoM], np.max(distances))
+    return sareaw, np.median(tmw.area_faces), distance_mean, distance_median, CSM_mean_curvature[0], CSM_Gaus_mean_curvature[0]
 
 
 """
@@ -1451,34 +1447,34 @@ Some features use Trimesh package (https://trimsh.org/trimesh.html).
     distance_mediansm: median distance to the Center of Mass, smoothed
     CSM_mean_curvaturesm: Cohen-Steiner and Morvan mean curvature, smoothed
     CSM_Gaus_mean_curvaturesm: Gaussian curvature mean angle, smoothed
-    WG_mediansm: Median distance to background surface, smoothed
-    WG_SDsm: Standard deviation fo distances to background surface, smoothed
-    WG_skewnesssm: Skewness of distances to background surface, smoothed
-    WG_kurtosissm: Kurtosity of distances to background surface, smoothed
+    BG_mediansm: Median distance to background surface, smoothed
+    BG_SDsm: Standard deviation fo distances to background surface, smoothed
+    BG_skewnesssm: Skewness of distances to background surface, smoothed
+    BG_kurtosissm: Kurtosity of distances to background surface, smoothed
 """
 casefun_3D_shape2_names = (
 'sarea3Dsm', 'relsarea3Dsm', 'tm_area_facessm', 'tm_relarea_facessm', 'mean_anglessm', 'median_anglessm', 'SD_anglessm',
-'distance_meansm', 'distance_mediansm', 'CSM_mean_curvaturesm', 'CSM_Gaus_mean_curvaturesm', 'WG_mediansm', 'WG_SDsm',
-'WG_skewnesssm', 'WG_kurtosissm')
+'distance_meansm', 'distance_mediansm', 'CSM_mean_curvaturesm', 'CSM_Gaus_mean_curvaturesm', 'BG_mediansm', 'BG_SDsm',
+'BG_skewnesssm', 'BG_kurtosissm')
 
 """
 Colletion of 3D shape features. 
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
-@param WGr: Background region mask
+@param BGr: Background region mask
 @param resolution: data resolution in mm [x,y,z]
 @returns: Please see casefun_3D_shape2_names
 """
 
 
-def casefun_3D_shape2(LESIONDATAr, LESIONr, WGr, resolution):
+def casefun_3D_shape2(LESIONDATAr, LESIONr, BGr, resolution):
     ROIdata = LESIONDATAr[LESIONr[0] > 0]
 
     # Whole Gland
-    vertsw, facesw = create_mesh_smooth(LESIONDATAr, WGr, 0.5, resolution, 'WG')
+    vertsw, facesw = create_mesh_smooth(LESIONDATAr, BGr, 0.5, resolution, 'BG')
     if len(vertsw) == 0:
-        print('failed to create WG')
+        print('failed to create BG')
         return 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     tmw = trimesh.base.Trimesh(vertices=vertsw, faces=facesw)
 
@@ -1488,16 +1484,16 @@ def casefun_3D_shape2(LESIONDATAr, LESIONr, WGr, resolution):
         return 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     sarea = skimage.measure.mesh_surface_area(verts_all, faces_all)
     tm = trimesh.base.Trimesh(vertices=verts_all, faces=faces_all)
-    angles_all = trimesh.curvature.face_angles(tm)
+    angles_all = trimesh.base.curvature.face_angles_sparse(tm)
     angles_all = angles_all.data
     CoM = tm.center_mass
     distances_all = []
     for v in tm.vertices:
         distances_all.append(
             np.sqrt(np.power(v[0] - CoM[0], 2.0) + np.power(v[1] - CoM[1], 2.0) + np.power(v[2] - CoM[2], 2.0)))
-    CSM_mean_curvature = trimesh.curvature.discrete_mean_curvature_measure(tm, [CoM], np.max(distances_all))
-    CSM_Gaus_mean_curvature = trimesh.curvature.discrete_gaussian_curvature_measure(tm, [CoM], np.max(distances_all))
-    closest, distancew_all, triangle_id = trimesh.proximity.closest_point(tm, tmw.vertices)
+    CSM_mean_curvature = trimesh.base.curvature.discrete_mean_curvature_measure(tm, [CoM], np.max(distances_all))
+    CSM_Gaus_mean_curvature = trimesh.base.curvature.discrete_gaussian_curvature_measure(tm, [CoM], np.max(distances_all))
+    closest, distancew_all, triangle_id = trimesh.base.proximity.closest_point(tm, tmw.vertices)
     for LESION_i in range(2, len(LESIONr)):
         try:
             verts, faces = create_mesh_smooth(LESIONDATAr, LESIONr[LESION_i], 1.0, resolution, 'L' + str(LESION_i - 1))
@@ -1510,7 +1506,7 @@ def casefun_3D_shape2(LESIONDATAr, LESIONr, WGr, resolution):
         faces_all = np.concatenate((faces_all, faces))
         sarea = sarea + skimage.measure.mesh_surface_area(verts, faces)
         tm = trimesh.base.Trimesh(vertices=verts, faces=faces)
-        angles = trimesh.curvature.face_angles(tm)
+        angles = trimesh.base.curvature.face_angles_sparse(tm)
         angles = angles.data
         angles_all = np.concatenate((angles_all, angles))
         CoM = tm.center_mass
@@ -1518,10 +1514,10 @@ def casefun_3D_shape2(LESIONDATAr, LESIONr, WGr, resolution):
         for v in tm.vertices:
             distances.append(
                 np.sqrt(np.power(v[0] - CoM[0], 2.0) + np.power(v[1] - CoM[1], 2.0) + np.power(v[2] - CoM[2], 2.0)))
-        CSM_mean_curvature = CSM_mean_curvature + trimesh.curvature.discrete_mean_curvature_measure(tm, [CoM], np.max(distances))
-        CSM_Gaus_mean_curvature = CSM_Gaus_mean_curvature + trimesh.curvature.discrete_gaussian_curvature_measure(tm, [CoM], np.max(distances))
+        CSM_mean_curvature = CSM_mean_curvature + trimesh.base.curvature.discrete_mean_curvature_measure(tm, [CoM], np.max(distances))
+        CSM_Gaus_mean_curvature = CSM_Gaus_mean_curvature + trimesh.base.curvature.discrete_gaussian_curvature_measure(tm, [CoM], np.max(distances))
         distances_all = np.concatenate((distances_all, distances))
-        closest, distancew, triangle_id = trimesh.proximity.closest_point(tm, tmw.vertices)
+        closest, distancew, triangle_id = trimesh.base.proximity.closest_point(tm, tmw.vertices)
         distancew_all = np.concatenate((distancew_all, distancew))
     verts = verts_all
     faces = faces_all
@@ -1546,8 +1542,7 @@ def casefun_3D_shape2(LESIONDATAr, LESIONr, WGr, resolution):
     w4 = scipy.stats.kurtosis(distancew)
 
     return sarea, sarea / sareaw, np.median(tm.area_faces), np.median(tm.area_faces) / len(
-        ROIdata), mean_angles, median_angles, SD_angles, distance_mean, distance_median, CSM_mean_curvature[0], \
-           CSM_Gaus_mean_curvature[0], w1, w2, w3, w4
+        ROIdata), mean_angles, median_angles, SD_angles, distance_mean, distance_median, CSM_mean_curvature[0], CSM_Gaus_mean_curvature[0], w1, w2, w3, w4
 
 
 """
@@ -1565,10 +1560,10 @@ Some features use Trimesh package (https://trimsh.org/trimesh.html).
     distance_mediansm: median distance to the Center of Mass, smoothed
     CSM_mean_curvaturesm: Cohen-Steiner and Morvan mean curvature, smoothed
     CSM_Gaus_mean_curvaturesm: Gaussian curvature mean angle, smoothed
-    WG_mediansm: Median distance to background surface, smoothed
-    WG_SDsm: Standard deviation fo distances to background surface, smoothed
-    WG_skewnesssm: Skewness of distances to background surface, smoothed
-    WG_kurtosissm: Kurtosity of distances to background surface, smoothed
+    BG_mediansm: Median distance to background surface, smoothed
+    BG_SDsm: Standard deviation fo distances to background surface, smoothed
+    BG_skewnesssm: Skewness of distances to background surface, smoothed
+    BG_kurtosissm: Kurtosity of distances to background surface, smoothed
 """
 casefun_3D_surface_textures_names = (
 'surf_mean', 'surf_median', 'surf_25percentile', 'surf_75percentile', 'surf_skewness', 'surf_kurtosis', 'surf_SD',
@@ -1579,13 +1574,13 @@ Colletion of 3D shape features.
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
-@param WGr: Background region mask
+@param BGr: Background region mask
 @param resolution: data resolution in mm [x,y,z]
 @returns: Please see casefun_3D_surface_textures_names
 """
 
 
-def casefun_3D_surface_textures(LESIONDATAr, LESIONr, WGr, resolution):
+def casefun_3D_surface_textures(LESIONDATAr, LESIONr, BGr, resolution):
     ROIdata = LESIONDATAr[LESIONr[0] > 0]
     print(len(ROIdata))
     # try:
@@ -1622,35 +1617,35 @@ def casefun_3D_surface_textures(LESIONDATAr, LESIONr, WGr, resolution):
 """
 Names for 3D surface textures of background region
 
-    WGsurf_mean: Surface mean intensity of background region
-    WGsurf_median: Surface median intensity of background region
-    WGsurf_25percentile: Surface intensity 25% intensity of background region
-    WGsurf_75percentile: Surface intensity 75% percentile of background region
-    WGsurf_skewness: Surface intensity skewness of background region
-    WGsurf_kurtosis: Surface intensity kurtosis of background region
-    WGsurf_SD: Surface intensity standard deviation of background region
-    WGsurf_range: Surface intensity range of background region
-    WGsurf_volume: Number of surface samples of background region
-    WGsurf_CV: Surface intensity Coefficient of Variation of background region
+    BGsurf_mean: Surface mean intensity of background region
+    BGsurf_median: Surface median intensity of background region
+    BGsurf_25percentile: Surface intensity 25% intensity of background region
+    BGsurf_75percentile: Surface intensity 75% percentile of background region
+    BGsurf_skewness: Surface intensity skewness of background region
+    BGsurf_kurtosis: Surface intensity kurtosis of background region
+    BGsurf_SD: Surface intensity standard deviation of background region
+    BGsurf_range: Surface intensity range of background region
+    BGsurf_volume: Number of surface samples of background region
+    BGsurf_CV: Surface intensity Coefficient of Variation of background region
 """
-casefun_3D_surface_textures_names_WG = (
-'WGsurf_mean', 'WGsurf_median', 'WGsurf_25percentile', 'WGsurf_75percentile', 'WGsurf_skewness', 'WGsurf_kurtosis',
-'WGsurf_SD', 'WGsurf_range', 'WGsurf_volume', 'WGsurf_CV')
+casefun_3D_surface_textures_names_BG = (
+'BGsurf_mean', 'BGsurf_median', 'BGsurf_25percentile', 'BGsurf_75percentile', 'BGsurf_skewness', 'BGsurf_kurtosis',
+'BGsurf_SD', 'BGsurf_range', 'BGsurf_volume', 'BGsurf_CV')
 
 """
 3D surface textures of background region
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
-@param WGr: Background region mask
+@param BGr: Background region mask
 @param resolution: data resolution in mm [x,y,z]
-@returns: Please see casefun_3D_surface_textures_names_WG
+@returns: Please see casefun_3D_surface_textures_names_BG
 """
 
 
-def casefun_3D_surface_textures_WG(LESIONDATAr, LESIONr, WGr, resolution):
-    ROIdata = LESIONDATAr[WGr > 0]
-    verts_all, faces_all = create_mesh_smooth(LESIONDATAr, WGr, 0.5, resolution, 'WG')
+def casefun_3D_surface_textures_BG(LESIONDATAr, LESIONr, BGr, resolution):
+    ROIdata = LESIONDATAr[BGr > 0]
+    verts_all, faces_all = create_mesh_smooth(LESIONDATAr, BGr, 0.5, resolution, 'BG')
     if len(verts_all) == 0:
         return 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     Surface_data = get_mesh_surface_samples(verts_all, faces_all, LESIONDATAr, resolution)
@@ -1668,7 +1663,7 @@ def casefun_3D_surface_textures_WG(LESIONDATAr, LESIONr, WGr, resolution):
     median = np.median(Surface_data)
     p25 = np.percentile(Surface_data, 25)
     p75 = np.percentile(Surface_data, 75)
-    skewness = scipy.stats.skew(Surface_data)
+    skewness = scipy.stats.skew(np.ndarray(Surface_data))
     kurtosis = scipy.stats.kurtosis(Surface_data)
     SD = np.std(Surface_data)
     rng = np.max(Surface_data) - np.min(Surface_data)
@@ -1829,9 +1824,9 @@ Names generator function for 3D Laws
 
 def casefun_3D_Laws_names_generator(params):
     names = []
-    for l in range(len(laws3D_names)):
+    for laws3D_names_i in range(len(laws3D_names)):
         for name in casefun_3D_Laws_names:
-            names.append('UTU3DLaws%s_%s_f%2.1f' % (laws3D_names[l], name, params[0]))
+            names.append('UTU3DLaws%s_%s_f%2.1f' % (laws3D_names[laws3D_names_i], name, params[0]))
     return names
 
 
@@ -1843,12 +1838,12 @@ Names generator function for 3D Laws in background region
 """
 
 
-def casefun_3D_Laws_names_generator_WG(params):
+def casefun_3D_Laws_names_generator_BG(params):
     names = []
-    for l in range(len(laws3D_names)):
+    for laws3D_names_i in range(len(laws3D_names)):
         for name_i in range(len(casefun_3D_Laws_names) - 1):
             name = casefun_3D_Laws_names[name_i]
-            names.append('WGUTU3DLaws%s_%s_f%2.1f' % (laws3D_names[l], name, params[0]))
+            names.append('BGUTU3DLaws%s_%s_f%2.1f' % (laws3D_names[laws3D_names_i], name, params[0]))
     return names
 
 
@@ -1857,15 +1852,15 @@ Appends Laws feature values to the end of exiting list
 
 @param outdata: Intensity data
 @param LESIONr: Lesion mask
-@param WGr: Background region mask
+@param BGr: Background region mask
 @param ret: List of results
 @returns: List of results, with new data appended
 """
 
 
-def append_Laws_results(outdata, LESIONrs, WGrs, ret):
+def append_Laws_results(outdata, LESIONrs, BGrs, ret):
     ROIdata = outdata[LESIONrs > 0]
-    WGdata = outdata[WGrs > 0]
+    BGdata = outdata[BGrs > 0]
     if len(ROIdata) == 0:
         for x in casefun_3D_Laws_names:
             ret.append(float('nan'))
@@ -1883,7 +1878,7 @@ def append_Laws_results(outdata, LESIONrs, WGrs, ret):
     if mean1 == 0:
         ret.append(0)
     else:
-        ret.append(mean1 / (mean1 + np.mean(WGdata)))
+        ret.append(mean1 / (mean1 + np.mean(BGdata)))
     return ret
 
 
@@ -1892,13 +1887,13 @@ Appends Laws feature values to the end of exiting list for background region
 
 @param outdata: Intensity data
 @param LESIONr: Lesion mask
-@param WGr: Background region mask
+@param BGr: Background region mask
 @param ret: List of results
 @returns: List of results, with new data appended
 """
 
 
-def append_Laws_results_WG(outdata, LESIONrs, ret):
+def append_Laws_results_BG(outdata, LESIONrs, ret):
     ROIdata = outdata[LESIONrs > 0]
     if len(ROIdata) == 0:
         for x in casefun_3D_Laws_names:
@@ -1956,7 +1951,7 @@ if numba_found:
     
     @param LESIONDATAr: Intensity data
     @param LESIONr: Lesion mask
-    @param WGr: Background region mask
+    @param BGr: Background region mask
     @param resolution: data resolution in mm [x,y,z]
     @param params: param[0]: isotropic resampling in mm
     @returns:
@@ -1964,23 +1959,23 @@ if numba_found:
     """
 
 
-    def casefun_3D_Laws_numba(LESIONDATAr, LESIONr, WGr, resolution, params):
+    def casefun_3D_Laws_numba(LESIONDATAr, LESIONr, BGr, resolution, params):
         # resolution factor affecting laws feature sampling ratio
         # 1: original resolution
         # <1: upsampling
         # >1: downsampling
         res_f = params[0]
 
-        x_lo, x_hi, y_lo, y_hi, z_lo, z_hi = find_bounded_subregion3D(WGr)
+        x_lo, x_hi, y_lo, y_hi, z_lo, z_hi = find_bounded_subregion3D(BGr)
         LESIONDATArs = LESIONDATAr[x_lo:x_hi, y_lo:y_hi, :]
         LESIONrs_temp = LESIONr[0][x_lo:x_hi, y_lo:y_hi, :]
-        WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi, :]
+        BGrs_temp = BGr[x_lo:x_hi, y_lo:y_hi, :]
 
         # Create masks and output data to desired resolution, intensity data is resliced later for non-zero only
         min_res = np.max(resolution)
         new_res = [min_res * res_f, min_res * res_f, min_res * res_f]
         LESIONrs_temp, affineLESIONrs_temp = reslice_array(LESIONrs_temp, resolution, new_res, 0)
-        WGrs_temp, affineWGrs_temp = reslice_array(WGrs_temp, resolution, new_res, 0)
+        BGrs_temp, affineBGrs_temp = reslice_array(BGrs_temp, resolution, new_res, 0)
         LESIONDATArs, affineLESIONDATArs = reslice_array(LESIONDATArs, resolution, new_res, 1)
 
         outdatas = []
@@ -2010,7 +2005,7 @@ if numba_found:
         sys.stderr = sys.__stderr__
         ret = []
         for kernel_i in range(1, len(Laws3Dkernel)):
-            ret = append_Laws_results(outdatas[kernel_i - 1], LESIONrs_temp, WGrs_temp, ret)
+            ret = append_Laws_results(outdatas[kernel_i - 1], LESIONrs_temp, BGrs_temp, ret)
         return ret
 
 
@@ -2019,14 +2014,14 @@ if numba_found:
     
     @param LESIONDATAr: Intensity data
     @param LESIONr: not in use
-    @param WGr: Background region mask
+    @param BGr: Background region mask
     @param resolution: data resolution in mm [x,y,z]
     @param params: param[0]: isotropic resampling in mm
     @returns: Please see corresponding result name list generation function
     """
 
 
-    def casefun_3D_Laws_WG_numba(LESIONDATAr, LESIONr, WGr, resolution, params):
+    def casefun_3D_Laws_BG_numba(LESIONDATAr, LESIONr, BGr, resolution, params):
         # resolution factor affecting laws feature sampling ratio
         # 1: original resolution
         # <1: upsampling
@@ -2042,18 +2037,18 @@ if numba_found:
             x_lo = 0
         if y_lo < 0:
             y_lo = 0
-        if x_hi >= WGr.shape[0]:
-            x_hi = WGr.shape[0] - 1
-        if y_hi >= WGr.shape[1]:
-            y_hi = WGr.shape[1] - 1
+        if x_hi >= BGr.shape[0]:
+            x_hi = BGr.shape[0] - 1
+        if y_hi >= BGr.shape[1]:
+            y_hi = BGr.shape[1] - 1
 
         LESIONDATArs = LESIONDATAr[x_lo:x_hi, y_lo:y_hi, :]
-        WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi, :]
+        BGrs_temp = BGr[x_lo:x_hi, y_lo:y_hi, :]
 
         # Create masks and output data to desired resolution, intensity data is resliced later for non-zero only
         min_res = np.max(resolution)
         new_res = [min_res * res_f, min_res * res_f, min_res * res_f]
-        WGrs_temp, affineWGrs_temp = reslice_array(WGrs_temp, resolution, new_res, 0)
+        BGrs_temp, affineBGrs_temp = reslice_array(BGrs_temp, resolution, new_res, 0)
         LESIONDATArs, affineLESIONDATArs = reslice_array(LESIONDATArs, resolution, new_res, 1)
 
         outdatas = []
@@ -2063,7 +2058,7 @@ if numba_found:
         s = 5
         sys.stderr = io.StringIO()
         ret = np.zeros((5, 5, 5))
-        for (x, y, z, window) in sliding_window3D(LESIONDATArs, WGrs_temp, 1, (s, s, s)):
+        for (x, y, z, window) in sliding_window3D(LESIONDATArs, BGrs_temp, 1, (s, s, s)):
             window = np.subtract(window, np.mean(window))
             w_std = np.std(window)
             if w_std > 0:
@@ -2083,7 +2078,7 @@ if numba_found:
         sys.stderr = sys.__stderr__
         ret = []
         for kernel_i in range(1, len(Laws3Dkernel)):
-            ret = append_Laws_results_WG(outdatas[kernel_i - 1], WGrs_temp, ret)
+            ret = append_Laws_results_BG(outdatas[kernel_i - 1], BGrs_temp, ret)
         return ret
 
 
@@ -2092,29 +2087,29 @@ if numba_found:
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
-@param WGr: Background region mask
+@param BGr: Background region mask
 @param resolution: params[0]: isotropic data resampling in mm [x,y,z]
 @returns: Please see corresponding featue list variable
 """
 
 
-def casefun_3D_Laws(LESIONDATAr, LESIONr, WGr, resolution, params):
+def casefun_3D_Laws(LESIONDATAr, LESIONr, BGr, resolution, params):
     # resolution factor affecting laws feature sampling ratio
     # 1: original resolution
     # <1: upsampling
     # >1: downsampling
     res_f = params[0]
 
-    x_lo, x_hi, y_lo, y_hi, z_lo, z_hi = find_bounded_subregion3D(WGr)
+    x_lo, x_hi, y_lo, y_hi, z_lo, z_hi = find_bounded_subregion3D(BGr)
     LESIONDATArs = LESIONDATAr[x_lo:x_hi, y_lo:y_hi, :]
     LESIONrs_temp = LESIONr[0][x_lo:x_hi, y_lo:y_hi, :]
-    WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi, :]
+    BGrs_temp = BGr[x_lo:x_hi, y_lo:y_hi, :]
 
     # Create masks and output data to desired resolution, intensity data is resliced later for non-zero only
     min_res = np.max(resolution)
     new_res = [min_res * res_f, min_res * res_f, min_res * res_f]
     LESIONrs_temp, affineLESIONrs_temp = reslice_array(LESIONrs_temp, resolution, new_res, 0)
-    WGrs_temp, affineWGrs_temp = reslice_array(WGrs_temp, resolution, new_res, 0)
+    BGrs_temp, affineBGrs_temp = reslice_array(BGrs_temp, resolution, new_res, 0)
     LESIONDATArs, affineLESIONDATArs = reslice_array(LESIONDATArs, resolution, new_res, 1)
 
     outdatas = []
@@ -2147,7 +2142,7 @@ def casefun_3D_Laws(LESIONDATAr, LESIONr, WGr, resolution, params):
     sys.stderr = sys.__stderr__
     ret = []
     for kernel_i in range(1, len(Laws3Dkernel)):
-        ret = append_Laws_results(outdatas[kernel_i - 1], LESIONrs_temp, WGrs_temp, ret)
+        ret = append_Laws_results(outdatas[kernel_i - 1], LESIONrs_temp, BGrs_temp, ret)
     return ret
 
 
@@ -2156,13 +2151,13 @@ def casefun_3D_Laws(LESIONDATAr, LESIONr, WGr, resolution, params):
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
-@param WGr: Background region mask
+@param BGr: Background region mask
 @param resolution: params[0]: isotropic data resampling in mm [x,y,z]
 @returns: Please see corresponding featue list variable
 """
 
 
-def casefun_3D_Laws_WG(LESIONDATAr, LESIONr, WGr, resolution, params):
+def casefun_3D_Laws_BG(LESIONDATAr, LESIONr, BGr, resolution, params):
     # resolution factor affecting laws feature sampling ratio
     # 1: original resolution
     # <1: upsampling
@@ -2179,18 +2174,18 @@ def casefun_3D_Laws_WG(LESIONDATAr, LESIONr, WGr, resolution, params):
         x_lo = 0
     if y_lo < 0:
         y_lo = 0
-    if x_hi >= WGr.shape[0]:
-        x_hi = WGr.shape[0] - 1
-    if y_hi >= WGr.shape[1]:
-        y_hi = WGr.shape[1] - 1
+    if x_hi >= BGr.shape[0]:
+        x_hi = BGr.shape[0] - 1
+    if y_hi >= BGr.shape[1]:
+        y_hi = BGr.shape[1] - 1
 
     LESIONDATArs = LESIONDATAr[x_lo:x_hi, y_lo:y_hi, :]
-    WGrs_temp = WGr[x_lo:x_hi, y_lo:y_hi, :]
+    BGrs_temp = BGr[x_lo:x_hi, y_lo:y_hi, :]
 
     # Create masks and output data to desired resolution, intensity data is resliced later for non-zero only
     min_res = np.max(resolution)
     new_res = [min_res * res_f, min_res * res_f, min_res * res_f]
-    WGrs_temp, affineWGrs_temp = reslice_array(WGrs_temp, resolution, new_res, 0)
+    BGrs_temp, affineBGrs_temp = reslice_array(BGrs_temp, resolution, new_res, 0)
     LESIONDATArs, affineLESIONDATArs = reslice_array(LESIONDATArs, resolution, new_res, 1)
 
     outdatas = []
@@ -2198,7 +2193,7 @@ def casefun_3D_Laws_WG(LESIONDATAr, LESIONr, WGr, resolution, params):
         outdatas.append(np.zeros_like(LESIONDATArs))
 
     sys.stderr = io.StringIO()
-    for (x, y, z, window) in sliding_window3D(LESIONDATArs, WGrs_temp, 1, (s, s, s)):
+    for (x, y, z, window) in sliding_window3D(LESIONDATArs, BGrs_temp, 1, (s, s, s)):
         window = np.subtract(window, np.mean(window))
         w_std = np.std(window)
         if w_std > 0:
@@ -2222,7 +2217,7 @@ def casefun_3D_Laws_WG(LESIONDATAr, LESIONr, WGr, resolution, params):
     sys.stderr = sys.__stderr__
     ret = []
     for kernel_i in range(1, len(Laws3Dkernel)):
-        ret = append_Laws_results_WG(outdatas[kernel_i - 1], WGrs_temp, ret)
+        ret = append_Laws_results_BG(outdatas[kernel_i - 1], BGrs_temp, ret)
     return ret
 
 
@@ -2243,7 +2238,7 @@ Names generator for signal-to-noise ration measurements features
 
 def casefun_SNR_name_generator(params):
     names = []
-    for Lname in ['', 'WG', 'rel']:
+    for Lname in ['', 'BG', 'rel']:
         for name in casefun_SNR_names:
             names.append('UTUSNRMoments_%s_%s' % (Lname, name))
     names.append('UTUSNRMoments_CNR')
@@ -2268,15 +2263,15 @@ Signal to noise ratio measurement features.
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
-@param WGr: Background region mask
+@param BGr: Background region mask
 @param resolution: data resolution in mm [x,y,z]
 @returns: Please see corresponding names variable
 """
 
 
-def casefun_SNR(LESIONDATAr, LESIONr, WGr, resolution, params):
+def casefun_SNR(LESIONDATAr, LESIONr, BGr, resolution, params):
     ROIdata = LESIONDATAr[LESIONr[0] > 0]
-    WGdata = LESIONDATAr[WGr > 0]
+    BGdata = LESIONDATAr[BGr > 0]
 
     mean = np.mean(ROIdata)
     median = np.median(ROIdata)
@@ -2287,14 +2282,14 @@ def casefun_SNR(LESIONDATAr, LESIONr, WGr, resolution, params):
     SD = np.std(ROIdata)
     IQrange = iqr(ROIdata)
 
-    wmean = np.mean(WGdata)
-    wmedian = np.median(WGdata)
-    wp25 = np.percentile(WGdata, 25)
-    wp75 = np.percentile(WGdata, 75)
-    wskewness = scipy.stats.skew(WGdata)
-    wkurtosis = scipy.stats.kurtosis(WGdata)
-    wSD = np.std(WGdata)
-    wIQrange = iqr(WGdata)
+    wmean = np.mean(BGdata)
+    wmedian = np.median(BGdata)
+    wp25 = np.percentile(BGdata, 25)
+    wp75 = np.percentile(BGdata, 75)
+    wskewness = scipy.stats.skew(BGdata)
+    wkurtosis = scipy.stats.kurtosis(BGdata)
+    wSD = np.std(BGdata)
+    wIQrange = iqr(BGdata)
 
     results = []
     results.append(mean)
@@ -2337,16 +2332,16 @@ is considered
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
-@param WGr: background mask
+@param BGr: background mask
 @param resolution: data resolution in mm [x,y,z]
 @param amount: coefficient for thresholding of KDE distribution
 @returns:
   ROIdata: ROI data
-  WGdata: background data
+  BGdata: background data
 """
 
 
-def Moment2_fun_KDE(LESIONDATAr, LESIONr, WGr, resolution, amount):
+def Moment2_fun_KDE(LESIONDATAr, LESIONr, BGr, resolution, amount):
     KDEregion_all = np.zeros_like(LESIONr[0])
     for z in range(LESIONr[0].shape[2]):
         eroded = LESIONr[0][:, :, z]
@@ -2388,9 +2383,9 @@ def Moment2_fun_KDE(LESIONDATAr, LESIONr, WGr, resolution, amount):
                 KDEregion[centroid_xyz[0][c_i], centroid_xyz[1][c_i]] = 1
         KDEregion_all[:, :, z] = KDEregion
     ROIdata = LESIONDATAr[KDEregion_all > 0]
-    WGr[KDEregion_all > 0] = 0
-    WGdata = LESIONDATAr[WGr > 0]
-    return ROIdata, WGdata
+    BGr[KDEregion_all > 0] = 0
+    BGdata = LESIONDATAr[BGr > 0]
+    return ROIdata, BGdata
 
 
 """
@@ -2398,22 +2393,22 @@ Statistical descriptors for background region
 
 @param LESIONDATAr: Intensity data
 @param LESIONr: Lesion mask
-@param WGr: Background region mask
+@param BGr: Background region mask
 @param resolution: data resolution in mm [x,y,z]
 @returns: Please see casefun_01_moments2_name_generator, 
 """
 
 
-def casefun_01_Moments2(LESIONDATAr, LESIONr, WGr, resolution, params):
-    # eroded, u1, u2 = operations3D.fun_voxelwise_erodeLesion_voxels_3Dmesh(LESIONr[0], WGr, LESIONDATAr, resolution, amount)
-    # LESIONr[0][WGr == 0] = 0
+def casefun_01_Moments2(LESIONDATAr, LESIONr, BGr, resolution, params):
+    # eroded, u1, u2 = operations3D.fun_voxelwise_erodeLesion_voxels_3Dmesh(LESIONr[0], BGr, LESIONDATAr, resolution, amount)
+    # LESIONr[0][BGr == 0] = 0
     # resolve slice with largest volume
     if params[1] == 'largest_slice':
-        ROIdata, WGdata = Moment2_fun_largest_slice(LESIONDATAr, LESIONr, WGr, resolution, params[0])
+        ROIdata, BGdata = Moment2_fun_largest_slice(LESIONDATAr, LESIONr, BGr, resolution, params[0])
     elif params[1] == 'largest_sliceKDE':
-        ROIdata, WGdata = Moment2_fun_largest_sliceKDE(LESIONDATAr, LESIONr, WGr, resolution, params[0])
+        ROIdata, BGdata = Moment2_fun_largest_sliceKDE(LESIONDATAr, LESIONr, BGr, resolution, params[0])
     elif params[1] == 'Moment2_fun_KDE':
-        ROIdata, WGdata = Moment2_fun_KDE(LESIONDATAr, LESIONr, WGr, resolution, params[0])
+        ROIdata, BGdata = Moment2_fun_KDE(LESIONDATAr, LESIONr, BGr, resolution, params[0])
     else:
         raise Exception('Moments 2 measurement method was not found:' + params[1])
 
@@ -2427,48 +2422,48 @@ def casefun_01_Moments2(LESIONDATAr, LESIONr, WGr, resolution, params):
     kurtosis = scipy.stats.kurtosis(ROIdata)
     SD = np.std(ROIdata)
     IQR = iqr(ROIdata)
-    wmean = np.mean(WGdata)
-    wmedian = np.median(WGdata)
-    if len(WGdata) == 0:
-        WGdata = [0]
-    wp25 = np.percentile(WGdata, 25)
-    print(WGdata)
-    wp75 = np.percentile(WGdata, 75)
-    wskewness = scipy.stats.skew(WGdata)
-    wkurtosis = scipy.stats.kurtosis(WGdata)
-    wSD = np.std(WGdata)
-    wIQrange = iqr(WGdata)
+    wmean = np.mean(BGdata)
+    wmedian = np.median(BGdata)
+    if len(BGdata) == 0:
+        BGdata = [0]
+    wp25 = np.percentile(BGdata, 25)
+    print(BGdata)
+    wp75 = np.percentile(BGdata, 75)
+    wskewness = scipy.stats.skew(BGdata)
+    wkurtosis = scipy.stats.kurtosis(BGdata)
+    wSD = np.std(BGdata)
+    wIQrange = iqr(BGdata)
     if mean == 0:
-        relWGmean = 0
+        relBGmean = 0
     else:
-        relWGmean = mean / (mean + np.mean(WGdata))
+        relBGmean = mean / (mean + np.mean(BGdata))
     if median == 0:
-        relWGmedian = 0
+        relBGmedian = 0
     else:
-        relWGmedian = median / (median + np.median(WGdata))
+        relBGmedian = median / (median + np.median(BGdata))
     if p25 == 0:
-        relWG25percentile = 0
+        relBG25percentile = 0
     else:
-        relWG25percentile = p25 / (p25 + np.percentile(WGdata, 25))
+        relBG25percentile = p25 / (p25 + np.percentile(BGdata, 25))
     if p75 == 0:
-        relWG75percentile = 0
+        relBG75percentile = 0
     else:
-        relWG75percentile = p75 / (p75 + np.percentile(WGdata, 75))
+        relBG75percentile = p75 / (p75 + np.percentile(BGdata, 75))
     if skewness == 0:
-        relWGskewness = 0
+        relBGskewness = 0
     else:
-        relWGskewness = skewness / (skewness + scipy.stats.skew(WGdata))
+        relBGskewness = skewness / (skewness + scipy.stats.skew(BGdata))
     if kurtosis == 0:
-        relWGkurtosis = 0
+        relBGkurtosis = 0
     else:
-        relWGkurtosis = kurtosis / (kurtosis + scipy.stats.kurtosis(WGdata))
+        relBGkurtosis = kurtosis / (kurtosis + scipy.stats.kurtosis(BGdata))
     if SD == 0:
-        relWGSD = 0
+        relBGSD = 0
     else:
-        relWGSD = SD / (SD + np.std(WGdata))
+        relBGSD = SD / (SD + np.std(BGdata))
     if IQR == 0:
-        WGIQR = 0
+        BGIQR = 0
     else:
-        WGIQR = IQR / (IQR + iqr(WGdata))
+        BGIQR = IQR / (IQR + iqr(BGdata))
 
-    return mean, median, p25, p75, skewness, kurtosis, SD, IQR, relWGmean, relWGmedian, relWG25percentile, relWG75percentile, relWGskewness, relWGkurtosis, relWGSD, WGIQR
+    return mean, median, p25, p75, skewness, kurtosis, SD, IQR, relBGmean, relBGmedian, relBG25percentile, relBG75percentile, relBGskewness, relBGkurtosis, relBGSD, BGIQR

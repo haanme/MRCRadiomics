@@ -89,16 +89,16 @@ Adds definitions of 3D Laws features, for whole organ
 """
 
 
-def add_Laws3D_WG(method, datafuns, prefix):
+def add_Laws3D_BG(method, datafuns, prefix):
     if method is None:
-        datafuns.append('WGLaws3D')
-    if method == 'WGLaws3D':
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_Laws_WG,
-                         textures_3D.casefun_3D_Laws_names_generator_WG, False, True, [0.5]))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_Laws_WG,
-                         textures_3D.casefun_3D_Laws_names_generator_WG, False, True, [1.0]))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_Laws_WG,
-                         textures_3D.casefun_3D_Laws_names_generator_WG, False, True, [2.0]))
+        datafuns.append('BGLaws3D')
+    if method == 'BGLaws3D':
+        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_Laws_BG,
+                         textures_3D.casefun_3D_Laws_names_generator_BG, False, True, [0.5]))
+        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_Laws_BG,
+                         textures_3D.casefun_3D_Laws_names_generator_BG, False, True, [1.0]))
+        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_Laws_BG,
+                         textures_3D.casefun_3D_Laws_names_generator_BG, False, True, [2.0]))
     return datafuns
 
 
@@ -300,8 +300,8 @@ Adds definitions of 2D corner edge detector features, for whole organ
 
 def add_bg_edges_corners2D3D(method, datafuns, prefix):
     if method is None:
-        datafuns.append('WGEdgesCorners2D3D')
-    if method == 'WGEdgesCorners2D3D':
+        datafuns.append('BGEdgesCorners2D3D')
+    if method == 'BGEdgesCorners2D3D':
         """
         blockSize (mm) - Neighborhood size (see the details on cornerEigenValsAndVecs()) 
                          will be truncated so closest effective voxels
@@ -309,13 +309,13 @@ def add_bg_edges_corners2D3D(method, datafuns, prefix):
                          Size of the extended Sobel kernel; it must be 1, 3, 5, or 7
         k              - Harris-Stephens detector free parameter.
         """
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Harris_WG,
-                         textures_2D.casefun_3D_2D_Harris_name_generator_WG, False, True, [2, 1, 0.01]))
+        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Harris_BG,
+                         textures_2D.casefun_3D_2D_Harris_name_generator_BG, False, True, [2, 1, 0.01]))
         # maxCorners (int) Maximum number of corners to return. If there are more corners than are found, the strongest of them is returned.
         # qualityLevel (%) Parameter characterizing the minimal accepted quality of image corners. The parameter value is multiplied by the best corner quality measure, which is the minimal eigenvalue (see cornerMinEigenVal() ) or the Harris function response (see cornerHarris() ). The corners with the quality measure less than the product are rejected. For example, if the best corner has the quality measure = 1500, and the qualityLevel=0.01 , then all the corners with the quality measure less than 15 are rejected.
         # minDistance (mm) Minimum possible Euclidean distance between the returned corners.
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Hessian_objectprops_WG,
-                         textures_2D.casefun_3D_2D_Hessian_objectprops_name_generator_WG, False, True, [0.025, 15]))
+        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Hessian_objectprops_BG,
+                         textures_2D.casefun_3D_2D_Hessian_objectprops_name_generator_BG, False, True, [0.025, 15]))
     return datafuns
 
 
@@ -372,16 +372,16 @@ Adds definitions of shape, topology, and surface intensity features, for whole o
 """
 
 
-def add_WGShapes(method, datafuns, prefix):
+def add_BGShapes(method, datafuns, prefix):
     if method is None:
-        datafuns.append('WGShapes')
-    if method == 'WGShapes':
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_shape_WG,
-                         textures_3D.casefun_3D_shape_names_WG, False, True, []))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_surface_textures_WG,
-                         textures_3D.casefun_3D_surface_textures_names_WG, False, True, []))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_GLCM_WG,
-                         textures_3D.casefun_3D_GLCM_names_WG, False, True, []))
+        datafuns.append('BGShapes')
+    if method == 'BGShapes':
+        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_shape_BG,
+                         textures_3D.casefun_3D_shape_names_BG, False, True, []))
+        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_surface_textures_BG,
+                         textures_3D.casefun_3D_surface_textures_names_BG, False, True, []))
+        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_GLCM_BG,
+                         textures_3D.casefun_3D_GLCM_names_BG, False, True, []))
     return datafuns
 
 
@@ -394,12 +394,12 @@ Adds definitions of 1st order statistics, for whole organ
 """
 
 
-def add_WGMoments(method, datafuns, prefix):
+def add_BGMoments(method, datafuns, prefix):
     if method is None:
-        datafuns.append('WGMoments')
-    if method == 'WGMoments':
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_01_moments_WG,
-                         textures_3D.casefun_01_moments_WG_names, False, True, []))
+        datafuns.append('BGMoments')
+    if method == 'BGMoments':
+        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_01_moments_BG,
+                         textures_3D.casefun_01_moments_BG_names, False, True, []))
     return datafuns
 
 
@@ -412,12 +412,12 @@ Adds definitions of 1st order statistics, for whole organ / lesion relative valu
 """
 
 
-def add_relativeWGMoments(method, datafuns, prefix):
+def add_relativeBGMoments(method, datafuns, prefix):
     if method is None:
-        datafuns.append('relativeWGMoments')
-    if method == 'relativeWGMoments':
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_01_moments_relativeWG,
-                         textures_3D.casefun_01_moments_relativeWG_names, True, True, []))
+        datafuns.append('relativeBGMoments')
+    if method == 'relativeBGMoments':
+        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_01_moments_relativeBG,
+                         textures_3D.casefun_01_moments_relativeBG_names, True, True, []))
     return datafuns
 
 
@@ -494,12 +494,12 @@ with other features.
 """
 
 
-def add_FFT2DWG(method, datafuns, prefix):
+def add_FFT2DBG(method, datafuns, prefix):
     if method is None:
-        datafuns.append('WGFFT2D')
-    if method == 'WGFFT2D':
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_FFT2D_WG,
-                         textures_2D.casefun_3D_2D_FFT2D_names_generator_WG, False, True, [1.0, 1.0, 5.0, 5.0]))
+        datafuns.append('BGFFT2D')
+    if method == 'BGFFT2D':
+        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_FFT2D_BG,
+                         textures_2D.casefun_3D_2D_FFT2D_names_generator_BG, False, True, [1.0, 1.0, 5.0, 5.0]))
     return datafuns
 
 
@@ -518,13 +518,13 @@ Test image dimensions for consistency
 def test_dimensions(data, bg_mask, lesionmask_list, fid_logfile, dim_i):
     mismatch = False
     if (bg_mask is not None) and (not data.shape[dim_i] == bg_mask.shape[dim_i]):
-        print('Data %d and WG mask %d x dimension mismatch\n' % (data.shape[dim_i], bg_mask.shape[dim_i]))
-        fid_logfile.write('Data %d and WG mask %d x dimension mismatch\n' % (data.shape[dim_i], bg_mask.shape[dim_i]))
+        print('Data %d and BG mask %d x dimension mismatch\n' % (data.shape[dim_i], bg_mask.shape[dim_i]))
+        fid_logfile.write('Data %d and BG mask %d x dimension mismatch\n' % (data.shape[dim_i], bg_mask.shape[dim_i]))
         mismatch = True
     if (lesionmask_list[0] is not None) and (not data.shape[dim_i] == lesionmask_list[0].shape[dim_i]):
-        print('Data %d and WG mask %d x dimension mismatch\n' % (data.shape[dim_i], lesionmask_list[0].shape[dim_i]))
+        print('Data %d and BG mask %d x dimension mismatch\n' % (data.shape[dim_i], lesionmask_list[0].shape[dim_i]))
         fid_logfile.write(
-            'Data %d and WG mask %d x dimension mismatch\n' % (data.shape[dim_i], lesionmask_list[0].shape[dim_i]))
+            'Data %d and BG mask %d x dimension mismatch\n' % (data.shape[dim_i], lesionmask_list[0].shape[dim_i]))
         mismatch = True
     return mismatch
 
@@ -541,11 +541,11 @@ Creates settings array for feature extraction
 def resolve_datafuns(method, modality):
     datafuns = []
     datafuns = add_FFT2D(method, datafuns, modality)
-    datafuns = add_FFT2DWG(method, datafuns, modality)
+    datafuns = add_FFT2DBG(method, datafuns, modality)
     datafuns = add_Laws(method, datafuns, modality)
     datafuns = add_Laws3D_ADC(method, datafuns, modality)
     datafuns = add_Laws3D(method, datafuns, modality)
-    datafuns = add_Laws3D_WG(method, datafuns, modality)
+    datafuns = add_Laws3D_BG(method, datafuns, modality)
     datafuns = add_edges_corners2D3D(method, datafuns, modality)
     datafuns = add_bg_edges_corners2D3D(method, datafuns, modality)
     datafuns = add_Gabor(method, datafuns, modality)
@@ -553,10 +553,10 @@ def resolve_datafuns(method, modality):
     datafuns = add_Hu(method, datafuns, modality)
     datafuns = add_moments(method, datafuns, modality)
     datafuns = add_shapes(method, datafuns, modality)
-    datafuns = add_WGShapes(method, datafuns, modality)
-    datafuns = add_relativeWGMoments(method, datafuns, modality)
+    datafuns = add_BGShapes(method, datafuns, modality)
+    datafuns = add_relativeBGMoments(method, datafuns, modality)
     datafuns = add_Moments2(method, datafuns, modality)
-    datafuns = add_WGMoments(method, datafuns, modality)
+    datafuns = add_BGMoments(method, datafuns, modality)
     datafuns = add_Zernike(method, datafuns, modality)
     datafuns = add_Wavelet(method, datafuns, modality)
     datafuns = add_SignalToNoiseRatios(method, datafuns, modality)
@@ -685,6 +685,7 @@ if __name__ == "__main__":
         if len(datafun) > 7 and type(datafun[4]) is list:
             feature_names = datafun[4]
         elif len(datafun) > 7:
+            print(datafun)
             feature_names = datafun[4](datafun[7])
         else:
             feature_names = datafun[4]
@@ -730,7 +731,7 @@ if __name__ == "__main__":
         else:
             LS_data, LS_affine, LS_voxelsize = [None, None, None]
         LESIONmasks = [LS_data, LS_data]
-        WGr = PM_data
+        BGr = PM_data
 
         # Process all feature extraction function in settings
         write_missing = True
@@ -767,9 +768,9 @@ if __name__ == "__main__":
             LESIONDATAr = DATA1_data
 
             # Verify ROI vs data dimensions match
-            if test_dimensions(DATA1_data, WGr, LESIONmasks, Nlog, 0) or test_dimensions(DATA1_data, WGr, LESIONmasks,
+            if test_dimensions(DATA1_data, BGr, LESIONmasks, Nlog, 0) or test_dimensions(DATA1_data, BGr, LESIONmasks,
                                                                                          Nlog, 1) or test_dimensions(
-                    DATA1_data, WGr, LESIONmasks, Nlog, 2):
+                    DATA1_data, BGr, LESIONmasks, Nlog, 2):
                 Nlog.write('Dimension errors found for case ' + case + '\n')
                 continue
 
@@ -797,9 +798,9 @@ if __name__ == "__main__":
                         datafun_names[datafun_i][7].append(
                             {'write_visualization': outputpath + os.sep + 'visualizations', 'name': case})
                         datafun_params = datafun_names[datafun_i][7]
-                        casefun_vals = casefun(LESIONDATAr, copy.deepcopy(LESIONmasks), WGr, resolution, datafun_params)
+                        casefun_vals = casefun(LESIONDATAr, copy.deepcopy(LESIONmasks), BGr, resolution, datafun_params)
                     else:
-                        casefun_vals = casefun(LESIONDATAr, copy.deepcopy(LESIONmasks), WGr, resolution,
+                        casefun_vals = casefun(LESIONDATAr, copy.deepcopy(LESIONmasks), BGr, resolution,
                                                datafun_names[datafun_i][7])
             # Handling for features not having specific parameters
             else:
@@ -812,7 +813,7 @@ if __name__ == "__main__":
                         datafun_names[datafun_i][7].append(
                             {'write_visualization': outputpath + os.sep + 'visualizations', 'name': case})
                     datafun_params = datafun_names[datafun_i][7]
-                    casefun_vals = casefun(LESIONDATAr, copy.deepcopy(LESIONmasks), WGr, resolution, datafun_params)
+                    casefun_vals = casefun(LESIONDATAr, copy.deepcopy(LESIONmasks), BGr, resolution, datafun_params)
 
             # Write output numbers to file if they were produced by the feature extraction function
             if casefun_vals is None:
