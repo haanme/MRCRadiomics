@@ -1,59 +1,7 @@
 #!/usr/bin/env python
 
-import os
-import copy
-import skimage
 import cv2
 import numpy as np
-import nibabel as nib
-from glob import glob
-import sklearn.metrics
-import DicomIO_G as dcm
-from dipy.align.reslice import reslice
-from sklearn.metrics import confusion_matrix
-import csv
-from GleasonScore import GS
-from scipy import ndimage
-from scipy.signal import correlate
-from scipy.signal import correlate2d
-import scipy.ndimage
-import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-import pymesh
-import skimage
-from skimage import measure
-import trimesh
-import sys
-from scipy import stats
-import subprocess
-from plyfile import PlyData, PlyElement
-import cv2
-from skimage import measure
-from skimage.segmentation import active_contour
-from scipy.interpolate import UnivariateSpline
-import numpy as np
-from scipy import ndimage
-from skimage.morphology import convex_hull_image
-from skimage.feature import local_binary_pattern
-from skimage import feature
-from skimage.measure import regionprops
-from scipy import ndimage
-from scipy.stats import iqr
-from scipy.signal import argrelextrema
-from skimage.morphology import watershed, disk
-from skimage import data
-from skimage.filters import rank
-from skimage.filters import scharr
-from skimage.util import img_as_ubyte
-from skimage.feature import peak_local_max
-import step6_calculate_AUCs_utilities as step6utils
-from skimage.filters import frangi, hessian
-from scipy.fftpack import rfft, irfft, fftfreq
-from scipy.ndimage.filters import gaussian_filter
-from scipy.interpolate import UnivariateSpline
-import scipy.fftpack as fp
-import pywt
 try:
     from skimage import filters
 except ImportError:
@@ -66,7 +14,6 @@ except NameError:
 # Directory where result data are located
 experiment_dir = ''
 stat_funs = []
-dcmio = dcm.DicomIO()
 seg36_base_segnames = ['2a', '2p', '13asr', '13asl', '1a', '1ap', '1p', '7a', '7ap', '7p', '8a', '8p']
 seg36_mid_segnames = ['4a', '4p', '14asr', '14asl', '3a', '3ap', '3p', '9a', '9ap', '9p', '10a', '10p']
 seg36_apex_segnames = ['6a', '6p', '5a', '5ap', '5p', '15asr', '15asl', '11a', '11ap', '11p', '12a', '12p']

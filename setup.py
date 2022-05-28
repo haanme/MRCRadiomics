@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(
-    name='ProstateFeatures',
+    name='MRCRadiomics',
     version='1.1.0',
     packages=[''],
     url='https://github.com/haanme/ProstateFeatures',
