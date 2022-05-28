@@ -9,7 +9,7 @@ Merisaari, H, Taimen, P, Shiradkar, R, et al. Repeatability of radiomics and mac
 
 For further information about the project, please see related ISMRM 2019 abstract:
 
-H Merisaari, R Shiradkar, Ji Toivonen, A Hiremath, M Khorrami, IM Perez, T Pahikkala, P Taimen, J Verho, PJ Boström, H Aronen, A Madabhushi, I Jambor, Repeatability of radiomics features for prostate cancer diffusion weighted imaging obtained using b-values up to 2000 s/mm2, 27th Annual Meeting & Exhibition ISMRM, May 11-16 2019, Montréal, QC, Canada, #7461
+H Merisaari, R Shiradkar, J Toivonen, A Hiremath, M Khorrami, IM Perez, T Pahikkala, P Taimen, J Verho, PJ Boström, H Aronen, A Madabhushi, I Jambor, Repeatability of radiomics features for prostate cancer diffusion weighted imaging obtained using b-values up to 2000 s/mm2, 27th Annual Meeting & Exhibition ISMRM, May 11-16 2019, Montréal, QC, Canada, #7461
 ![Merisaari_4472_Teaser](https://user-images.githubusercontent.com/8802462/170784539-047493e0-ece7-4490-8522-7b4191ea983a.jpg)
 
 Required packages with installation instructions:
