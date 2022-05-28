@@ -25,6 +25,7 @@ modality=$2
 # Folder where results are saved
 experiment_dir=$3
 method=$4
+voxelsize=$5
 if [[ ! -f "$selectionfile" ]]
 then
     echo "Namelist file does not exist, creating it"
@@ -44,7 +45,7 @@ for (( round=1; round<=$no_folders; round++ ))
 do
     subjectname=$(sed -n "$round"p $selectionfile | awk '{print $1}')
     #process patient with python script
-    xtermcmd=$(echo python MRCRadiomics.py --modality $modality --method $method --input $experiment_dir --output '../../features_'$modality --case $subjectname --voxelsize [0.4771,0.4771,2.75])
+    xtermcmd=$(echo python MRCRadiomics.py --modality $modality --method $method --input $experiment_dir --output '../../features_'$modality --case $subjectname --voxelsize $voxelsize)
     echo $(date +"%d/%m/%Y %H:%M:%S")':'$(whoami)':'$0':'$xtermcmd >> $experiment_dir'/QC/'$subjectname'.log'
     echo $xtermcmd
     ret=$(eval $xtermcmd)

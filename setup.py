@@ -8,7 +8,7 @@ setup(
     license='LGPL 3.0',
     author='Harri Merisaari',
     author_email='haanme@utu.fi',
-    description='MRC Radiomic feature extraction package'
+    description='MRC Radiomic feature extraction package',
     install_requires=[
         'dipy',
         'csv',

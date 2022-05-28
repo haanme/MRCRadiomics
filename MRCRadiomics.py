@@ -333,7 +333,7 @@ def add_moments(method, datafuns, prefix):
         datafuns.append('Moments')
     if method == 'Moments':
         datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_01_moments,
-                         textures_3D.casefun_01_moments_names, True, False, []))
+                         textures_3D.casefun_01_moments_names, True, False))
     return datafuns
 
 
@@ -577,20 +577,19 @@ def resolve_found_cases(destination_path, modality, method):
     featurefile_header_found = False
     featurefile_cases_found = []
     print(modality)
-    if modality == 'DWI':
-        featurefile = destination_path + os.sep + 'MRC_features4D_' + modality + '_' + method + '.txt'
-    else:
-        featurefile = destination_path + os.sep + 'MRC_features_' + modality + '_' + method + '.txt'
+    featurefile = destination_path + os.sep + 'MRCRadiomics_features_' + modality + '_' + method + '.txt'
     featurefile_EOL_found = False
     if os.path.exists(featurefile):
         print('Reading feature file ' + featurefile)
         f = open(featurefile, 'r')
         for line in f.readlines():
-            if 'case' in line.strip():
+            if 'case' in line.strip() and 'ROI' in line.strip() and 'background_ROI' in line.strip():
                 featurefile_header_found = True
             else:
                 case_id = line.split('\t')[0]
-                featurefile_cases_found.append(case_id)
+                ROI_id = line.split('\t')[1]
+                BG_id = line.split('\t')[2]
+                featurefile_cases_found.append((case_id, ROI_id, BG_id))
             if line[-1] == '\n':
                 featurefile_EOL_found = True
             else:
@@ -630,8 +629,8 @@ if __name__ == "__main__":
     parser.add_argument("--case", dest="case", help="case number", required=False, default='')
     parser.add_argument("--voxelsize", dest="voxelsize", help="voxelsize in: '[x,y,z]'", required=False, default='')
     parser.add_argument("--create_visualization", dest="create_visualization", help="1 for extra visualization/debug data if feature is supporting it", required=False, default='')
-    parser.add_argument("--BGname", dest="BGname", help="Background mask Nifti filename", required=False, default='BG')
-    parser.add_argument("--LSname", dest="LSname", help="Lesion (i e foreground) mask Nifti filename", required=False, default='LS')
+    parser.add_argument("--BGname", dest="BGname", help="Background mask Nifti filename", required=False, default='N/A')
+    parser.add_argument("--LSname", dest="LSname", help="Lesion (i e foreground) mask Nifti filename", required=False, default='N/A')
     args = parser.parse_args()
     modalityname = args.modality
     methodname = args.method
@@ -640,6 +639,10 @@ if __name__ == "__main__":
     required_case = args.case
     BGname = args.BGname
     LSname = args.LSname
+    if(BGname == 'N/A' and LSname == 'N/A'):
+        print('Either of LSname or BGname must be given')
+        sys.exit(1)
+
     create_visualization = args.create_visualization
     if len(create_visualization) > 0:
         create_visualization = True
@@ -668,7 +671,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Open log file
-    Nlog = open(outputpath + os.sep + 'MRC_features_' + modalityname + '_' + methodname + '_log.txt', 'w')
+    Nlog = open(outputpath + os.sep + 'MRCRadiomics_features_' + modalityname + '_' + methodname + '_log.txt', 'w')
 
     # Resolve existing output values in the output file
     N_filename, cases_found, header_found, EOL_found = resolve_found_cases(outputpath, modalityname, methodname)
@@ -678,17 +681,18 @@ if __name__ == "__main__":
     # Write header if it was not found from the file yet
     if not header_found:
         fout = open(N_filename, 'w')
-        fout.write('case')
+        fout.write('case\tROI\tbackground_ROI')
     else:
         fout = open(N_filename, 'a')
     for datafun in datafun_names:
-        if len(datafun) > 7 and type(datafun[4]) is list:
+        if type(datafun[4]) is list:
             feature_names = datafun[4]
-        elif len(datafun) > 7:
-            print(datafun)
+        elif type(datafun[4]) is tuple:
+            feature_names = datafun[4]
+        elif len(datafun) > 7 and callable(datafun[4]):
             feature_names = datafun[4](datafun[7])
         else:
-            feature_names = datafun[4]
+            feature_names = datafun[4]()
         if not header_found:
             for name in feature_names:
                 fout.write('\t%s' % (datafun[1] + '_' + name))
@@ -716,7 +720,8 @@ if __name__ == "__main__":
             continue
         if len(required_case) > 0 and not case == required_case and not case.split('_')[0] == required_case:
             continue
-        if case in cases_found:
+        print(cases_found)
+        if (case.strip(), LSname.strip('.nii'), BGname.strip('.nii')) in cases_found:
             print('SKIP: case ' + case + ' already found')
             continue
         runs = runs + 1
@@ -786,7 +791,7 @@ if __name__ == "__main__":
             casefun = datafun_names[datafun_i][3]
             # Special handling for feature having specific input parameters
             if len(datafun_names[datafun_i]) > 7:
-                if type(datafun_names[datafun_i][4]) is list:
+                if type(datafun_names[datafun_i][4]) is list or type(datafun_names[datafun_i][4]) is tuple:
                     casefun_names = datafun_names[datafun_i][4]
                 else:
                     casefun_names = datafun_names[datafun_i][4](datafun_names[datafun_i][7])
@@ -800,8 +805,7 @@ if __name__ == "__main__":
                         datafun_params = datafun_names[datafun_i][7]
                         casefun_vals = casefun(LESIONDATAr, copy.deepcopy(LESIONmasks), BGr, resolution, datafun_params)
                     else:
-                        casefun_vals = casefun(LESIONDATAr, copy.deepcopy(LESIONmasks), BGr, resolution,
-                                               datafun_names[datafun_i][7])
+                        casefun_vals = casefun(LESIONDATAr, copy.deepcopy(LESIONmasks), BGr, resolution, datafun_names[datafun_i][7])
             # Handling for features not having specific parameters
             else:
                 casefun_names = datafun_names[datafun_i][4]
@@ -809,11 +813,7 @@ if __name__ == "__main__":
                     print('NULL DATA' + str((np.max(LESIONDATAr) == 0, np.max(LESIONmasks[0]) == 0)))
                     casefun_vals = [float('nan') for x in casefun_names]
                 else:
-                    if create_visualization:
-                        datafun_names[datafun_i][7].append(
-                            {'write_visualization': outputpath + os.sep + 'visualizations', 'name': case})
-                    datafun_params = datafun_names[datafun_i][7]
-                    casefun_vals = casefun(LESIONDATAr, copy.deepcopy(LESIONmasks), BGr, resolution, datafun_params)
+                    casefun_vals = casefun(LESIONDATAr, copy.deepcopy(LESIONmasks), BGr, resolution)
 
             # Write output numbers to file if they were produced by the feature extraction function
             if casefun_vals is None:
@@ -826,7 +826,7 @@ if __name__ == "__main__":
             if (not create_visualization) and (len(casefun_vals) > 0 and write_case):
                 if not EOL_found:
                     fout.write('\n')
-                fout.write('%s' % case.strip())
+                fout.write('%s\t%s\t%s' % (case.strip(), LSname.strip('.nii'), BGname.strip('.nii')))
                 write_case = False
             for val in casefun_vals:
                 fout.write('\t%10.9f' % val)

@@ -1371,6 +1371,7 @@ def casefun_3D_2D_ShiTomasi_name_generator(params):
 
 
 def casefun_3D_2D_ShiTomasi(LESIONDATAr, LESIONr, BG_roi, resolution, params):
+    print('casefun_3D_2D_ShiTomasi')
     maxCorners = params[0]
     qualityLevel = params[1]
     minDistance = params[2] / np.mean([resolution[0], resolution[1]])
@@ -1667,17 +1668,25 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, BG_roi, resolution, fun2D, p
             BGdensity.append(np.mean([kernel[0, 0], kernel[1, 1]]))
 
     ret = []
-    meanarea = np.mean(area)
-    ret.append(meanarea)
-    ret.append(np.median(area))
-    ret.append(np.std(area))
-    ret.append(iqr(area))
-    # print((fun2D,'meanarea',meanarea, area, blobs,eccentricity))
+    if len(area) > 0:
+        meanarea = np.mean(area)
+        ret.append(meanarea)
+        ret.append(np.median(area))
+        ret.append(np.std(area))
+        ret.append(iqr(area))
+    else:
+        meanarea = 0.0
+        ret.append(meanarea)
+        ret.append(0.0)
+        ret.append(float('NaN'))
+        ret.append(float('NaN'))
     if meanarea == 0:
         ret.append(0)
     else:
-        ret.append(meanarea / (meanarea + np.mean(BGarea)))
-
+        if len(BGarea) > 0:
+            ret.append(meanarea / (meanarea + np.mean(BGarea)))
+        else:
+            ret.append(1.0)
     if (len(eccentricity) == 0):
         meaneccentricity = 0
         ret.append(0)
@@ -1693,8 +1702,10 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, BG_roi, resolution, fun2D, p
     if meaneccentricity == 0:
         ret.append(0)
     else:
-        ret.append(meaneccentricity / (meaneccentricity + np.mean(BGeccentricity)))
-
+        if len(BGeccentricity) > 0:
+            ret.append(meaneccentricity / (meaneccentricity + np.mean(BGeccentricity)))
+        else:
+            ret.append(1)
     if (len(major_axis_length) == 0):
         meanmajor_axis_length = 0
         ret.append(meanmajor_axis_length)
@@ -1710,8 +1721,10 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, BG_roi, resolution, fun2D, p
     if meanmajor_axis_length == 0:
         ret.append(0)
     else:
-        ret.append(meanmajor_axis_length / (meanmajor_axis_length + np.mean(BGmajor_axis_length)))
-
+        if len(BGmajor_axis_length) > 0:
+            ret.append(meanmajor_axis_length / (meanmajor_axis_length + np.mean(BGmajor_axis_length)))
+        else:
+            ret.append(1)
     if (len(minor_axis_length) == 0):
         meanminor_axis_length = 0
         ret.append(meanminor_axis_length)
@@ -1727,8 +1740,10 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, BG_roi, resolution, fun2D, p
     if meanminor_axis_length == 0:
         ret.append(0)
     else:
-        ret.append(meanminor_axis_length / (meanminor_axis_length + np.mean(BGminor_axis_length)))
-
+        if len(BGminor_axis_length) > 0:
+            ret.append(meanminor_axis_length / (meanminor_axis_length + np.mean(BGminor_axis_length)))
+        else:
+            ret.append(1)
     if (len(mean_intensity) == 0):
         mean_mean_intensity = 0
         ret.append(mean_mean_intensity)
@@ -1744,8 +1759,10 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, BG_roi, resolution, fun2D, p
     if mean_mean_intensity == 0:
         ret.append(0)
     else:
-        ret.append(mean_mean_intensity / (mean_mean_intensity + np.mean(BGmean_intensity)))
-
+        if len(BGmean_intensity) > 0:
+            ret.append(mean_mean_intensity / (mean_mean_intensity + np.mean(BGmean_intensity)))
+        else:
+            ret.append(1)
     if (len(orientation) == 0):
         ret.append(0)
         ret.append(0)
@@ -1755,8 +1772,10 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, BG_roi, resolution, fun2D, p
         ret.append(np.std(orientation))
         ret.append(iqr(orientation))
         meanorientation = np.mean(orientation)
-        ret.append(meanorientation / (meanorientation + np.mean(BGorientation)))
-
+        if len(BGorientation) > 0:
+            ret.append(meanorientation / (meanorientation + np.mean(BGorientation)))
+        else:
+            ret.append(1)
     if (len(perimeter) == 0):
         meanperimeter = 0
         ret.append(0)
@@ -1772,8 +1791,10 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, BG_roi, resolution, fun2D, p
     if meanperimeter == 0:
         ret.append(0)
     else:
-        ret.append(meanperimeter / (meanperimeter + np.mean(BGperimeter)))
-
+        if len(BGperimeter) > 0:
+            ret.append(meanperimeter / (meanperimeter + np.mean(BGperimeter)))
+        else:
+            ret.append(1)
     if len(density) == 0:
         ret.append(0)
         ret.append(0)
@@ -1785,18 +1806,16 @@ def casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, BG_roi, resolution, fun2D, p
         ret.append(meandensity)
         ret.append(np.median(density))
         # print(np.median(density))
-        if len(BGdensity) == 0:
-            ret.append(0)
-        else:
+        if len(BGdensity) > 0:
             ret.append(meandensity / (meandensity + np.mean(BGdensity)))
-
+        else:
+            ret.append(1)
     if blobs == 0:
         ret.append(0)
         ret.append(0)
     else:
         ret.append(blobs)
         ret.append(blobs / (blobs + BGblobs))
-
     return ret
 
 
@@ -1931,8 +1950,9 @@ def subfun_Frangi(slice2D, params):
     return frangi_bin
 
 
-def casefun_3D_2D_Frangi_objectprops(LESIONDATAr, LESIONr, BG_roi, resolution):
-    return casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, BG_roi, resolution, subfun_Frangi, [])
+def casefun_3D_2D_Frangi_objectprops(LESIONDATAr, LESIONr, BG_roi, resolution, params):
+    print('casefun_3D_2D_Frangi_objectprops')
+    return casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, BG_roi, resolution, subfun_Frangi, params)
 
 
 def casefun_3D_2D_Hessian_objectprops_name_generator(params):
@@ -1950,16 +1970,8 @@ def casefun_3D_2D_Hessian_objectprops_name_generator_BG(params):
 
 
 def subfun_Hessian(slice2D, params):
-    """
-    beta1 : float, optional
-        Frangi correction constant that adjusts the filter's
-        sensitivity to deviation from a blob-like structure.
-    beta2 : float, optional
-        Frangi correction constant that adjusts the filter's
-        sensitivity to areas of high variance/texture/structure.
-    """
     # Create binary edge image
-    edge_hessian = hessian(slice2D, beta1=params[0], beta2=params[1])
+    edge_hessian = hessian(slice2D, beta=params[0], gamma=params[1])
     val = filters.threshold_otsu(edge_hessian)
     hessian_bin = np.zeros_like(edge_hessian)
     hessian_bin[edge_hessian >= val] = 1
@@ -1967,6 +1979,7 @@ def subfun_Hessian(slice2D, params):
 
 
 def casefun_3D_2D_Hessian_objectprops(LESIONDATAr, LESIONr, BG_roi, resolution, params):
+    print('casefun_3D_2D_Hessian_objectprops')
     return casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, BG_roi, resolution, subfun_Hessian, params)
 
 
@@ -1985,8 +1998,9 @@ def subfun_Scharr(slice2D, params):
     return scharr_bin
 
 
-def casefun_3D_2D_Scharr_objectprops(LESIONDATAr, LESIONr, BG_roi, resolution):
-    return casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, BG_roi, resolution, subfun_Scharr, [])
+def casefun_3D_2D_Scharr_objectprops(LESIONDATAr, LESIONr, BG_roi, resolution, params):
+    print('casefun_3D_2D_Scharr_objectprops')
+    return casefun_3D_2D_objectprops(LESIONDATAr, LESIONr, BG_roi, resolution, subfun_Scharr, params)
 
 
 """
