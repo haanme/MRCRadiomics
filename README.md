@@ -13,16 +13,35 @@ H Merisaari, R Shiradkar, J Toivonen, A Hiremath, M Khorrami, IM Perez, T Pahikk
 ![Merisaari_4472_Teaser](https://user-images.githubusercontent.com/8802462/170784539-047493e0-ece7-4490-8522-7b4191ea983a.jpg)
 
 Required packages with installation instructions:
-- scipy: conda install -c anaconda scipy 
-- pyzernikemoment: pip install pyzernikemoment
-- numba (optional for GPU speed-up): conda install numba
-- skimage: conda install skimage
-- cv2: pip install opencv<br>
+- scipy image processing tools: 
+```bash
+install -c anaconda scipy 
+```
+- pyzernikemoment texture features:
+```bash
+pip install pyzernikemoment
+```
+- numba (optional for GPU speed-up): 
+```bash
+conda install numba
+```
+- skimage image processing tools: 
+```bash
+conda install skimage
+```
+- cv2 iamge processing tools: 
+```bash
+pip install opencv<br>
+```
 
 For Pyradiomics wrapper:
-- pyradiomics: pip install pyradiomics
-
+- pyradiomics:
+```bash
+pip install pyradiomics
+```
+```bash
 - SimpleITK: conda install -c simpleitk simpleitk
+```
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
