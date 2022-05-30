@@ -12,7 +12,7 @@ For further information about the project, please see related ISMRM 2019 abstrac
 H Merisaari, R Shiradkar, J Toivonen, A Hiremath, M Khorrami, IM Perez, T Pahikkala, P Taimen, J Verho, PJ Boström, H Aronen, A Madabhushi, I Jambor, Repeatability of radiomics features for prostate cancer diffusion weighted imaging obtained using b-values up to 2000 s/mm2, 27th Annual Meeting & Exhibition ISMRM, May 11-16 2019, Montréal, QC, Canada, #7461
 ![Merisaari_4472_Teaser](https://user-images.githubusercontent.com/8802462/170784539-047493e0-ece7-4490-8522-7b4191ea983a.jpg)
 
-Required packages with installation instructions:
+<b>Installation instructions</b>:
 - scipy image processing tools: 
 ```bash
 install -c anaconda scipy 
@@ -31,7 +31,7 @@ conda install skimage
 ```
 - cv2 iamge processing tools: 
 ```bash
-pip install opencv<br>
+pip install opencv
 ```
 
 For Pyradiomics wrapper:
@@ -39,21 +39,29 @@ For Pyradiomics wrapper:
 ```bash
 pip install pyradiomics
 ```
+- SimpleITK: 
 ```bash
-- SimpleITK: conda install -c simpleitk simpleitk
+conda install -c simpleitk simpleitk
 ```
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+<b>MRCRadiomics</b> package:
+1) Download and extract the repository
+2) Install with setup.py
+```bash
+python setup.py install
+```
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-    
-    (c) Harri Merisaari 2018-2021
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+(c) Harri Merisaari 2018-2022
