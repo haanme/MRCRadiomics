@@ -17,7 +17,7 @@ Required packages with installation instructions:
 - pyzernikemoment: pip install pyzernikemoment
 - numba (optional for GPU speed-up): conda install numba
 - skimage: conda install skimage
-- cv2: pip install opencv
+- cv2: pip install opencv<br>
 For Pyradiomics wrapper:
 - pyradiomics: pip install pyradiomics
 - SimpleITK: conda install -c simpleitk simpleitk
