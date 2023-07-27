@@ -38,6 +38,7 @@ from skimage import feature
 import copy
 from scipy import stats
 import numpy as np
+import os.path as path
 
 numba_found = False
 try:
@@ -1797,13 +1798,12 @@ def read_3DLaws_kernel(filename):
 
 
 # Read kernels into memory by default
-Laws3Dkernel = read_3DLaws_kernel('mask-3d-5.txt')
+Laws3Dkernel = read_3DLaws_kernel(path.dirname(path.abspath(__file__)) + os.sep + 'mask-3d-5.txt')
 
 """
 Names for 3D Laws features. Contains basic first order statistics to be takesn for each feature map.
 """
-casefun_3D_Laws_names = ['mean_ROI', 'median_ROI', 'SD_ROI', 'IQR_ROI', 'skewnessROI', 'kurtosisROI', 'p25ROI',
-                         'p75ROI', 'rel']
+casefun_3D_Laws_names = ['mean_ROI', 'median_ROI', 'SD_ROI', 'IQR_ROI', 'skewnessROI', 'kurtosisROI', 'p25ROI', 'p75ROI', 'rel']
 
 # Initialize array formats for use in numba
 laws3D_names = []
