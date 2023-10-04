@@ -20,7 +20,7 @@ from skimage.filters import frangi, hessian
 from scipy.ndimage.filters import gaussian_filter
 from scipy.interpolate import UnivariateSpline
 import pywt
-from . import visualizations
+import visualizations
 
 try:
     from skimage import filters

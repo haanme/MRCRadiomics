@@ -12,11 +12,15 @@ RUN pip install nibabel
 RUN pip install pydicom
 RUN pip install dipy
 RUN pip install SimpleITK
-RUN pip install radiomics
-RUN pip install pyradiomics
-RUN pip install sklearn
 RUN pip install pymesh
+RUN pip install scikit-image
+RUN pip install opencv-python
+RUN apt-get install libgl1-mesa-glx -y
+RUN apt-get install libgtk2.0-dev -y
+RUN pip install pywavelets
+RUN pip install trimesh
+RUN pip install plyfile
 
 COPY *.py .
-ENTRYPOINT ["/bin/python3", "pyradiomics.py"]
+ENTRYPOINT ["/bin/python3", "main.py"]
 
