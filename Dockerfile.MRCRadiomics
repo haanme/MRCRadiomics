@@ -1,0 +1,22 @@
+FROM ubuntu:22.04
+MAINTAINER Harri Merisaari <haanme@utu.fi>
+
+RUN apt-get update
+RUN apt-get install wget -y
+# skip conda version of libraries for now
+#RUN wget https://repo.anaconda.com/archive/Anaconda3-2020.02-Linux-x86_64.sh
+#RUN bash Anaconda3-2020.02-Linux-x86_64.sh -bfp /usr/local
+RUN apt-get install tzdata -y
+RUN apt-get install pip -y
+RUN pip install nibabel
+RUN pip install pydicom
+RUN pip install dipy
+RUN pip install SimpleITK
+RUN pip install radiomics
+RUN pip install pyradiomics
+RUN pip install sklearn
+RUN pip install pymesh
+
+COPY *.py .
+ENTRYPOINT ["/bin/python3", "pyradiomics.py"]
+
