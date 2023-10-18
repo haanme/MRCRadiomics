@@ -536,11 +536,12 @@ Statistical moments of intensity values inside lesion
 @param LESIONr: Lesion mask
 @param BGr: background mask
 @param resolution: data resolution in mm [x,y,z]
+@param params: not used
 @returns: Please see casefun_01_moments_names
 """
 
 
-def casefun_01_moments(LESIONDATAr, LESIONr, BGr, resolution):
+def casefun_01_moments(LESIONDATAr, LESIONr, BGr, resolution, params):
     ROIdata = LESIONDATAr[LESIONr[0] > 0]
     mean = np.mean(ROIdata)
     median = np.median(ROIdata)
