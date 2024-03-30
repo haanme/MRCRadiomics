@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-__version__ = "1.1.0"
+__version__ = "1.1.2"
 
 # $Source$
 
@@ -31,6 +31,21 @@ from utilities import load_nifti
 from glob import glob
 from argparse import ArgumentParser
 import copy
+
+
+
+"""
+Printout depending on verbosity setting
+
+@param entry: text otbe printed
+@param verbose: verbose status
+"""
+verbose = False
+def print_verbose(entry, verbose):
+    if verbose:
+        print(entry)
+
+
 
 """
 Adds definitions of 2D Laws features
@@ -539,6 +554,7 @@ Creates settings array for feature extraction
 
 
 def resolve_datafuns(method, modality):
+    print_verbose('Resolving radiomic data functions to be used', verbose)
     datafuns = []
     datafuns = add_FFT2D(method, datafuns, modality)
     datafuns = add_FFT2DBG(method, datafuns, modality)
@@ -631,6 +647,7 @@ if __name__ == "__main__":
     parser.add_argument("--create_visualization", dest="create_visualization", help="1 for extra visualization/debug data if feature is supporting it", required=False, default='')
     parser.add_argument("--BGname", dest="BGname", help="Background mask Nifti filename", required=False, default='N/A')
     parser.add_argument("--LSname", dest="LSname", help="Lesion (i e foreground) mask Nifti filename", required=False, default='N/A')
+    parser.add_argument("--verbose", dest="verbose", help="Print verbose output Yes/No[default]", required=False, default='No')
     args = parser.parse_args()
     modalityname = args.modality
     methodname = args.method
@@ -639,6 +656,7 @@ if __name__ == "__main__":
     required_case = args.case
     BGname = args.BGname
     LSname = args.LSname
+    verbose = args.verbose == 'Yes'
     if(BGname == 'N/A' and LSname == 'N/A'):
         print('Either of LSname or BGname must be given')
         sys.exit(1)
@@ -665,37 +683,51 @@ if __name__ == "__main__":
             os.makedirs(outputpath + os.sep + 'visualizations')
 
     # Resolve settings from command line arguments
+    print_verbose('Method name:' + methodname, verbose)
+    print_verbose('Modality name:' + modalityname, verbose)
     datafun_names = resolve_datafuns(methodname, modalityname)
     if len(datafun_names) == 0:
         print('No data functions to processs')
         sys.exit(1)
 
     # Open log file
+    print_verbose('Opening log file:' + outputpath + os.sep + 'MRCRadiomics_features_' + modalityname + '_' + methodname + '_log.txt', verbose)
     Nlog = open(outputpath + os.sep + 'MRCRadiomics_features_' + modalityname + '_' + methodname + '_log.txt', 'w')
 
     # Resolve existing output values in the output file
     N_filename, cases_found, header_found, EOL_found = resolve_found_cases(outputpath, modalityname, methodname)
+    print_verbose('Feature value file:' + N_filename, verbose)
+    print_verbose('Cases found:' + str(cases_found), verbose)
+    print_verbose('Header found:' + str(header_found), verbose)
+    print_verbose('End of line found:' + str(EOL_found), verbose)
     if header_found:
         print('Header found in output file')
 
     # Write header if it was not found from the file yet
     if not header_found:
+        print_verbose('Creating new file', verbose)
         fout = open(N_filename, 'w')
         fout.write('case\tROI\tbackground_ROI')
     else:
+        print_verbose('Appending to existing file', verbose)
         fout = open(N_filename, 'a')
     for datafun in datafun_names:
         if type(datafun[4]) is list:
+            print_verbose('Data function type: list', verbose)
             feature_names = datafun[4]
         elif type(datafun[4]) is tuple:
+            print_verbose('Data function type: tuple', verbose)
             feature_names = datafun[4]
         elif len(datafun) > 7 and callable(datafun[4]):
+            print_verbose('Data function type: callable', verbose)
             feature_names = datafun[4](datafun[7])
         else:
+            print_verbose('Data function type: function without parameters', verbose)
             feature_names = datafun[4]()
         if not header_found:
             for name in feature_names:
                 fout.write('\t%s' % (datafun[1] + '_' + name))
+    print_verbose('Resolved feature names:' + str(feature_names), verbose)
     if not header_found:
         fout.write('\n')
         EOL_found = True
@@ -705,7 +737,14 @@ if __name__ == "__main__":
     runs = 0
     LS_missing = []
     PM_missing = []
+    print_verbose('Reading folder:' + inputpath, verbose)
     folders = glob(inputpath + os.sep + '*')
+    print_verbose('Resolved ' + str(len(folders)) + ' subfolders', verbose)
+    found_non_dir = 0
+    found_case_mismatch = 0
+    found_already_in_results = 0
+    if len(required_case) > 0:
+        print_verbose('Required case [' + required_case + ']', verbose)
     for folder_i in range(len(folders)):
         folder = folders[folder_i]
         case = os.path.basename(folder)
@@ -715,16 +754,20 @@ if __name__ == "__main__":
         # - not having numerical subject name (subject folder)
         # - already found in the results file
         if not os.path.isdir(folder):
-            continue
-        if not case.split('_')[0].isdigit():
+            found_non_dir += 1
+            print_verbose('Folder [' + folder + '] not a directory', verbose)
             continue
         if len(required_case) > 0 and not case == required_case and not case.split('_')[0] == required_case:
+            found_case_mismatch += 1
+            print_verbose('Folder [' + folder + '] not matching required subfolder ' + required_case, verbose)
             continue
         print(cases_found)
         if (case.strip(), LSname.strip('.nii'), BGname.strip('.nii')) in cases_found:
-            print('SKIP: case ' + case + ' already found')
+            found_already_in_results += 1
+            print_verbose('Folder [' + folder + '] already found in results', verbose)
             continue
         runs = runs + 1
+        print_verbose('Folder [' + folder + '] RUN', verbose)
 
         # Read ROIs
         if os.path.exists(folder + os.sep + BGname):
@@ -789,6 +832,7 @@ if __name__ == "__main__":
             datafun_name = datafun_names[datafun_i][1]
             datafun_scale = datafun_names[datafun_i][2]
             casefun = datafun_names[datafun_i][3]
+            print_verbose('Function to run:' + str(casefun), verbose)
             # Special handling for feature having specific input parameters
             if len(datafun_names[datafun_i]) > 7:
                 if type(datafun_names[datafun_i][4]) is list or type(datafun_names[datafun_i][4]) is tuple:
@@ -837,5 +881,9 @@ if __name__ == "__main__":
     fout.close()
     Nlog.close()
     if runs == 0:
-        print('no cases executed')
+        print('No cases executed')
+        print_verbose('Reasons for not running subfolders:', verbose)
+        print_verbose('Not dir:' + str(found_non_dir), verbose)
+        print_verbose('Not matching required case:' + str(found_case_mismatch), verbose)
+        print_verbose('Found already in result file:' + str(found_already_in_results), verbose)
     sys.exit(0)

@@ -541,7 +541,7 @@ Statistical moments of intensity values inside lesion
 """
 
 
-def casefun_01_moments(LESIONDATAr, LESIONr, BGr, resolution, params):
+def casefun_01_moments(LESIONDATAr, LESIONr, BGr, resolution, params=None):
     ROIdata = LESIONDATAr[LESIONr[0] > 0]
     mean = np.mean(ROIdata)
     median = np.median(ROIdata)

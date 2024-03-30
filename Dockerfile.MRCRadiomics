@@ -24,4 +24,4 @@ RUN pip install scikit-learn
 
 COPY *.py .
 COPY mask-3d-5.txt .
-ENTRYPOINT ["/bin/python3", "main.py"]
+ENTRYPOINT ["/bin/python3", "MRCRadiomics.py"]
