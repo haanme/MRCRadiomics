@@ -204,19 +204,19 @@ def add_Zernike(method, datafuns, prefix):
         datafuns.append('Zernike')
     if method == 'Zernike':
         datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Zernike_9_8_8,
-                         textures_2D.casefun_3D_2D_Zernike_9_8_8_names, True, True, []))
+                         textures_2D.casefun_3D_2D_Zernike_9_8_8_names, True, True))
         datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Zernike_15_5_5,
-                         textures_2D.casefun_3D_2D_Zernike_15_5_5_names, True, True, []))
+                         textures_2D.casefun_3D_2D_Zernike_15_5_5_names, True, True))
         datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Zernike_15_6_6,
-                         textures_2D.casefun_3D_2D_Zernike_15_6_6_names, True, True, []))
+                         textures_2D.casefun_3D_2D_Zernike_15_6_6_names, True, True))
         datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Zernike_17_6_6,
-                         textures_2D.casefun_3D_2D_Zernike_17_6_6_names, True, True, []))
+                         textures_2D.casefun_3D_2D_Zernike_17_6_6_names, True, True))
         datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Zernike_19_6_6,
-                         textures_2D.casefun_3D_2D_Zernike_19_6_6_names, True, True, []))
+                         textures_2D.casefun_3D_2D_Zernike_19_6_6_names, True, True))
         datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Zernike_21_8_8,
-                         textures_2D.casefun_3D_2D_Zernike_21_8_8_names, True, True, []))
+                         textures_2D.casefun_3D_2D_Zernike_21_8_8_names, True, True))
         datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Zernike_25_12_12,
-                         textures_2D.casefun_3D_2D_Zernike_25_12_12_names, True, True, []))
+                         textures_2D.casefun_3D_2D_Zernike_25_12_12_names, True, True))
     return datafuns
 
 
@@ -648,6 +648,8 @@ if __name__ == "__main__":
     parser.add_argument("--BGname", dest="BGname", help="Background mask Nifti filename", required=False, default='N/A')
     parser.add_argument("--LSname", dest="LSname", help="Lesion (i e foreground) mask Nifti filename", required=False, default='N/A')
     parser.add_argument("--verbose", dest="verbose", help="Print verbose output Yes/No[default]", required=False, default='No')
+    parser.add_argument("--boilerplate", dest="boilerplate", help="Write boilerplate.txt with citation(s) and descriptions for the used radiomics Yes/No[default]", required=False,
+                        default='No')
     args = parser.parse_args()
     modalityname = args.modality
     methodname = args.method
