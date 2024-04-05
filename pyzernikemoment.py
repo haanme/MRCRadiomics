@@ -66,9 +66,9 @@ def Zernikemoment(src, n, m):
 
     H, W = src.shape
     if H > W:
-        src = src[(H - W) / 2: (H + W) / 2, :]
+        src = src[int((H - W) / 2): int((H + W) / 2), :]
     elif H < W:
-        src = src[:, (W - H) / 2: (H + W) / 2]
+        src = src[:, int((W - H) / 2): int((H + W) / 2)]
 
     N = src.shape[0]
     if N % 2:

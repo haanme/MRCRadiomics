@@ -549,11 +549,12 @@ Creates settings array for feature extraction
 
 @param method: settings group name as string, or None for resolving supported feature group names
 @param modality: modality name (basename of file to be run)
+@param boilerplate: collect boilerplate list of strings
 @returns: list of settings
 """
 
 
-def resolve_datafuns(method, modality):
+def resolve_datafuns(method, modality, boilerplate):
     print_verbose('Resolving radiomic data functions to be used', verbose)
     datafuns = []
     datafuns = add_FFT2D(method, datafuns, modality)
@@ -635,7 +636,7 @@ SUBJECTS <-('--input' command line argument)
 """
 if __name__ == "__main__":
     # Parse input arguments into args structure
-    supported_methods = resolve_datafuns(None, None)
+    supported_methods = resolve_datafuns(None, None, False)
     parser = ArgumentParser()
     parser.add_argument("--version", dest="version", help="prints version number", required=False)
     parser.add_argument("--modality", dest="modality", help="modality (basename of input Nifti)", required=True)
@@ -662,6 +663,8 @@ if __name__ == "__main__":
     if(BGname == 'N/A' and LSname == 'N/A'):
         print('Either of LSname or BGname must be given')
         sys.exit(1)
+    boilerplate = (args.boilerplate == 'Yes')
+    print_verbose('Writing boilerplate:' + str(boilerplate), verbose)
 
     create_visualization = args.create_visualization
     if len(create_visualization) > 0:
@@ -687,7 +690,7 @@ if __name__ == "__main__":
     # Resolve settings from command line arguments
     print_verbose('Method name:' + methodname, verbose)
     print_verbose('Modality name:' + modalityname, verbose)
-    datafun_names = resolve_datafuns(methodname, modalityname)
+    datafun_names = resolve_datafuns(methodname, modalityname, boilerplate)
     if len(datafun_names) == 0:
         print('No data functions to processs')
         sys.exit(1)
