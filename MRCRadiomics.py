@@ -25,7 +25,7 @@ __version__ = "1.2.0"
 import os
 import numpy as np
 import sys
-from features import Laws, Laws3D, Laws3D_Background, Zernike, LocalBinaryPatterns, Gabor, textures_3D, textures_2D as textures_2D
+from features import Laws, Laws3D, Laws3D_Background, Zernike, LocalBinaryPatterns, Gabor, Hu, textures_3D, textures_2D as textures_2D
 from utilities import load_nifti
 from glob import glob
 from argparse import ArgumentParser
@@ -141,14 +141,10 @@ def add_Hu(method, datafuns, prefix):
     if method is None:
         datafuns.append('HU')
     if method == 'HU':
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Hu_moments_rawintensity,
-                         textures_2D.casefun_3D_2D_Hu_moments_rawintensity_names, True, True, []))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Hu_moments_bins,
-                         textures_2D.casefun_3D_2D_Hu_moments_2bins_names, True, True, [2]))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Hu_moments_bins,
-                         textures_2D.casefun_3D_2D_Hu_moments_3bins_names, True, True, [3]))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Hu_moments_bins,
-                         textures_2D.casefun_3D_2D_Hu_moments_4bins_names, True, True, [4]))
+        datafuns.append(Hu(['raw']))
+        datafuns.append(Hu([2]))
+        datafuns.append(Hu([3]))
+        datafuns.append(Hu([4]))
     return datafuns
 
 
