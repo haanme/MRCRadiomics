@@ -18,15 +18,14 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-__version__ = "1.1.2"
+__version__ = "1.2.0"
 
 # $Source$
 
 import os
 import numpy as np
 import sys
-import textures_2D as textures_2D
-import textures_3D
+from features import Laws, Laws3D, Laws3D_Background, Zernike, LocalBinaryPatterns, Gabor, textures_3D, textures_2D as textures_2D
 from utilities import load_nifti
 from glob import glob
 from argparse import ArgumentParser
@@ -60,14 +59,10 @@ def add_Laws(method, datafuns, prefix):
     if method is None:
         datafuns.append('Laws')
     if method == 'Laws':
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Laws,
-                         textures_2D.casefun_3D_2D_Laws_names_generator, True, True, [0.5]))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Laws,
-                         textures_2D.casefun_3D_2D_Laws_names_generator, True, True, [1.0]))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Laws,
-                         textures_2D.casefun_3D_2D_Laws_names_generator, True, True, [2.0]))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Laws,
-                         textures_2D.casefun_3D_2D_Laws_names_generator, True, True, [4.0]))
+        datafuns.append(Laws([0.5]))
+        datafuns.append(Laws([1.0]))
+        datafuns.append(Laws([2.0]))
+        datafuns.append(Laws([4.0]))
     return datafuns
 
 
@@ -84,14 +79,10 @@ def add_Laws3D(method, datafuns, prefix):
     if method is None:
         datafuns.append('Laws3D')
     if method == 'Laws3D':
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_Laws,
-                         textures_3D.casefun_3D_Laws_names_generator, True, True, [0.5]))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_Laws,
-                         textures_3D.casefun_3D_Laws_names_generator, True, True, [1.0]))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_Laws,
-                         textures_3D.casefun_3D_Laws_names_generator, True, True, [2.0]))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_Laws,
-                         textures_3D.casefun_3D_Laws_names_generator, True, True, [4.0]))
+        datafuns.append(Laws3D([0.5]))
+        datafuns.append(Laws3D([1.0]))
+        datafuns.append(Laws3D([2.0]))
+        datafuns.append(Laws3D([4.0]))
     return datafuns
 
 
@@ -108,33 +99,10 @@ def add_Laws3D_BG(method, datafuns, prefix):
     if method is None:
         datafuns.append('BGLaws3D')
     if method == 'BGLaws3D':
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_Laws_BG,
-                         textures_3D.casefun_3D_Laws_names_generator_BG, False, True, [0.5]))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_Laws_BG,
-                         textures_3D.casefun_3D_Laws_names_generator_BG, False, True, [1.0]))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_Laws_BG,
-                         textures_3D.casefun_3D_Laws_names_generator_BG, False, True, [2.0]))
-    return datafuns
-
-
-"""
-Adds definitions of 3D Laws features, with Apparent Diffusion Coefficient specific settings
-tailored for prostate cancer detection.
-
-@param datafuns: current feature settings
-@param prefix: input data basename
-@returns: updated feature settings list
-"""
-
-
-def add_Laws3D_ADC(method, datafuns, prefix):
-    if method is None:
-        datafuns.append('Laws3D_ADC')
-    if method == 'Laws3D_ADC':
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_Laws,
-                         textures_3D.casefun_3D_Laws_names_generator, True, True, [0.5]))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_Laws,
-                         textures_3D.casefun_3D_Laws_names_generator, True, True, [2.0]))
+        datafuns.append(Laws3D_Background([0.5]))
+        datafuns.append(Laws3D_Background([1.0]))
+        datafuns.append(Laws3D_Background([2.0]))
+        datafuns.append(Laws3D_Background([4.0]))
     return datafuns
 
 
@@ -151,18 +119,12 @@ def add_LBP(method, datafuns, prefix):
     if method is None:
         datafuns.append('LBP')
     if method == 'LBP':
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_local_binary_pattern_41,
-                         textures_2D.casefun_3D_2D_local_binary_pattern_41_names, True, True, []))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_local_binary_pattern_81,
-                         textures_2D.casefun_3D_2D_local_binary_pattern_81_names, True, True, []))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_local_binary_pattern_42,
-                         textures_2D.casefun_3D_2D_local_binary_pattern_42_names, True, True, []))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_local_binary_pattern_82,
-                         textures_2D.casefun_3D_2D_local_binary_pattern_82_names, True, True, []))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_local_binary_pattern_43,
-                         textures_2D.casefun_3D_2D_local_binary_pattern_43_names, True, True, []))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_local_binary_pattern_83,
-                         textures_2D.casefun_3D_2D_local_binary_pattern_83_names, True, True, []))
+        datafuns.append(LocalBinaryPatterns([4, 1]))
+        datafuns.append(LocalBinaryPatterns([8, 1]))
+        datafuns.append(LocalBinaryPatterns([4, 2]))
+        datafuns.append(LocalBinaryPatterns([8, 2]))
+        datafuns.append(LocalBinaryPatterns([4, 3]))
+        datafuns.append(LocalBinaryPatterns([8, 3]))
     return datafuns
 
 
@@ -203,20 +165,13 @@ def add_Zernike(method, datafuns, prefix):
     if method is None:
         datafuns.append('Zernike')
     if method == 'Zernike':
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Zernike_9_8_8,
-                         textures_2D.casefun_3D_2D_Zernike_9_8_8_names, True, True))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Zernike_15_5_5,
-                         textures_2D.casefun_3D_2D_Zernike_15_5_5_names, True, True))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Zernike_15_6_6,
-                         textures_2D.casefun_3D_2D_Zernike_15_6_6_names, True, True))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Zernike_17_6_6,
-                         textures_2D.casefun_3D_2D_Zernike_17_6_6_names, True, True))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Zernike_19_6_6,
-                         textures_2D.casefun_3D_2D_Zernike_19_6_6_names, True, True))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Zernike_21_8_8,
-                         textures_2D.casefun_3D_2D_Zernike_21_8_8_names, True, True))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Zernike_25_12_12,
-                         textures_2D.casefun_3D_2D_Zernike_25_12_12_names, True, True))
+        datafuns.append(Zernike(9, 8, 8))
+        datafuns.append(Zernike(15, 5, 5))
+        datafuns.append(Zernike(15, 6, 6))
+        datafuns.append(Zernike(17, 6, 6))
+        datafuns.append(Zernike(19, 6, 6))
+        datafuns.append(Zernike(21, 8, 8))
+        datafuns.append(Zernike(25, 12, 12))
     return datafuns
 
 
@@ -256,9 +211,7 @@ def add_Gabor(method, datafuns, prefix):
                 for frequency in [1.0]:
                     if frequency >= kernelsize:
                         continue
-                    params = [frequency, directions, kernelsize]
-                    datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_gabor_filter,
-                                     textures_2D.casefun_3D_2D_gabor_filter_name_generator, True, True, params, []))
+                    datafuns.append(Gabor([frequency, directions, kernelsize]))
     return datafuns
 
 
@@ -557,27 +510,27 @@ Creates settings array for feature extraction
 def resolve_datafuns(method, modality, boilerplate):
     print_verbose('Resolving radiomic data functions to be used', verbose)
     datafuns = []
-    datafuns = add_FFT2D(method, datafuns, modality)
-    datafuns = add_FFT2DBG(method, datafuns, modality)
-    datafuns = add_Laws(method, datafuns, modality)
-    datafuns = add_Laws3D_ADC(method, datafuns, modality)
-    datafuns = add_Laws3D(method, datafuns, modality)
-    datafuns = add_Laws3D_BG(method, datafuns, modality)
-    datafuns = add_edges_corners2D3D(method, datafuns, modality)
-    datafuns = add_bg_edges_corners2D3D(method, datafuns, modality)
-    datafuns = add_Gabor(method, datafuns, modality)
-    datafuns = add_LBP(method, datafuns, modality)
-    datafuns = add_Hu(method, datafuns, modality)
-    datafuns = add_moments(method, datafuns, modality)
-    datafuns = add_shapes(method, datafuns, modality)
-    datafuns = add_BGShapes(method, datafuns, modality)
-    datafuns = add_relativeBGMoments(method, datafuns, modality)
-    datafuns = add_Moments2(method, datafuns, modality)
-    datafuns = add_BGMoments(method, datafuns, modality)
-    datafuns = add_Zernike(method, datafuns, modality)
-    datafuns = add_Wavelet(method, datafuns, modality)
-    datafuns = add_SignalToNoiseRatios(method, datafuns, modality)
-    return datafuns
+    boilerplate_str = []
+    datafuns, boilerplate_str = add_FFT2D(method, datafuns, boilerplate, modality)
+    datafuns, boilerplate_str = add_FFT2DBG(method, datafuns, boilerplate, modality)
+    datafuns, boilerplate_str = add_Laws(method, datafuns, boilerplate, modality)
+    datafuns, boilerplate_str = add_Laws3D(method, datafuns, boilerplate, modality)
+    datafuns, boilerplate_str = add_Laws3D_BG(method, datafuns, boilerplate, modality)
+    datafuns, boilerplate_str = add_edges_corners2D3D(method, datafuns, boilerplate, modality)
+    datafuns, boilerplate_str = add_bg_edges_corners2D3D(method, datafuns, boilerplate, modality)
+    datafuns, boilerplate_str = add_Gabor(method, datafuns, boilerplate, modality)
+    datafuns, boilerplate_str = add_LBP(method, datafuns, boilerplate, modality)
+    datafuns, boilerplate_str = add_Hu(method, datafuns, boilerplate, modality)
+    datafuns, boilerplate_str = add_moments(method, datafuns, boilerplate, modality)
+    datafuns, boilerplate_str = add_shapes(method, datafuns, boilerplate, modality)
+    datafuns, boilerplate_str = add_BGShapes(method, datafuns, boilerplate, modality)
+    datafuns, boilerplate_str = add_relativeBGMoments(method, datafuns, boilerplate, modality)
+    datafuns, boilerplate_str = add_Moments2(method, datafuns, boilerplate, modality)
+    datafuns, boilerplate_str = add_BGMoments(method, datafuns, boilerplate, modality)
+    datafuns, boilerplate_str = add_Zernike(method, datafuns, boilerplate, modality)
+    datafuns, boilerplate_str = add_Wavelet(method, datafuns, boilerplate, modality)
+    datafuns, boilerplate_str = add_SignalToNoiseRatios(method, datafuns, boilerplate, modality)
+    return datafuns, boilerplate_str
 
 
 """
@@ -690,7 +643,7 @@ if __name__ == "__main__":
     # Resolve settings from command line arguments
     print_verbose('Method name:' + methodname, verbose)
     print_verbose('Modality name:' + modalityname, verbose)
-    datafun_names = resolve_datafuns(methodname, modalityname, boilerplate)
+    datafun_names, boilerplate = resolve_datafuns(methodname, modalityname, boilerplate)
     if len(datafun_names) == 0:
         print('No data functions to processs')
         sys.exit(1)
