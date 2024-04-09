@@ -25,7 +25,7 @@ __version__ = "1.2.0"
 import os
 import numpy as np
 import sys
-from features import Laws, Laws3D, Laws3D_Background, Zernike, LocalBinaryPatterns, Gabor, Hu, textures_3D, textures_2D as textures_2D
+from features import Laws, Laws3D, Laws3D_Background, Zernike, LocalBinaryPatterns, Gabor, Hu, Wavelet, textures_3D, textures_2D as textures_2D
 from utilities import load_nifti
 from glob import glob
 from argparse import ArgumentParser
@@ -184,8 +184,7 @@ def add_Wavelet(method, datafuns, prefix):
     if method is None:
         datafuns.append('Wavelet')
     if method == 'Wavelet':
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Wavelet,
-                         textures_2D.casefun_3D_2D_Wavelet_names_generator, True, True, ['Haar', 1.0]))
+        datafuns.append(Wavelet(['Haar', 1.0]))
     return datafuns
 
 
