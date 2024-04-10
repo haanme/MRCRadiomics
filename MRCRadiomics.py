@@ -25,7 +25,10 @@ __version__ = "1.2.0"
 import os
 import numpy as np
 import sys
-from features import Laws, Laws3D, Laws3D_Background, Zernike, LocalBinaryPatterns, Gabor, Hu, Wavelet, textures_3D, textures_2D as textures_2D
+from features import Moments, BackgroundMoments, BackgroundMomentsRelative, FastFourier2D, FastFourier2D_background, Laws2D, Laws3D, Zernike, LocalBinaryPatterns, Gabor, Hu, Wavelet
+from features.CornersEdges2D import HarrisStephens, ShiTomasi, Frangi, Hessian, Scharr
+from features.CornersEdges2D_background import HarrisStephensBackground, HessianBackground
+from features.Laws3D_background import Laws3D_Background
 from utilities import load_nifti
 from glob import glob
 from argparse import ArgumentParser
@@ -59,10 +62,10 @@ def add_Laws(method, datafuns, prefix):
     if method is None:
         datafuns.append('Laws')
     if method == 'Laws':
-        datafuns.append(Laws([0.5]))
-        datafuns.append(Laws([1.0]))
-        datafuns.append(Laws([2.0]))
-        datafuns.append(Laws([4.0]))
+        datafuns.append(Laws2D([0.5]))
+        datafuns.append(Laws2D([1.0]))
+        datafuns.append(Laws2D([2.0]))
+        datafuns.append(Laws2D([4.0]))
     return datafuns
 
 
@@ -229,26 +232,17 @@ def add_edges_corners2D3D(method, datafuns, prefix):
         for blockSize in [2, 3, 4]:
             for ksize in [1, 3, 7]:
                 for k in [0.01, 0.05, 0.5]:
-                    datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Harris,
-                                     textures_2D.casefun_3D_2D_Harris_name_generator, True, True,
-                                     [blockSize, ksize, k]))
+                    datafuns.append(HarrisStephens([blockSize, ksize, k]))
         # maxCorners (int) Maximum number of corners to return. If there are more corners than are found, the strongest of them is returned.
         # qualityLevel (%) Parameter characterizing the minimal accepted quality of image corners. The parameter value is multiplied by the best corner quality measure, which is the minimal eigenvalue (see cornerMinEigenVal() ) or the Harris function response (see cornerHarris() ). The corners with the quality measure less than the product are rejected. For example, if the best corner has the quality measure = 1500, and the qualityLevel=0.01 , then all the corners with the quality measure less than 15 are rejected.
         # minDistance (mm) Minimum possible Euclidean distance between the returned corners.
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_ShiTomasi,
-                         textures_2D.casefun_3D_2D_ShiTomasi_name_generator, True, True, [1000, 0.001, 2.0]))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_ShiTomasi,
-                         textures_2D.casefun_3D_2D_ShiTomasi_name_generator, True, True, [1000, 0.05, 2.0]))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_ShiTomasi,
-                         textures_2D.casefun_3D_2D_ShiTomasi_name_generator, True, True, [1000, 0.1, 2.0]))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Frangi_objectprops,
-                         textures_2D.casefun_3D_2D_Frangi_objectprops_names, True, True, []))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Hessian_objectprops,
-                         textures_2D.casefun_3D_2D_Hessian_objectprops_name_generator, True, True, [0.005, 15]))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Hessian_objectprops,
-                         textures_2D.casefun_3D_2D_Hessian_objectprops_name_generator, True, True, [0.025, 15]))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Scharr_objectprops,
-                         textures_2D.casefun_3D_2D_Scharr_objectprops_names, True, True, []))
+        datafuns.append(ShiTomasi([1000, 0.001, 2.0]))
+        datafuns.append(ShiTomasi([1000, 0.05, 2.0]))
+        datafuns.append(ShiTomasi([1000, 0.1, 2.0]))
+        datafuns.append(Frangi())
+        datafuns.append(Hessian([0.005, 15]))
+        datafuns.append(Hessian([0.025, 15]))
+        datafuns.append(Scharr())
     return datafuns
 
 
@@ -272,13 +266,11 @@ def add_bg_edges_corners2D3D(method, datafuns, prefix):
                          Size of the extended Sobel kernel; it must be 1, 3, 5, or 7
         k              - Harris-Stephens detector free parameter.
         """
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Harris_BG,
-                         textures_2D.casefun_3D_2D_Harris_name_generator_BG, False, True, [2, 1, 0.01]))
+        datafuns.append(HarrisStephensBackground([2, 1, 0.01]))
         # maxCorners (int) Maximum number of corners to return. If there are more corners than are found, the strongest of them is returned.
         # qualityLevel (%) Parameter characterizing the minimal accepted quality of image corners. The parameter value is multiplied by the best corner quality measure, which is the minimal eigenvalue (see cornerMinEigenVal() ) or the Harris function response (see cornerHarris() ). The corners with the quality measure less than the product are rejected. For example, if the best corner has the quality measure = 1500, and the qualityLevel=0.01 , then all the corners with the quality measure less than 15 are rejected.
         # minDistance (mm) Minimum possible Euclidean distance between the returned corners.
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_Hessian_objectprops_BG,
-                         textures_2D.casefun_3D_2D_Hessian_objectprops_name_generator_BG, False, True, [0.025, 15]))
+        datafuns.append(HessianBackground([0.025, 15]))
     return datafuns
 
 
@@ -295,8 +287,7 @@ def add_moments(method, datafuns, prefix):
     if method is None:
         datafuns.append('Moments')
     if method == 'Moments':
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_01_moments,
-                         textures_3D.casefun_01_moments_names, True, False))
+        datafuns.append(Moments())
     return datafuns
 
 
@@ -361,8 +352,7 @@ def add_BGMoments(method, datafuns, prefix):
     if method is None:
         datafuns.append('BGMoments')
     if method == 'BGMoments':
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_01_moments_BG,
-                         textures_3D.casefun_01_moments_BG_names, False, True, []))
+        datafuns.append(BackgroundMoments())
     return datafuns
 
 
@@ -379,51 +369,8 @@ def add_relativeBGMoments(method, datafuns, prefix):
     if method is None:
         datafuns.append('relativeBGMoments')
     if method == 'relativeBGMoments':
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_01_moments_relativeBG,
-                         textures_3D.casefun_01_moments_relativeBG_names, True, True, []))
+        datafuns.append(BackgroundMomentsRelative([]))
     return datafuns
-
-
-"""
-Adds definitions of 1st order statistics, with ROI refinement operations
-
-@param datafuns: current feature settings
-@param prefix: input data basename
-@returns: updated feature settings list
-"""
-
-
-def add_Moments2(method, datafuns, prefix):
-    if method is None:
-        datafuns.append('Moments2')
-    if method == 'Moments2':
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_01_Moments2,
-                         textures_3D.casefun_01_moments2_name_generator, True, True, [1, 'largest_slice']))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_01_Moments2,
-                         textures_3D.casefun_01_moments2_name_generator, True, True, [1, 'largest_slice5x5']))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_01_Moments2,
-                         textures_3D.casefun_01_moments2_name_generator, True, True, [0.75, 'largest_sliceKDE']))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_01_Moments2,
-                         textures_3D.casefun_01_moments2_name_generator, True, True, [0.9, 'Moment2_fun_KDE']))
-    return datafuns
-
-
-"""
-Adds definitions of SNR measurements.
-
-@param list_datafun: list of feature settings
-@param prefix: input data basename
-@returns: updated feature settings list
-"""
-
-
-def add_SignalToNoiseRatios(method, list_datafun, prefix):
-    if method is None:
-        list_datafun.append('SNR')
-    if method == 'SNR':
-        list_datafun.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_SNR, textures_3D.casefun_SNR_name_generator,
-                             True, True, []))
-    return list_datafun
 
 
 """
@@ -441,8 +388,7 @@ def add_FFT2D(method, datafuns, prefix):
     if method is None:
         datafuns.append('FFT2D')
     if method == 'FFT2D':
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_FFT2D,
-                         textures_2D.casefun_3D_2D_FFT2D_names_generator, True, True, [1.0, 1.0, 5.0, 5.0]))
+        datafuns.append(FastFourier2D([1.0, 1.0, 5.0, 5.0]))
     return datafuns
 
 
@@ -461,8 +407,7 @@ def add_FFT2DBG(method, datafuns, prefix):
     if method is None:
         datafuns.append('BGFFT2D')
     if method == 'BGFFT2D':
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_2D.casefun_3D_2D_FFT2D_BG,
-                         textures_2D.casefun_3D_2D_FFT2D_names_generator_BG, False, True, [1.0, 1.0, 5.0, 5.0]))
+        datafuns.append(FastFourier2D_background([1.0, 1.0, 5.0, 5.0]))
     return datafuns
 
 
@@ -506,25 +451,25 @@ def resolve_datafuns(method, modality, boilerplate):
     print_verbose('Resolving radiomic data functions to be used', verbose)
     datafuns = []
     boilerplate_str = []
-    datafuns, boilerplate_str = add_FFT2D(method, datafuns, boilerplate, modality)
-    datafuns, boilerplate_str = add_FFT2DBG(method, datafuns, boilerplate, modality)
-    datafuns, boilerplate_str = add_Laws(method, datafuns, boilerplate, modality)
-    datafuns, boilerplate_str = add_Laws3D(method, datafuns, boilerplate, modality)
-    datafuns, boilerplate_str = add_Laws3D_BG(method, datafuns, boilerplate, modality)
-    datafuns, boilerplate_str = add_edges_corners2D3D(method, datafuns, boilerplate, modality)
-    datafuns, boilerplate_str = add_bg_edges_corners2D3D(method, datafuns, boilerplate, modality)
-    datafuns, boilerplate_str = add_Gabor(method, datafuns, boilerplate, modality)
-    datafuns, boilerplate_str = add_LBP(method, datafuns, boilerplate, modality)
-    datafuns, boilerplate_str = add_Hu(method, datafuns, boilerplate, modality)
-    datafuns, boilerplate_str = add_moments(method, datafuns, boilerplate, modality)
-    datafuns, boilerplate_str = add_shapes(method, datafuns, boilerplate, modality)
-    datafuns, boilerplate_str = add_BGShapes(method, datafuns, boilerplate, modality)
-    datafuns, boilerplate_str = add_relativeBGMoments(method, datafuns, boilerplate, modality)
-    datafuns, boilerplate_str = add_Moments2(method, datafuns, boilerplate, modality)
-    datafuns, boilerplate_str = add_BGMoments(method, datafuns, boilerplate, modality)
-    datafuns, boilerplate_str = add_Zernike(method, datafuns, boilerplate, modality)
-    datafuns, boilerplate_str = add_Wavelet(method, datafuns, boilerplate, modality)
-    datafuns, boilerplate_str = add_SignalToNoiseRatios(method, datafuns, boilerplate, modality)
+    datafuns, boilerplate_str = add_FFT2D(method, datafuns, boilerplate)
+    datafuns, boilerplate_str = add_FFT2DBG(method, datafuns, boilerplate)
+    datafuns, boilerplate_str = add_Laws(method, datafuns, boilerplate)
+    datafuns, boilerplate_str = add_Laws3D(method, datafuns, boilerplate)
+    datafuns, boilerplate_str = add_Laws3D_BG(method, datafuns, boilerplate)
+    datafuns, boilerplate_str = add_edges_corners2D3D(method, datafuns, boilerplate)
+    datafuns, boilerplate_str = add_bg_edges_corners2D3D(method, datafuns, boilerplate)
+    datafuns, boilerplate_str = add_Gabor(method, datafuns, boilerplate)
+    datafuns, boilerplate_str = add_LBP(method, datafuns, boilerplate)
+    datafuns, boilerplate_str = add_Hu(method, datafuns, boilerplate)
+    datafuns, boilerplate_str = add_moments(method, datafuns, boilerplate)
+    datafuns, boilerplate_str = add_shapes(method, datafuns, boilerplate)
+    datafuns, boilerplate_str = add_BGShapes(method, datafuns, boilerplate)
+    datafuns, boilerplate_str = add_relativeBGMoments(method, datafuns, boilerplate)
+    datafuns, boilerplate_str = add_Moments2(method, datafuns, boilerplate)
+    datafuns, boilerplate_str = add_BGMoments(method, datafuns, boilerplate)
+    datafuns, boilerplate_str = add_Zernike(method, datafuns, boilerplate)
+    datafuns, boilerplate_str = add_Wavelet(method, datafuns, boilerplate)
+    datafuns, boilerplate_str = add_SignalToNoiseRatios(method, datafuns, boilerplate)
     return datafuns, boilerplate_str
 
 

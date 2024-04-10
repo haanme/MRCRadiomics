@@ -12,6 +12,8 @@ Resolve non-zero subregion in the image
 @param img: mask image
 @return x_lo, x_hi, y_lo, y_hi for x and y bounds
 """
+
+
 def find_bounded_subregion3D2D(img):
     if len(img.shape) > 2:
         x_lo = 0
@@ -117,12 +119,44 @@ def find_bounded_subregion3D(img):
 
 
 """
+Resolve non-zero subregion in the image
+@param slice2D: slice for finding subregio
+"""
+
+
+def find_bounded_subregion2D(slice2D):
+    x_lo = 0
+    for x in range(slice2D.shape[0]):
+        if np.max(slice2D[x, :]) > 0:
+            x_lo = x
+            break
+    x_hi = slice2D.shape[0] - 1
+    for x in range(slice2D.shape[0] - 1, -1, -1):
+        if np.max(slice2D[x, :]) > 0:
+            x_hi = x
+            break
+    y_lo = 0
+    for y in range(slice2D.shape[1]):
+        if np.max(slice2D[:, y]) > 0:
+            y_lo = y
+            break
+    y_hi = slice2D.shape[1] - 1
+    for y in range(slice2D.shape[1] - 1, -1, -1):
+        if np.max(slice2D[:, y]) > 0:
+            y_hi = y
+            break
+    return x_lo, x_hi, y_lo, y_hi
+
+
+"""
 Apply 2D sliding window to image data
 @param image: image whre window is applied
 @param stepSize: step size to x and y directions, in pixels
 @param windowSize: x and y size of window
 @return x_lo, x_hi, y_lo, y_hi for x and y bounds
 """
+
+
 def sliding_window(image, stepSize, windowSize):
     # slide a window across the image
     for y in xrange(0, image.shape[0], stepSize):

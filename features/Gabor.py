@@ -145,26 +145,26 @@ class Gabor(FeatureIndexandBackground):
     """
     Returns list of strings decsribing boilerplate information about feature, including citations, if nay
     """
-    @staticmethod
     def get_boilerplate(self):
-        pass
+        return ['Gagor filter',
+                'Gabor, D.(1946)."Theory of communication".J.Inst.Electr.Eng.93.']
 
     """
     Returns number of required intensity images
     """
     def number_of_intensity_images_required(self):
-        1
+        return 1
 
     """
     Returns number of required foreground mask images
     """
     def number_of_foreground_mask_images_required(self):
-        1
+        return 1
 
     """
     Returns number of required background mask images
     """
     def number_of_background_mask_images_required(self):
-        1
+        return 1
 
 

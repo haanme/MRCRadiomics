@@ -55,7 +55,6 @@ class Feature(ABC):
     """
     Returns list of strings decsribing boilerplate information about feature, including citations, if nay
     """
-    @staticmethod
     @abstractmethod
     def get_boilerplate(self):
         pass
@@ -140,7 +139,6 @@ class FeatureIndexandBackground(Feature):
     Returns list of strings decsribing boilerplate information about feature, including citations, if nay
     """
 
-    @staticmethod
     @abstractmethod
     def get_boilerplate(self):
         pass
