@@ -30,11 +30,9 @@ class Moments(FeatureIndexandBackground):
     """
     Initialization
 
-    @param name: short name of the feature
-    @param params: not used
     """
-    def __init__(self, name, params):
-        super('Moments', params)
+    def __init__(self):
+        super('Moments', None)
 
 
     """
@@ -74,9 +72,20 @@ class Moments(FeatureIndexandBackground):
         return self.casefun_01_moments_names
 
     """
-    Returns list of strings decsribing boilerplate information about feature, including citations, if nay
+    Returns list of input value descriptions 
+
+    @return list of stings, or None
     """
-    def get_boilerplate(self):
+
+    def get_input_descriptions(self):
+        return None
+
+    """
+    Returns list of strings decsribing boilerplate information about feature, including citations, if any
+    """
+
+    @staticmethod
+    def get_boilerplate():
         return ["1st order statistical descriptors"]
 
     """

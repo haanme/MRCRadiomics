@@ -53,10 +53,22 @@ class Feature(ABC):
         pass
 
     """
+    Returns list of input value descriptions 
+
+    @return list of stings, or None
+    """
+
+    @abstractmethod
+    def get_input_descriptions(self):
+        pass
+
+    """
     Returns list of strings decsribing boilerplate information about feature, including citations, if nay
     """
+
+    @staticmethod
     @abstractmethod
-    def get_boilerplate(self):
+    def get_boilerplate():
         pass
 
     """
@@ -135,13 +147,6 @@ class FeatureIndexandBackground(Feature):
     def get_return_value_short_names(self):
         pass
 
-    """
-    Returns list of strings decsribing boilerplate information about feature, including citations, if nay
-    """
-
-    @abstractmethod
-    def get_boilerplate(self):
-        pass
 
     """
     Returns true if background region is needed for this feature to be executed
@@ -161,7 +166,6 @@ class FeatureIndexandBackground(Feature):
     Returns number of required intensity images
     """
 
-    @abstractmethod
     def number_of_intensity_images_required(self):
         return 1
 
@@ -169,7 +173,6 @@ class FeatureIndexandBackground(Feature):
     Returns number of required foreground mask images
     """
 
-    @abstractmethod
     def number_of_foreground_mask_images_required(self):
         return 1
 
@@ -177,6 +180,5 @@ class FeatureIndexandBackground(Feature):
     Returns number of required background mask images
     """
 
-    @abstractmethod
     def number_of_background_mask_images_required(self):
         return 1

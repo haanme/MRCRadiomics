@@ -85,7 +85,7 @@ class FastFourier2D_background(FeatureIndexandBackground):
         # >1: downsampling
         # start_FWHM: starting FWHM threshold in mm
         # end_FWHM: starting FWHM threshold in mm
-        # step_FWHM: starting FWHM threshold in mm
+        # step_FWHM: step FWHM threshold in mm
         res_f = self.params[0]
         start_FWHM = self.params[1]
         end_FWHM = self.params[2]
@@ -180,6 +180,19 @@ class FastFourier2D_background(FeatureIndexandBackground):
                 name = self.casefun_3D_2D_FFT2D_names[name_i]
                 names.append('BGUTU3D2DFFT2D_%s_f%2.1f_FWHM%3.2f_HP' % (name, res_f, threshold_FWHM))
         return names
+
+    """
+    Returns list of input value descriptions 
+
+    @return list of stings, or None
+    """
+
+    def get_input_descriptions(self):
+        return ["Resolution factor affecting laws feature sampling ratio 1: original resolution <1: upsampling >1: downsampling",
+                "Starting FWHM threshold in mm",
+                "Ending FWHM threshold in mm",
+                "Step size FWHM in mm"]
+
 
     """
     Returns list of strings decsribing boilerplate information about feature, including citations, if nay

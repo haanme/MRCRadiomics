@@ -26,7 +26,7 @@ class Wavelet(FeatureIndexandBackground):
     """
     Initialization
 
-    @param name: name of the feature class, without spaces
+    @param params: name of the feature class, without spaces
     1) wavelet type to be passed to pywt.wavedec2
     2) resolution factor affecting laws feature sampling ratio
     # 1: original resolution
@@ -34,7 +34,7 @@ class Wavelet(FeatureIndexandBackground):
     # >1: downsampling
     """
 
-    def __init__(self, name, params):
+    def __init__(self, params):
         super('Wavelet', params)
 
 
@@ -191,11 +191,11 @@ class Wavelet(FeatureIndexandBackground):
         return names
 
     """
-    Returns list of strings decsribing boilerplate information about feature, including citations, if nay
+    Returns list of strings decsribing boilerplate information about feature, including citations, if any
     """
 
     @staticmethod
-    def get_boilerplate(self):
+    def get_boilerplate():
         ret = ['2D multilevel decomposition with four levels',
                'Gregory R. Lee, Ralf Gommers, Filip Wasilewski, Kai Wohlfahrt, Aaron O’Leary (2019). PyWavelets: A Python package for wavelet analysis. Journal of Open Source Software, 4(36), 1237, https://doi.org/10.21105/joss.01237.']
         return ret

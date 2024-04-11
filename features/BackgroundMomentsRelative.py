@@ -31,10 +31,9 @@ class BackgroundMomentsRelative(FeatureIndexandBackground):
     Initialization
 
     @param name: short name of the feature
-    @param params: not used
     """
-    def __init__(self, name, params):
-        super('BackgroundMomentsRelative', params)
+    def __init__(self, name):
+        super('BackgroundMomentsRelative', None)
 
 
     """
@@ -103,6 +102,15 @@ class BackgroundMomentsRelative(FeatureIndexandBackground):
     """
     def get_return_value_short_names(self):
         return self.casefun_01_moments_relativeBG_names
+
+    """
+    Returns list of input value descriptions 
+
+    @return list of stings, or None
+    """
+
+    def get_input_descriptions(self):
+        return None
 
     """
     Returns list of strings decsribing boilerplate information about feature, including citations, if nay

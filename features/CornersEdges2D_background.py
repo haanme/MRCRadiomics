@@ -32,14 +32,13 @@ class HarrisStephensBackground(FeatureIndexandBackground):
     """
     Initialization
 
-    @param name: short name of the feature
     @param params: parameter list for the feature instance
     1) blockSize - Neighborhood size (see the details on cornerEigenValsAndVecs()).
     2) ksize - Aperture parameter for the Sobel() operator.
     3) k - Harris detector free parameter.
     """
 
-    def __init__(self, name, params):
+    def __init__(self, params):
         super().__init__('HarrisStephensBackground', params)
 
     """
@@ -195,10 +194,22 @@ class HarrisStephensBackground(FeatureIndexandBackground):
         return names
 
     """
+    Returns list of input value descriptions 
+
+    @return list of stings, or None
+    """
+
+    def get_input_descriptions(self):
+        return ["Neighborhood size (see the details on cornerEigenValsAndVecs()).",
+                "Aperture parameter for the Sobel() operator.",
+                "Harris detector free parameter."]
+
+    """
     Returns list of strings decsribing boilerplate information about feature, including citations, if nay
     """
 
-    def get_boilerplate(self):
+    @staticmethod
+    def get_boilerplate():
         ret = super().get_boilerplate()
         ret.append('Harris-Stephens corner edge detection with background ROI')
         ret.append(
@@ -232,12 +243,13 @@ class HessianBackground(FeatureIndexandBackground):
 
     """
     Initialization
-
-    @param name: short name of the feature
-    @param params: not in use
+    
+    @param params:
+    1) Frangi correction constant that adjusts the filter’s sensitivity to deviation from a blob-like structure.
+    2) Frangi correction constant that adjusts the filter’s sensitivity to areas of high variance/texture/structure.
     """
 
-    def __init__(self, name, params):
+    def __init__(self, params):
         super().__init__('HessianBackground', params)
 
     """
@@ -410,10 +422,21 @@ class HessianBackground(FeatureIndexandBackground):
         return names
 
     """
+    Returns list of input value descriptions 
+
+    @return list of stings, or None
+    """
+
+    def get_input_descriptions(self):
+        return ["Frangi correction constant that adjusts the filter’s sensitivity to deviation from a blob-like structure.",
+                "Frangi correction constant that adjusts the filter’s sensitivity to areas of high variance/texture/structure."]
+
+    """
     Returns list of strings decsribing boilerplate information about feature, including citations, if nay
     """
 
-    def get_boilerplate(self):
+    @staticmethod
+    def get_boilerplate():
         ret = super().get_boilerplate()
         ret.append('Object properties of Hessian filtered data')
         ret.append(

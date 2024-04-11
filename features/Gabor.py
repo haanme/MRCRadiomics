@@ -24,13 +24,12 @@ class Gabor(FeatureIndexandBackground):
     """
     Initialization
 
-    @param name: short name of the feature
     @param params: parameter list for the feature instance
     1) Number of circularly symmetric neighbour set points (quantization of the angular space)
     2) Radius of circle (spatial resolution of the operator)
     3) kernel size in SD units
     """
-    def __init__(self, name, params):
+    def __init__(self, params):
         super('Gabor', params)
 
 
@@ -143,9 +142,21 @@ class Gabor(FeatureIndexandBackground):
         return names
 
     """
+    Returns list of input value descriptions 
+
+    @return list of stings, or None
+    """
+
+    def get_input_descriptions(self):
+        return ["Frequency of filter at index 0",
+                "Directions",
+                "Kernel size in SD unitsNumber of histogram bins"]
+
+    """
     Returns list of strings decsribing boilerplate information about feature, including citations, if nay
     """
-    def get_boilerplate(self):
+    @staticmethod
+    def get_boilerplate():
         return ['Gagor filter',
                 'Gabor, D.(1946)."Theory of communication".J.Inst.Electr.Eng.93.']
 

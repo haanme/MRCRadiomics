@@ -61,7 +61,8 @@ class CornersEdges2D(FeatureIndexandBackground):
     Returns list of strings decsribing boilerplate information about feature, including citations, if nay
     """
 
-    def get_boilerplate(self: list) -> list:
+    @staticmethod
+    def get_boilerplate() -> list:
         return ['Corner edge detector properties',
                 'Merisaari, H, Taimen, P, Shiradkar, R, et al. Repeatability of radiomics and machine learning for DWI: Short - term repeatability study of 112 patients with prostate cancer.Magn Reson Med.2019; 00: 1– 17. https://doi.org/10.1002/mrm.28058',
                 'Merisaari H, Shiradkar R, Toivonen J, Hiremath A, Khorrami M, Perez IM, Pahikkala T, Taimen P, Verho J, Bosträm PJ, Aronen H, Madabhushi A, Jambor I, Repeatability of radiomics features for prostate cancer diffusion weighted imaging obtained using b-values up to 2000 s / mm2, 27th Annual Meeting & Exhibition ISMRM, May 11-16 2019, Montréal, QC, Canada,  # 7461']
@@ -104,14 +105,13 @@ class HarrisStephens(CornersEdges2D):
     """
     Initialization
 
-    @param name: short name of the feature
     @param params: parameter list for the feature instance
     1) blockSize - Neighborhood size (see the details on cornerEigenValsAndVecs()).
     2) ksize - Aperture parameter for the Sobel() operator.
     3) k - Harris detector free parameter.
     """
 
-    def __init__(self, name, params):
+    def __init__(self, params):
         super().__init__('HarrisStephens', params)
 
     """
@@ -267,10 +267,22 @@ class HarrisStephens(CornersEdges2D):
         return names
 
     """
+    Returns list of input value descriptions 
+
+    @return list of stings, or None
+    """
+
+    def get_input_descriptions(self):
+        return ["Neighborhood size (see the details on cornerEigenValsAndVecs()).",
+                "Aperture parameter for the Sobel() operator.",
+                "Harris detector free parameter."]
+
+    """
     Returns list of strings decsribing boilerplate information about feature, including citations, if nay
     """
 
-    def get_boilerplate(self):
+    @staticmethod
+    def get_boilerplate():
         ret = super().get_boilerplate()
         ret.append('Harris-Stephens corner edge detection')
         ret.append(
@@ -294,14 +306,13 @@ class ShiTomasi(CornersEdges2D):
     """
     Initialization
 
-    @param name: short name of the feature
     @param params: parameter list for the feature instance
     1) maxCorners Maximum number of corners to return. If there are more corners than are found, the strongest of them is returned.
     2) qualityLevel Parameter characterizing the minimal accepted quality of image corners. The parameter value is multiplied by the best corner quality measure, which is the minimal eigenvalue (see cornerMinEigenVal() ) or the Harris function response (see cornerHarris() ). The corners with the quality measure less than the product are rejected. For example, if the best corner has the quality measure = 1500, and the qualityLevel=0.01 , then all the corners with the quality measure less than 15 are rejected.
     3) minDistance Minimum possible Euclidean distance between the returned corners.
     """
 
-    def __init__(self, name, params):
+    def __init__(self, params):
         super().__init__('ShiTomasi', params)
 
     """
@@ -464,10 +475,22 @@ class ShiTomasi(CornersEdges2D):
         return names
 
     """
+    Returns list of input value descriptions 
+
+    @return list of stings, or None
+    """
+
+    def get_input_descriptions(self):
+        return ["Maximum number of corners to return. If there are more corners than are found, the strongest of them is returned.",
+                "Parameter characterizing the minimal accepted quality of image corners. The parameter value is multiplied by the best corner quality measure, which is the minimal eigenvalue (see cornerMinEigenVal() ) or the Harris function response (see cornerHarris() ). The corners with the quality measure less than the product are rejected. For example, if the best corner has the quality measure = 1500, and the qualityLevel=0.01 , then all the corners with the quality measure less than 15 are rejected.",
+                "Distance Minimum possible Euclidean distance between the returned corners."]
+
+    """
     Returns list of strings decsribing boilerplate information about feature, including citations, if nay
     """
 
-    def get_boilerplate(self):
+    @staticmethod
+    def get_boilerplate():
         ret = super().get_boilerplate()
         ret.append('Shi-Tomasi corner detection')
         ret.append('Shi, J. and Tomasi, C., 1993. Good features to track. Cornell University.')
@@ -804,12 +827,10 @@ class Frangi(Objprop):
     """
     Initialization
 
-    @param name: short name of the feature
-    @param params: not in use
     """
 
-    def __init__(self, name, params):
-        super().__init__('Frangi', params)
+    def __init__(self):
+        super().__init__('Frangi', None)
 
     """
     Function applying Frangi filter
@@ -849,11 +870,23 @@ class Frangi(Objprop):
     def get_return_value_short_names(self):
         return super().casefun_3D_2D_objectprops_name_generator('Frangi', [])
 
+
+    """
+    Returns list of input value descriptions 
+
+    @return list of stings, or None
+    """
+
+    def get_input_descriptions(self):
+        return None
+
+
     """
     Returns list of strings decsribing boilerplate information about feature, including citations, if nay
     """
 
-    def get_boilerplate(self):
+    @staticmethod
+    def get_boilerplate():
         ret = super().get_boilerplate()
         ret.append('Object properties of Frangi filtered data')
         ret.append(
@@ -870,12 +903,10 @@ class Scharr(Objprop):
     """
     Initialization
 
-    @param name: short name of the feature
-    @param params: not in use
     """
 
-    def __init__(self, name, params):
-        super().__init__('Scharr', params)
+    def __init__(self):
+        super().__init__('Scharr', None)
 
     """
     Function applying Frangi filter
@@ -915,10 +946,20 @@ class Scharr(Objprop):
         return super().casefun_3D_2D_objectprops_name_generator('Scharr', [])
 
     """
+    Returns list of input value descriptions 
+
+    @return list of stings, or None
+    """
+
+    def get_input_descriptions(self):
+        return None
+
+    """
     Returns list of strings decsribing boilerplate information about feature, including citations, if nay
     """
 
-    def get_boilerplate(self):
+    @staticmethod
+    def get_boilerplate():
         ret = super().get_boilerplate()
         ret.append('Object properties of Scharr filtered data')
         ret.append('B. Jaehne, H. Scharr, and S. Koerkel. Principles of filter design. In Handbook of Computer Vision and Applications. Academic Press, 1999.')
@@ -934,17 +975,18 @@ class Hessian(Objprop):
     """
     Initialization
 
-    @param name: short name of the feature
-    @param params: not in use
+    @param params:
+    1) Frangi correction constant that adjusts the filter’s sensitivity to deviation from a blob-like structure.
+    2) Frangi correction constant that adjusts the filter’s sensitivity to areas of high variance/texture/structure.
     """
 
-    def __init__(self, name, params):
+    def __init__(self, params):
         super().__init__('Hessian', params)
 
     """
     Function applying Hessian filter
     @param slice2D: slice for which to calculate features
-    @param params: not used
+    @param params: parameters to hessina filter
     """
     @staticmethod
     def subfun_Hessian(self, slice2D, params):
@@ -982,10 +1024,21 @@ class Hessian(Objprop):
         return names
 
     """
+    Returns list of input value descriptions 
+
+    @return list of stings, or None
+    """
+
+    def get_input_descriptions(self):
+        return ["Frangi correction constant that adjusts the filter’s sensitivity to deviation from a blob-like structure.",
+                "Frangi correction constant that adjusts the filter’s sensitivity to areas of high variance/texture/structure."]
+
+    """
     Returns list of strings decsribing boilerplate information about feature, including citations, if nay
     """
 
-    def get_boilerplate(self):
+    @staticmethod
+    def get_boilerplate():
         ret = super().get_boilerplate()
         ret.append('Object properties of Hessian filtered data')
         ret.append('Choon-Ching Ng, Moi Hoon Yap, Nicholas Costen and Baihua Li, "Automatic Wrinkle Detection using Hybrid Hessian Filter".')

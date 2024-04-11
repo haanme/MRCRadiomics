@@ -98,11 +98,21 @@ class LocalBinaryPatterns(FeatureIndexandBackground):
         return casefun_3D_2D_local_binary_pattern_names
 
     """
+    Returns list of input value descriptions 
+
+    @return list of stings, or None
+    """
+
+    def get_input_descriptions(self):
+        return ["Number of circularly symmetric neighbour set points (quantization of the angular space)",
+                "Radius of circle (spatial resolution of the operator)"]
+
+    """
     Returns list of strings decsribing boilerplate information about feature, including citations, if nay
     """
 
     @staticmethod
-    def get_boilerplate(self):
+    def get_boilerplate():
         return ["[R387388]	Multiresolution Gray-Scale and Rotation Invariant Texture Classification with Local Binary Patterns. Timo Ojala, Matti Pietikainen, Topi Maenpaa. http://www.rafbis.it/biplab15/images/stories/docenti/Danielriccio/Articoliriferimento/LBP.pdf, 2002.",
                 "[R388388]	(1, 2) Face recognition with local binary patterns. Timo Ahonen, Abdenour Hadid, Matti Pietikainen, http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.214.6851, 2004."]
         pass

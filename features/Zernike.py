@@ -23,8 +23,8 @@ class Zernike(Feature):
     3) repetition number of zernike moment
     """
 
-    def __init__(self, name, params):
-        super('Laws2D', params)
+    def __init__(self, params):
+        super('Zernike', params)
         # Size of patch
         self.s = params[0]
         # n = The order of Zernike moment (scalar)
@@ -127,11 +127,21 @@ class Zernike(Feature):
         return casefun_names
 
     """
+    Returns list of input value descriptions 
+
+    @return list of stings, or None
+    """
+
+    def get_input_descriptions(self):
+        return ["Size of patch", "Order of zernike moment", "Repetition number of zernike moment"]
+
+
+    """
     Returns list of strings decsribing boilerplate information about feature, including citations, if nay
     """
 
     @staticmethod
-    def get_boilerplate(self):
+    def get_boilerplate():
         ret = []
         ret.append(
             "[1] A. Tahmasbi, F. Saki, S. B. Shokouhi, Classification of Benign and Malignant Masses Based on Zernike Moments, Comput. Biol. Med., vol. 41, no. 8, pp. 726-735, 2011.")

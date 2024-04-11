@@ -312,11 +312,20 @@ class Laws3D(FeatureIndexandBackground):
         return names
 
     """
+    Returns list of input value descriptions 
+
+    @return list of stings, or None
+    """
+
+    def get_input_descriptions(self):
+        return ["Resolution factor affecting laws feature sampling ratio 1: original resolution <1: upsampling >1: downsampling"]
+
+    """
     Returns list of strings decsribing boilerplate information about feature, including citations, if nay
     """
 
     @staticmethod
-    def get_boilerplate(self):
+    def get_boilerplate():
         return ['3D analogue of laws texture features.',
                 'Suzuki, M.T. and Yaginuma, Y., 2007, January.',
                 'A solid texture analysis based on three - dimensional convolution kernels.In Videometrics IX(Vol. 6491,p. 64910W).',

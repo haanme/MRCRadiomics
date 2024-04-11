@@ -64,7 +64,7 @@ class Hu(FeatureIndexandBackground):
     @param name: name of the feature class, without spaces
     """
 
-    def __init__(self, name, params):
+    def __init__(self, params):
         super('Hu', params)
 
 
@@ -79,7 +79,7 @@ class Hu(FeatureIndexandBackground):
     @param resolution: spatial resolution
     """
 
-    def calculate_2D_contour_measures(contours, resolution):
+    def calculate_2D_contour_measures(self, contours, resolution):
 
         if len(contours[1]) == 0:
             print('len(contours[1]) == 0')
@@ -188,9 +188,7 @@ class Hu(FeatureIndexandBackground):
                     if 'write_visualization' in self.params[-1]:
                         LESIONDATAr_cvimg = utils.make_cv2_slice2D(intensity_images[:, :, z]).copy()
                         LESIONr_cvimg = utils.make_cv2_slice2D(foreground_mask_images[:, :, z]).copy()
-                        basename = self.params[-1]['name'] + '_2D_curvature_' + str(self.params[:-1]).replace(' ',
-                                                                                                    '_') + '_slice' + str(
-                            z)
+                        basename = self.params[-1]['name'] + '_2D_curvature_' + str(self.params[:-1]).replace(' ', '_') + '_slice' + str(z)
                         visualizations.write_slice2D(LESIONDATAr_cvimg,
                                                      self.params[-1][
                                                          'write_visualization'] + os.sep + basename + '_data.tiff')
@@ -360,11 +358,21 @@ class Hu(FeatureIndexandBackground):
         return names
 
     """
+    Returns list of input value descriptions 
+
+    @return list of stings, or None
+    """
+
+    def get_input_descriptions(self):
+        return ["Number of histogram bins",
+                "(Optional) Write visualization"]
+
+    """
     Returns list of strings decsribing boilerplate information about feature, including citations, if nay
     """
 
     @staticmethod
-    def get_boilerplate(self):
+    def get_boilerplate():
         return ['Hu, M.K., 1962. Visual pattern recognition by moment invariants. IRE transactions on information theory, 8(2), pp.179-187.']
 
 

@@ -14,7 +14,7 @@ Laws features
 """
 
 
-class Laws(FeatureIndexandBackground):
+class Laws2D(FeatureIndexandBackground):
 
     """
     Names of extracted Laws feature statistical descriptors
@@ -276,11 +276,20 @@ class Laws(FeatureIndexandBackground):
         return names
 
     """
+    Returns list of input value descriptions 
+
+    @return list of stings, or None
+    """
+
+    def get_input_descriptions(self):
+        return ["Resolution factor affecting laws feature sampling ratio 1: original resolution <1: upsampling >1: downsampling"]
+
+    """
     Returns list of strings decsribing boilerplate information about feature, including citations, if nay
     """
 
     @staticmethod
-    def get_boilerplate(self):
+    def get_boilerplate():
         return ['Laws texture features',
                 'K. Laws "Textured Image Segmentation", Ph.D. Dissertation, University of Southern California, January 1980',
                 'A. Meyer-Base, "Pattern Recognition for Medical Imaging", Academic Press, 2004.',

@@ -25,10 +25,21 @@ __version__ = "1.2.0"
 import os
 import numpy as np
 import sys
-from features import Moments, BackgroundMoments, BackgroundMomentsRelative, FastFourier2D, FastFourier2D_background, Laws2D, Laws3D, Zernike, LocalBinaryPatterns, Gabor, Hu, Wavelet
 from features.CornersEdges2D import HarrisStephens, ShiTomasi, Frangi, Hessian, Scharr
 from features.CornersEdges2D_background import HarrisStephensBackground, HessianBackground
+from features.Laws2D import Laws2D
+from features.Laws3D import Laws3D
 from features.Laws3D_background import Laws3D_Background
+from features.Moments import Moments
+from features.BackgroundMoments import BackgroundMoments
+from features.BackgroundMomentsRelative import BackgroundMomentsRelative
+from features.FastFourier2D import FastFourier2D
+from features.FastFourier2D_background import FastFourier2D_background
+from features.Zernike import Zernike
+from features.Gabor import Gabor
+from features.Hu import Hu
+from features.Wavelet import Wavelet
+from features.LocalBinaryPatterns import LocalBinaryPatterns
 from utilities import load_nifti
 from glob import glob
 from argparse import ArgumentParser
@@ -53,12 +64,12 @@ def print_verbose(entry, verbose):
 Adds definitions of 2D Laws features
 
 @param datafuns: current feature settings
-@param prefix: input data basename
+@param boilerplate_str: list of boilerplate strings, appended if not None
 @returns: updated feature settings list
 """
 
 
-def add_Laws(method, datafuns, prefix):
+def add_Laws(method, datafuns, boilerplate_str):
     if method is None:
         datafuns.append('Laws')
     if method == 'Laws':
@@ -66,19 +77,20 @@ def add_Laws(method, datafuns, prefix):
         datafuns.append(Laws2D([1.0]))
         datafuns.append(Laws2D([2.0]))
         datafuns.append(Laws2D([4.0]))
-    return datafuns
+    if boilerplate_str is not None:
+        boilerplate_str.append(Laws2D.get_boilerplate())
+    return datafuns, boilerplate_str
 
 
 """
 Adds definitions of 3D Laws features
 
 @param datafuns: current feature settings
-@param prefix: input data basename
 @returns: updated feature settings list
 """
 
 
-def add_Laws3D(method, datafuns, prefix):
+def add_Laws3D(method, datafuns, boilerplate_str):
     if method is None:
         datafuns.append('Laws3D')
     if method == 'Laws3D':
@@ -86,19 +98,21 @@ def add_Laws3D(method, datafuns, prefix):
         datafuns.append(Laws3D([1.0]))
         datafuns.append(Laws3D([2.0]))
         datafuns.append(Laws3D([4.0]))
-    return datafuns
+    if boilerplate_str is not None:
+        boilerplate_str.append(Laws3D.get_boilerplate())
+
+    return datafuns, boilerplate_str
 
 
 """
 Adds definitions of 3D Laws features, for whole organ
 
 @param datafuns: current feature settings
-@param prefix: input data basename
 @returns: updated feature settings list
 """
 
 
-def add_Laws3D_BG(method, datafuns, prefix):
+def add_Laws3D_BG(method, datafuns, boilerplate_str):
     if method is None:
         datafuns.append('BGLaws3D')
     if method == 'BGLaws3D':
@@ -106,19 +120,20 @@ def add_Laws3D_BG(method, datafuns, prefix):
         datafuns.append(Laws3D_Background([1.0]))
         datafuns.append(Laws3D_Background([2.0]))
         datafuns.append(Laws3D_Background([4.0]))
-    return datafuns
+    if boilerplate_str is not None:
+        boilerplate_str.append(Laws3D_Background.get_boilerplate())
+    return datafuns, boilerplate_str
 
 
 """
 Adds definitions of Local Binary Patterns.
 
 @param datafuns: current feature settings
-@param prefix: input data basename
 @returns: updated feature settings list
 """
 
 
-def add_LBP(method, datafuns, prefix):
+def add_LBP(method, datafuns, boilerplate_str):
     if method is None:
         datafuns.append('LBP')
     if method == 'LBP':
@@ -128,19 +143,20 @@ def add_LBP(method, datafuns, prefix):
         datafuns.append(LocalBinaryPatterns([8, 2]))
         datafuns.append(LocalBinaryPatterns([4, 3]))
         datafuns.append(LocalBinaryPatterns([8, 3]))
-    return datafuns
+    if boilerplate_str is not None:
+        boilerplate_str.append(LocalBinaryPatterns.get_boilerplate())
+    return datafuns, boilerplate_str
 
 
 """
 Adds definitions of Hu invariant moments.
 
 @param datafuns: current feature settings
-@param prefix: input data basename
 @returns: updated feature settings list
 """
 
 
-def add_Hu(method, datafuns, prefix):
+def add_Hu(method, datafuns, boilerplate_str):
     if method is None:
         datafuns.append('HU')
     if method == 'HU':
@@ -148,59 +164,62 @@ def add_Hu(method, datafuns, prefix):
         datafuns.append(Hu([2]))
         datafuns.append(Hu([3]))
         datafuns.append(Hu([4]))
-    return datafuns
+    if boilerplate_str is not None:
+        boilerplate_str.append(Hu.get_boilerplate())
+    return datafuns, boilerplate_str
 
 
 """
 Adds definitions of Zernike features
 
 @param datafuns: current feature settings
-@param prefix: input data basename
 @returns: updated feature settings list
 """
 
 
-def add_Zernike(method, datafuns, prefix):
+def add_Zernike(method, datafuns, boilerplate_str):
     if method is None:
         datafuns.append('Zernike')
     if method == 'Zernike':
-        datafuns.append(Zernike(9, 8, 8))
-        datafuns.append(Zernike(15, 5, 5))
-        datafuns.append(Zernike(15, 6, 6))
-        datafuns.append(Zernike(17, 6, 6))
-        datafuns.append(Zernike(19, 6, 6))
-        datafuns.append(Zernike(21, 8, 8))
-        datafuns.append(Zernike(25, 12, 12))
-    return datafuns
+        datafuns.append(Zernike([9, 8, 8]))
+        datafuns.append(Zernike([15, 5, 5]))
+        datafuns.append(Zernike([15, 6, 6]))
+        datafuns.append(Zernike([17, 6, 6]))
+        datafuns.append(Zernike([19, 6, 6]))
+        datafuns.append(Zernike([21, 8, 8]))
+        datafuns.append(Zernike([25, 12, 12]))
+    if boilerplate_str is not None:
+        boilerplate_str.append(Zernike.get_boilerplate())
+    return datafuns, boilerplate_str
 
 
 """
 Adds definitions of Wavelet features
 
 @param datafuns: current feature settings
-@param prefix: input data basename
 @returns: updated feature settings list
 """
 
 
-def add_Wavelet(method, datafuns, prefix):
+def add_Wavelet(method, datafuns, boilerplate_str):
     if method is None:
         datafuns.append('Wavelet')
     if method == 'Wavelet':
         datafuns.append(Wavelet(['Haar', 1.0]))
-    return datafuns
+    if boilerplate_str is not None:
+        boilerplate_str.append(Wavelet.get_boilerplate())
+    return datafuns, boilerplate_str
 
 
 """
 Adds definitions of Gabor filter features
 
 @param datafuns: current feature settings
-@param prefix: input data basename
 @returns: updated feature settings list
 """
 
 
-def add_Gabor(method, datafuns, prefix):
+def add_Gabor(method, datafuns, boilerplate_str):
     if method is None:
         datafuns.append('Gabor')
     if method == 'Gabor':
@@ -210,19 +229,20 @@ def add_Gabor(method, datafuns, prefix):
                     if frequency >= kernelsize:
                         continue
                     datafuns.append(Gabor([frequency, directions, kernelsize]))
-    return datafuns
+    if boilerplate_str is not None:
+        boilerplate_str.append(Gabor.get_boilerplate())
+    return datafuns, boilerplate_str
 
 
 """
 Adds definitions of 2D corner edge detector features
 
 @param datafuns: current feature settings
-@param prefix: input data basename
 @returns: updated feature settings list
 """
 
 
-def add_edges_corners2D3D(method, datafuns, prefix):
+def add_edges_corners2D3D(method, datafuns, boilerplate_str):
     if method is None:
         datafuns.append('EdgesCorners2D3D')
     if method == 'EdgesCorners2D3D':
@@ -243,19 +263,24 @@ def add_edges_corners2D3D(method, datafuns, prefix):
         datafuns.append(Hessian([0.005, 15]))
         datafuns.append(Hessian([0.025, 15]))
         datafuns.append(Scharr())
-    return datafuns
+    if boilerplate_str is not None:
+        boilerplate_str.append(HarrisStephens.get_boilerplate())
+        boilerplate_str.append(ShiTomasi.get_boilerplate())
+        boilerplate_str.append(Frangi.get_boilerplate())
+        boilerplate_str.append(Hessian.get_boilerplate())
+        boilerplate_str.append(Scharr.get_boilerplate())
+    return datafuns, boilerplate_str
 
 
 """
 Adds definitions of 2D corner edge detector features, for whole organ
 
 @param datafuns: current feature settings
-@param prefix: input data basename
 @returns: updated feature settings list
 """
 
 
-def add_bg_edges_corners2D3D(method, datafuns, prefix):
+def add_bg_edges_corners2D3D(method, datafuns, boilerplate_str):
     if method is None:
         datafuns.append('BGEdgesCorners2D3D')
     if method == 'BGEdgesCorners2D3D':
@@ -271,36 +296,39 @@ def add_bg_edges_corners2D3D(method, datafuns, prefix):
         # qualityLevel (%) Parameter characterizing the minimal accepted quality of image corners. The parameter value is multiplied by the best corner quality measure, which is the minimal eigenvalue (see cornerMinEigenVal() ) or the Harris function response (see cornerHarris() ). The corners with the quality measure less than the product are rejected. For example, if the best corner has the quality measure = 1500, and the qualityLevel=0.01 , then all the corners with the quality measure less than 15 are rejected.
         # minDistance (mm) Minimum possible Euclidean distance between the returned corners.
         datafuns.append(HessianBackground([0.025, 15]))
-    return datafuns
+    if boilerplate_str is not None:
+        boilerplate_str.append(HarrisStephensBackground.get_boilerplate())
+        boilerplate_str.append(HessianBackground.get_boilerplate())
+    return datafuns, boilerplate_str
 
 
 """
 Adds definitions of 1st order statistics
 
 @param datafuns: current feature settings
-@param prefix: input data basename
 @returns: updated feature settings list
 """
 
 
-def add_moments(method, datafuns, prefix):
+def add_moments(method, datafuns, boilerplate_str):
     if method is None:
         datafuns.append('Moments')
     if method == 'Moments':
         datafuns.append(Moments())
-    return datafuns
+    if boilerplate_str is not None:
+        boilerplate_str.append(HessianBackground.get_boilerplate())
+    return datafuns, boilerplate_str
 
 
 """
 Adds definitions of shape, topology, and surface intensity features
 
 @param datafuns: current feature settings
-@param prefix: input data basename
 @returns: updated feature settings list
 """
 
 
-def add_shapes(method, datafuns, prefix):
+def add_shapes(method, datafuns, boilerplate_str):
     if method is None:
         datafuns.append('Shapes')
     if method == 'Shapes':
@@ -314,19 +342,18 @@ def add_shapes(method, datafuns, prefix):
                          True, True, []))
         datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_GLCM, textures_3D.casefun_3D_GLCM_names,
                          True, True, []))
-    return datafuns
+    return datafuns, boilerplate_str
 
 
 """
 Adds definitions of shape, topology, and surface intensity features, for whole organ
 
 @param datafuns: current feature settings
-@param prefix: input data basename
 @returns: updated feature settings list
 """
 
 
-def add_BGShapes(method, datafuns, prefix):
+def add_BGShapes(method, datafuns, boilerplate_str):
     if method is None:
         datafuns.append('BGShapes')
     if method == 'BGShapes':
@@ -336,41 +363,39 @@ def add_BGShapes(method, datafuns, prefix):
                          textures_3D.casefun_3D_surface_textures_names_BG, False, True, []))
         datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_GLCM_BG,
                          textures_3D.casefun_3D_GLCM_names_BG, False, True, []))
-    return datafuns
+    return datafuns, boilerplate_str
 
 
 """
 Adds definitions of 1st order statistics, for whole organ
 
 @param datafuns: current feature settings
-@param prefix: input data basename
 @returns: updated feature settings list
 """
 
 
-def add_BGMoments(method, datafuns, prefix):
+def add_BGMoments(method, datafuns, boilerplate_str):
     if method is None:
         datafuns.append('BGMoments')
     if method == 'BGMoments':
         datafuns.append(BackgroundMoments())
-    return datafuns
+    return datafuns, boilerplate_str
 
 
 """
 Adds definitions of 1st order statistics, for whole organ / lesion relative values
 
 @param datafuns: current feature settings
-@param prefix: input data basename
 @returns: updated feature settings list
 """
 
 
-def add_relativeBGMoments(method, datafuns, prefix):
+def add_relativeBGMoments(method, datafuns, boilerplate_str):
     if method is None:
         datafuns.append('relativeBGMoments')
     if method == 'relativeBGMoments':
         datafuns.append(BackgroundMomentsRelative([]))
-    return datafuns
+    return datafuns, boilerplate_str
 
 
 """
@@ -379,17 +404,16 @@ This method is generally used as reference method for comparison
 with other features.
 
 @param datafuns: current feature settings
-@param prefix: input data basename
 @returns: updated feature settings
 """
 
 
-def add_FFT2D(method, datafuns, prefix):
+def add_FFT2D(method, datafuns, boilerplate_str):
     if method is None:
         datafuns.append('FFT2D')
     if method == 'FFT2D':
         datafuns.append(FastFourier2D([1.0, 1.0, 5.0, 5.0]))
-    return datafuns
+    return datafuns, boilerplate_str
 
 
 """
@@ -398,17 +422,16 @@ This method is generally used as reference method for comparison
 with other features.
 
 @param datafuns: current feature settings
-@param prefix: input data basename
 @returns: updated feature settings
 """
 
 
-def add_FFT2DBG(method, datafuns, prefix):
+def add_FFT2DBG(method, datafuns, boilerplate_str):
     if method is None:
         datafuns.append('BGFFT2D')
     if method == 'BGFFT2D':
         datafuns.append(FastFourier2D_background([1.0, 1.0, 5.0, 5.0]))
-    return datafuns
+    return datafuns, boilerplate_str
 
 
 """
@@ -451,25 +474,23 @@ def resolve_datafuns(method, modality, boilerplate):
     print_verbose('Resolving radiomic data functions to be used', verbose)
     datafuns = []
     boilerplate_str = []
-    datafuns, boilerplate_str = add_FFT2D(method, datafuns, boilerplate)
-    datafuns, boilerplate_str = add_FFT2DBG(method, datafuns, boilerplate)
-    datafuns, boilerplate_str = add_Laws(method, datafuns, boilerplate)
-    datafuns, boilerplate_str = add_Laws3D(method, datafuns, boilerplate)
-    datafuns, boilerplate_str = add_Laws3D_BG(method, datafuns, boilerplate)
-    datafuns, boilerplate_str = add_edges_corners2D3D(method, datafuns, boilerplate)
-    datafuns, boilerplate_str = add_bg_edges_corners2D3D(method, datafuns, boilerplate)
-    datafuns, boilerplate_str = add_Gabor(method, datafuns, boilerplate)
-    datafuns, boilerplate_str = add_LBP(method, datafuns, boilerplate)
-    datafuns, boilerplate_str = add_Hu(method, datafuns, boilerplate)
-    datafuns, boilerplate_str = add_moments(method, datafuns, boilerplate)
-    datafuns, boilerplate_str = add_shapes(method, datafuns, boilerplate)
-    datafuns, boilerplate_str = add_BGShapes(method, datafuns, boilerplate)
-    datafuns, boilerplate_str = add_relativeBGMoments(method, datafuns, boilerplate)
-    datafuns, boilerplate_str = add_Moments2(method, datafuns, boilerplate)
-    datafuns, boilerplate_str = add_BGMoments(method, datafuns, boilerplate)
-    datafuns, boilerplate_str = add_Zernike(method, datafuns, boilerplate)
-    datafuns, boilerplate_str = add_Wavelet(method, datafuns, boilerplate)
-    datafuns, boilerplate_str = add_SignalToNoiseRatios(method, datafuns, boilerplate)
+    datafuns, boilerplate_str = add_FFT2D(method, datafuns, boilerplate_str)
+    datafuns, boilerplate_str = add_FFT2DBG(method, datafuns, boilerplate_str)
+    datafuns, boilerplate_str = add_Laws(method, datafuns, boilerplate_str)
+    datafuns, boilerplate_str = add_Laws3D(method, datafuns, boilerplate_str)
+    datafuns, boilerplate_str = add_Laws3D_BG(method, datafuns, boilerplate_str)
+    datafuns, boilerplate_str = add_edges_corners2D3D(method, datafuns, boilerplate_str)
+    datafuns, boilerplate_str = add_bg_edges_corners2D3D(method, datafuns, boilerplate_str)
+    datafuns, boilerplate_str = add_Gabor(method, datafuns, boilerplate_str)
+    datafuns, boilerplate_str = add_LBP(method, datafuns, boilerplate_str)
+    datafuns, boilerplate_str = add_Hu(method, datafuns, boilerplate_str)
+    datafuns, boilerplate_str = add_moments(method, datafuns, boilerplate_str)
+    datafuns, boilerplate_str = add_shapes(method, datafuns, boilerplate_str)
+    datafuns, boilerplate_str = add_BGShapes(method, datafuns, boilerplate_str)
+    datafuns, boilerplate_str = add_relativeBGMoments(method, datafuns, boilerplate_str)
+    datafuns, boilerplate_str = add_BGMoments(method, datafuns, boilerplate_str)
+    datafuns, boilerplate_str = add_Zernike(method, datafuns, boilerplate_str)
+    datafuns, boilerplate_str = add_Wavelet(method, datafuns, boilerplate_str)
     return datafuns, boilerplate_str
 
 
