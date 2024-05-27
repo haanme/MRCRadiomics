@@ -3,7 +3,7 @@ import copy
 from abc import abstractmethod, ABC
 import numpy as np
 import os
-import utils
+import features.Utils
 import cv2
 from skimage import measure
 import scipy.stats
@@ -81,9 +81,9 @@ class HarrisStephensBackground(FeatureIndexandBackground):
             if (np.max(LS) == 0 and np.max(BG) == 0):
                 continue
             if (slices == 1):
-                cvimg = utils.make_cv2_slice2D(intensity_images[:, :])
+                cvimg = Utils.make_cv2_slice2D(intensity_images[:, :])
             else:
-                cvimg = utils.make_cv2_slice2D(intensity_images[:, :, slice_i])
+                cvimg = Utils.make_cv2_slice2D(intensity_images[:, :, slice_i])
             edgemap = abs(cv2.cornerHarris(cvimg, blockSize, ksize, k))
             ROIdata = copy.deepcopy(edgemap)
             ROIdata[LS == 0] = 0
@@ -210,10 +210,9 @@ class HarrisStephensBackground(FeatureIndexandBackground):
 
     @staticmethod
     def get_boilerplate():
-        ret = super().get_boilerplate()
+        ret = []
         ret.append('Harris-Stephens corner edge detection with background ROI')
-        ret.append(
-            'Harris, C. and Stephens, M., 1988, August. A combined corner and edge detector. In Alvey vision conference (Vol. 15, No. 50, pp. 10-5244).')
+        ret.append('Harris, C. and Stephens, M., 1988, August. A combined corner and edge detector. In Alvey vision conference (Vol. 15, No. 50, pp. 10-5244).')
         return ret
 
     """
@@ -300,7 +299,7 @@ class HessianBackground(FeatureIndexandBackground):
                 if (np.max(background_mask_images[:, :, slice_i]) == 0):
                     continue
                 slice2Ddata = intensity_images[:, :, slice_i]
-            x_lo, x_hi, y_lo, y_hi = utils.find_bounded_subregion2D(slice2Ddata)
+            x_lo, x_hi, y_lo, y_hi = Utils.find_bounded_subregion2D(slice2Ddata)
             slice2Ddata = slice2Ddata[x_lo:x_hi, y_lo:y_hi]
             if slices == 1:
                 slice2D_ROI = background_mask_images[x_lo:x_hi, y_lo:y_hi]
@@ -437,10 +436,9 @@ class HessianBackground(FeatureIndexandBackground):
 
     @staticmethod
     def get_boilerplate():
-        ret = super().get_boilerplate()
+        ret = []
         ret.append('Object properties of Hessian filtered data')
-        ret.append(
-            'Choon-Ching Ng, Moi Hoon Yap, Nicholas Costen and Baihua Li, "Automatic Wrinkle Detection using Hybrid Hessian Filter".')
+        ret.append('Choon-Ching Ng, Moi Hoon Yap, Nicholas Costen and Baihua Li, "Automatic Wrinkle Detection using Hybrid Hessian Filter".')
         return ret
 
     """

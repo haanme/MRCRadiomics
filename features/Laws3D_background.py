@@ -8,7 +8,7 @@ import csv
 import sys
 import numpy as np
 import scipy.stats
-import utils
+import features.Utils
 import os.path as path
 
 numba_found = False
@@ -192,7 +192,7 @@ class Laws3D_Background(FeatureIndexandBackground):
         res_f = self.params[0]
 
         s = 5
-        x_lo, x_hi, y_lo, y_hi, z_lo, z_hi = utils.find_bounded_subregion3D(intensity_images)
+        x_lo, x_hi, y_lo, y_hi, z_lo, z_hi = Utils.find_bounded_subregion3D(intensity_images)
         x_lo -= 2
         x_hi += 2
         y_lo -= 2
@@ -212,15 +212,15 @@ class Laws3D_Background(FeatureIndexandBackground):
         # Create masks and output data to desired resolution, intensity data is resliced later for non-zero only
         min_res = np.max(resolution)
         new_res = [min_res * res_f, min_res * res_f, min_res * res_f]
-        BGrs_temp, affineBGrs_temp = utils.reslice_array(BGrs_temp, resolution, new_res, 0)
-        LESIONDATArs, affineLESIONDATArs = utils.reslice_array(LESIONDATArs, resolution, new_res, 1)
+        BGrs_temp, affineBGrs_temp = Utils.reslice_array(BGrs_temp, resolution, new_res, 0)
+        LESIONDATArs, affineLESIONDATArs = Utils.reslice_array(LESIONDATArs, resolution, new_res, 1)
 
         outdatas = []
         for kernel_i in range(1, len(Laws3Dkernel)):
             outdatas.append(np.zeros_like(LESIONDATArs))
 
         sys.stderr = io.StringIO()
-        for (x, y, z, window) in utils.sliding_window3D(LESIONDATArs, BGrs_temp, 1, (s, s, s)):
+        for (x, y, z, window) in Utils.sliding_window3D(LESIONDATArs, BGrs_temp, 1, (s, s, s)):
             window = np.subtract(window, np.mean(window))
             w_std = np.std(window)
             if w_std > 0:

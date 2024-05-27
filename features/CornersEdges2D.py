@@ -3,7 +3,7 @@ import copy
 from abc import abstractmethod, ABC
 import numpy as np
 import os
-import utils
+import features.Utils
 import cv2
 from skimage import measure
 import scipy.stats
@@ -154,9 +154,9 @@ class HarrisStephens(CornersEdges2D):
             if (np.max(LS) == 0 and np.max(BG) == 0):
                 continue
             if (slices == 1):
-                cvimg = utils.make_cv2_slice2D(intensity_images[:, :])
+                cvimg = Utils.make_cv2_slice2D(intensity_images[:, :])
             else:
-                cvimg = utils.make_cv2_slice2D(intensity_images[:, :, slice_i])
+                cvimg = Utils.make_cv2_slice2D(intensity_images[:, :, slice_i])
             edgemap = abs(cv2.cornerHarris(cvimg, blockSize, ksize, k))
             ROIdata = copy.deepcopy(edgemap)
             ROIdata[LS == 0] = 0
@@ -283,7 +283,7 @@ class HarrisStephens(CornersEdges2D):
 
     @staticmethod
     def get_boilerplate():
-        ret = super().get_boilerplate()
+        ret = super(HarrisStephens, HarrisStephens).get_boilerplate()
         ret.append('Harris-Stephens corner edge detection')
         ret.append(
             'Harris, C. and Stephens, M., 1988, August. A combined corner and edge detector. In Alvey vision conference (Vol. 15, No. 50, pp. 10-5244).')
@@ -348,14 +348,14 @@ class ShiTomasi(CornersEdges2D):
             if slices == 1:
                 if (np.max(foreground_mask_images[:, :]) == 0 and np.max(background_mask_images[:, :]) == 0):
                     continue
-                cvimg = utils.make_cv2_slice2D(intensity_images[:, :])
-                cvROImask = utils.make_cv2_slice2D(foreground_mask_images[:, :])
+                cvimg = Utils.make_cv2_slice2D(intensity_images[:, :])
+                cvROImask = Utils.make_cv2_slice2D(foreground_mask_images[:, :])
             else:
                 if (np.max(foreground_mask_images[:, :, slice_i]) == 0 and np.max(
                         background_mask_images[:, :, slice_i]) == 0):
                     continue
-                cvimg = utils.make_cv2_slice2D(intensity_images[:, :, slice_i])
-                cvROImask = utils.make_cv2_slice2D(foreground_mask_images[:, :, slice_i])
+                cvimg = Utils.make_cv2_slice2D(intensity_images[:, :, slice_i])
+                cvROImask = Utils.make_cv2_slice2D(foreground_mask_images[:, :, slice_i])
             locs_ROI = cv2.goodFeaturesToTrack(cvimg, maxCorners, qualityLevel, minDistance, mask=cvROImask)
             locs_ROI = np.squeeze(locs_ROI)
             if locs_ROI is None or len(locs_ROI.shape) == 0:
@@ -377,7 +377,7 @@ class ShiTomasi(CornersEdges2D):
             else:
                 sliceBGdata = copy.deepcopy(background_mask_images[:, :, slice_i])
                 sliceBGdata[foreground_mask_images[:, :, slice_i] > 0] = 0
-            cvBGmask = utils.make_cv2_slice2D(sliceBGdata)
+            cvBGmask = Utils.make_cv2_slice2D(sliceBGdata)
             locs_BG = cv2.goodFeaturesToTrack(cvimg, maxCorners, qualityLevel, minDistance, mask=cvBGmask)
             locs_BG = np.squeeze(locs_BG)
             if locs_BG is None or len(locs_BG.shape) == 0:
@@ -491,7 +491,7 @@ class ShiTomasi(CornersEdges2D):
 
     @staticmethod
     def get_boilerplate():
-        ret = super().get_boilerplate()
+        ret = super(ShiTomasi, ShiTomasi).get_boilerplate()
         ret.append('Shi-Tomasi corner detection')
         ret.append('Shi, J. and Tomasi, C., 1993. Good features to track. Cornell University.')
         return ret
@@ -563,7 +563,7 @@ class Objprop(CornersEdges2D, ABC):
                         background_mask_images[:, :, slice_i]) == 0):
                     continue
                 slice2Ddata = intensity_images[:, :, slice_i]
-            x_lo, x_hi, y_lo, y_hi = utils.find_bounded_subregion2D(slice2Ddata)
+            x_lo, x_hi, y_lo, y_hi = Utils.find_bounded_subregion2D(slice2Ddata)
             slice2Ddata = slice2Ddata[x_lo:x_hi, y_lo:y_hi]
             if slices == 1:
                 slice2D_ROI = foreground_mask_images[x_lo:x_hi, y_lo:y_hi]
@@ -580,8 +580,8 @@ class Objprop(CornersEdges2D, ABC):
 
             if (type(self.params) == list) and (len(self.params) > 1) and (not type(self.params[-1]) == int) and (
                     'write_visualization' in self.params[-1]):
-                LESIONDATAr_cvimg = utils.make_cv2_slice2D(intensity_images[:, :, slice_i]).copy()
-                LESIONr_cvimg = utils.make_cv2_slice2D(foreground_mask_images[:, :, slice_i]).copy()
+                LESIONDATAr_cvimg = Utils.make_cv2_slice2D(intensity_images[:, :, slice_i]).copy()
+                LESIONr_cvimg = Utils.make_cv2_slice2D(foreground_mask_images[:, :, slice_i]).copy()
                 basename = self.params[-1]['name'] + '_2D_curvature_' + str(self.params[:-1]).replace(' ', '_')
                 visualizations.write_slice2D(cvimg,
                                              self.params[-1]['write_visualization'] + os.sep + basename + '_data.tiff')
@@ -887,7 +887,7 @@ class Frangi(Objprop):
 
     @staticmethod
     def get_boilerplate():
-        ret = super().get_boilerplate()
+        ret = super(Frangi, Frangi).get_boilerplate()
         ret.append('Object properties of Frangi filtered data')
         ret.append(
             'A.Frangi, W.Niessen, K.Vincken, and M.Viergever. "Multiscale vessel enhancement filtering," In LNCS, vol. 1496, pages 130 - 137, Germany, 1998. Springer - Verlag.')
@@ -960,7 +960,7 @@ class Scharr(Objprop):
 
     @staticmethod
     def get_boilerplate():
-        ret = super().get_boilerplate()
+        ret = super(Scharr, Scharr).get_boilerplate()
         ret.append('Object properties of Scharr filtered data')
         ret.append('B. Jaehne, H. Scharr, and S. Koerkel. Principles of filter design. In Handbook of Computer Vision and Applications. Academic Press, 1999.')
         return ret
@@ -1039,7 +1039,7 @@ class Hessian(Objprop):
 
     @staticmethod
     def get_boilerplate():
-        ret = super().get_boilerplate()
+        ret = super(Hessian, Hessian).get_boilerplate()
         ret.append('Object properties of Hessian filtered data')
         ret.append('Choon-Ching Ng, Moi Hoon Yap, Nicholas Costen and Baihua Li, "Automatic Wrinkle Detection using Hybrid Hessian Filter".')
         return ret

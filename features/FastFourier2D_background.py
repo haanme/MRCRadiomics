@@ -5,8 +5,8 @@ import scipy.stats
 from scipy.ndimage.filters import gaussian_filter
 from scipy.interpolate import UnivariateSpline
 import cv2
-import utils
-import FastFourier2D
+import features.Utils
+import features.FastFourier2D
 
 """
 Statistical descriptors of intensity value distributions
@@ -93,7 +93,7 @@ class FastFourier2D_background(FeatureIndexandBackground):
         thresholds_FWHM = [float(x) for x in np.linspace(int(start_FWHM), int(end_FWHM), int(step_FWHM))]
 
         # print(np.max(LESIONDATAr))
-        x_lo, x_hi, y_lo, y_hi = utils.find_bounded_subregion3D2D(intensity_images)
+        x_lo, x_hi, y_lo, y_hi = Utils.find_bounded_subregion3D2D(intensity_images)
         # print((x_lo, x_hi, y_lo, y_hi))
         LESIONDATArs_temp = intensity_images[x_lo:x_hi, y_lo:y_hi, :]
         BG_rois_temp = background_mask_images[x_lo:x_hi, y_lo:y_hi, :]

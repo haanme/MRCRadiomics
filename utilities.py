@@ -12,6 +12,8 @@ import skimage
 import os
 import subprocess
 from skimage import measure
+import SimpleITK as sitk
+
 
 # Directory where result data are located
 experiment_dir = ''
@@ -60,6 +62,25 @@ def load_nifti(name, filename):
 
     return np.squeeze(data), affine, voxelsize
 
+
+
+def load_mha(name, filename):
+    """
+    Loads ITK data
+    :param name: data name for stdout
+    :param filename: loaded filename
+    :return: data matrix, affine transformation matrix, data voxelsize
+    """
+
+    image = sitk.ReadImage(filename, imageIO="MetaImageIO")
+    data = sitk.GetArrayViewFromImage(image)
+    voxelsize = image.GetSpacing()
+    affine = np.eye(4)
+    affine[0, 0] = voxelsize[0]
+    affine[1, 1] = voxelsize[1]
+    affine[2, 2] = voxelsize[2]
+    print('Loading ' + name + ':' + filename + ' ' + str(data.shape) + ' ' + str(voxelsize))
+    return np.squeeze(data), affine, voxelsize
 
 
 load_dcm_SUPP_exceptions1 = [2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034]

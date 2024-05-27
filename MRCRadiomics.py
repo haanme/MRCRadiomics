@@ -39,8 +39,10 @@ from features.Zernike import Zernike
 from features.Gabor import Gabor
 from features.Hu import Hu
 from features.Wavelet import Wavelet
+from features.Shapes import Shapes
+from features.Shapes_background import Shapes_background
 from features.LocalBinaryPatterns import LocalBinaryPatterns
-from utilities import load_nifti
+from utilities import load_nifti, load_mha
 from glob import glob
 from argparse import ArgumentParser
 import copy
@@ -332,16 +334,9 @@ def add_shapes(method, datafuns, boilerplate_str):
     if method is None:
         datafuns.append('Shapes')
     if method == 'Shapes':
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_shape, textures_3D.casefun_3D_shape_names,
-                         True, True, []))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_shape2,
-                         textures_3D.casefun_3D_shape2_names, True, True, []))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_surface_textures,
-                         textures_3D.casefun_3D_surface_textures_names, True, True, []))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_levelset, textures_3D.casefun_levelset_names,
-                         True, True, []))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_GLCM, textures_3D.casefun_3D_GLCM_names,
-                         True, True, []))
+        datafuns.append(Shapes())
+    if boilerplate_str is not None:
+        boilerplate_str.append(Shapes.get_boilerplate())
     return datafuns, boilerplate_str
 
 
@@ -357,12 +352,7 @@ def add_BGShapes(method, datafuns, boilerplate_str):
     if method is None:
         datafuns.append('BGShapes')
     if method == 'BGShapes':
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_shape_BG,
-                         textures_3D.casefun_3D_shape_names_BG, False, True, []))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_surface_textures_BG,
-                         textures_3D.casefun_3D_surface_textures_names_BG, False, True, []))
-        datafuns.append((prefix + '.nii', prefix, 2.0, textures_3D.casefun_3D_GLCM_BG,
-                         textures_3D.casefun_3D_GLCM_names_BG, False, True, []))
+        datafuns.append(Shapes_background())
     return datafuns, boilerplate_str
 
 
@@ -681,7 +671,7 @@ if __name__ == "__main__":
             print_verbose('Folder [' + folder + '] not matching required subfolder ' + required_case, verbose)
             continue
         print(cases_found)
-        if (case.strip(), LSname.strip('.nii'), BGname.strip('.nii')) in cases_found:
+        if (case.strip(), LSname.strip('.nii').strip('.mha'), BGname.strip('.nii').strip('.mha')) in cases_found:
             found_already_in_results += 1
             print_verbose('Folder [' + folder + '] already found in results', verbose)
             continue
@@ -690,11 +680,21 @@ if __name__ == "__main__":
 
         # Read ROIs
         if os.path.exists(folder + os.sep + BGname):
-            PM_data, PM_affine, PM_voxelsize = load_nifti(case + ' ' + BGname, folder + os.sep + BGname)
+            if '.nii' in BGname:
+                PM_data, PM_affine, PM_voxelsize = load_nifti(case + ' ' + BGname, folder + os.sep + BGname)
+            elif '.mha' in BGname:
+                LS_data, LS_affine, LS_voxelsize = load_mha(case + ' ' + LSname, folder + os.sep + LSname)
+            else:
+                print('Unrecogized file suffix:' + BGname)
         else:
             PM_data, PM_affine, PM_voxelsize = [None, None, None]
         if os.path.exists(folder + os.sep + LSname):
-            LS_data, LS_affine, LS_voxelsize = load_nifti(case + ' ' + LSname, folder + os.sep + LSname)
+            if '.nii' in LSname:
+                LS_data, LS_affine, LS_voxelsize = load_nifti(case + ' ' + LSname, folder + os.sep + LSname)
+            elif '.mha' in LSname:
+                LS_data, LS_affine, LS_voxelsize = load_mha(case + ' ' + LSname, folder + os.sep + LSname)
+            else:
+                print('Unrecogized file suffix:' + LSname)
         else:
             LS_data, LS_affine, LS_voxelsize = [None, None, None]
         LESIONmasks = [LS_data, LS_data]

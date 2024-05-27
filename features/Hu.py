@@ -1,13 +1,13 @@
 
 
-from Feature import FeatureIndexandBackgrounds
+from Feature import FeatureIndexandBackground
 import numpy as np
 import scipy.stats
 import os
 import copy
 import cv2
 from visualizations import visualizations
-import utils
+import features.Utils
 
 """
 HU moments
@@ -161,7 +161,7 @@ class Hu(FeatureIndexandBackground):
             for x in range(labelimage.shape[0]):
                 if len(np.unique(labelimage[x, :, :])) < 2:
                     continue
-                cvimg = utils.make_cv2_slice2D(labelimage[x, :, :]).copy()
+                cvimg = Utils.make_cv2_slice2D(labelimage[x, :, :]).copy()
                 contours = cv2.findContours(cvimg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                 contour_measures = self.calculate_2D_contour_measures(contours, resolution2D)
                 if contour_measures is not None:
@@ -171,7 +171,7 @@ class Hu(FeatureIndexandBackground):
             for y in range(labelimage.shape[1]):
                 if len(np.unique(labelimage[:, y, :])) < 2:
                     continue
-                cvimg = utils.make_cv2_slice2D(labelimage[:, y, :]).copy()
+                cvimg = Utils.make_cv2_slice2D(labelimage[:, y, :]).copy()
                 contours = cv2.findContours(cvimg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                 contour_measures = self.calculate_2D_contour_measures(contours, resolution2D)
                 if contour_measures is not None:
@@ -181,13 +181,13 @@ class Hu(FeatureIndexandBackground):
             for z in range(labelimage.shape[2]):
                 if len(np.unique(labelimage[:, :, z])) < 2:
                     continue
-                cvimg = utils.make_cv2_slice2D(labelimage[:, :, z]).copy()
+                cvimg = Utils.make_cv2_slice2D(labelimage[:, :, z]).copy()
                 contours = cv2.findContours(cvimg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                 contour_measures = self.calculate_2D_contour_measures(contours, resolution2D)
                 if contour_measures is not None:
                     if 'write_visualization' in self.params[-1]:
-                        LESIONDATAr_cvimg = utils.make_cv2_slice2D(intensity_images[:, :, z]).copy()
-                        LESIONr_cvimg = utils.make_cv2_slice2D(foreground_mask_images[:, :, z]).copy()
+                        LESIONDATAr_cvimg = Utils.make_cv2_slice2D(intensity_images[:, :, z]).copy()
+                        LESIONr_cvimg = Utils.make_cv2_slice2D(foreground_mask_images[:, :, z]).copy()
                         basename = self.params[-1]['name'] + '_2D_curvature_' + str(self.params[:-1]).replace(' ', '_') + '_slice' + str(z)
                         visualizations.write_slice2D(LESIONDATAr_cvimg,
                                                      self.params[-1][

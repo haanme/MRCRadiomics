@@ -6,7 +6,7 @@ from scipy.signal import correlate2d
 from scipy import stats
 import cv2
 from scipy.stats import iqr
-from utils import find_bounded_subregion3D2D, sliding_window
+from features.Utils import find_bounded_subregion3D2D, sliding_window
 
 
 """

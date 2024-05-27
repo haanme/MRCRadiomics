@@ -1,2 +1,3 @@
-echo docker run -it --rm -v %CD%:/data -w /data --entrypoint /bin/bash haanme/mrcradiomics:1.1.0
-docker run --rm -v %CD%:/data -w /data haanme/mrcradiomics:1.1.2
+echo docker run -it --rm -v %CD%:/data -w /data --entrypoint /bin/bash haanme/mrcradiomics:1.3.0
+#docker run -it --rm -v %CD%:/data -w /data --entrypoint /usr/bin/bash haanme/mrcradiomics:1.3.0
+docker run --rm -v %CD%:/data -w /data haanme/mrcradiomics:1.3.0

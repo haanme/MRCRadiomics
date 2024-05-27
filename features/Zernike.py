@@ -1,7 +1,7 @@
-import Feature
+from Feature import Feature
 import numpy as np
 import scipy
-import utils
+import features.Utils
 
 try:
     from skimage import filters
@@ -42,7 +42,7 @@ class Zernike(Feature):
         from pyzernikemoment import Zernikemoment
         output = np.zeros_like(slicedata)
         mid = int(np.floor(self.s / 2.0))
-        for (x, y, window) in utils.sliding_window(slicedata, 1, (self.s, self.s)):
+        for (x, y, window) in Utils.sliding_window(slicedata, 1, (self.s, self.s)):
             if np.min(window) == np.max(window):
                 continue
             val = filters.threshold_otsu(window)
@@ -122,7 +122,7 @@ class Zernike(Feature):
 
     def get_return_value_short_names(self):
         casefun_names = []
-        for statname in ['mean', 'meadian', '25percentile', '75percentile', 'skewness', 'kutosis', 'SD', 'range', 'CV']
+        for statname in ['mean', 'meadian', '25percentile', '75percentile', 'skewness', 'kutosis', 'SD', 'range', 'CV']:
             casefun_names.append('Z' + str(self.s) + '_' + str(self.n) + '_' + str(self.m) + '_' + statname)
         return casefun_names
 

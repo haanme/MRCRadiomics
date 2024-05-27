@@ -4,9 +4,9 @@ from Feature import FeatureIndexandBackground
 import numpy as np
 import os
 import scipy.stats
-import skimage.filters.gabor
+from skimage.filters import gabor
 from visualizations import visualizations
-import utils
+import features.Utils
 
 """
 2D Gabor filter using skimage python package
@@ -62,7 +62,7 @@ class Gabor(FeatureIndexandBackground):
                     slicedata = intensity_images[:, :, slice_i, t]
                     filt_reals = np.zeros([intensity_images.shape[0], intensity_images.shape[1], len(radians)])
                     for r_i in range(len(radians)):
-                        filt_real, filt_imag = skimage.filters.gabor(slicedata, frequency=self.params[0], theta=radians[r_i],
+                        filt_real, filt_imag = gabor(slicedata, frequency=self.params[0], theta=radians[r_i],
                                                                      n_stds=self.params[2])
                         filt_reals[:, :, r_i] = filt_real
                     outdata[:, :, slice_i, t] = np.mean(filt_reals, 2)
@@ -73,7 +73,7 @@ class Gabor(FeatureIndexandBackground):
                     slicedata = intensity_images[:, :, slice_i]
                 filt_reals = np.zeros([intensity_images.shape[0], intensity_images.shape[1], len(radians)])
                 for r_i in range(len(radians)):
-                    filt_real, filt_imag = skimage.filters.gabor(slicedata, frequency=self.params[0], theta=radians[r_i],
+                    filt_real, filt_imag = gabor(slicedata, frequency=self.params[0], theta=radians[r_i],
                                                                  n_stds=self.params[2])
                     filt_reals[:, :, r_i] = filt_real
                 if slices == 1:
@@ -88,10 +88,10 @@ class Gabor(FeatureIndexandBackground):
                         continue
                     if not self.params[2] == 2:
                         continue
-                    LESIONDATAr_cvimg = utils.make_cv2_slice2D(slicedata).copy()
-                    LESIONr_cvimg = utils.make_cv2_slice2D(foreground_mask_images[:, :, slice_i]).copy()
-                    BG_roi_cvimg = utils.make_cv2_slice2D(background_mask_images[:, :, slice_i]).copy()
-                    outdata_cvimg = utils.make_cv2_slice2D(outdata[:, :, slice_i]).copy()
+                    LESIONDATAr_cvimg = Utils.make_cv2_slice2D(slicedata).copy()
+                    LESIONr_cvimg = Utils.make_cv2_slice2D(foreground_mask_images[:, :, slice_i]).copy()
+                    BG_roi_cvimg = Utils.make_cv2_slice2D(background_mask_images[:, :, slice_i]).copy()
+                    outdata_cvimg = Utils.make_cv2_slice2D(outdata[:, :, slice_i]).copy()
                     if (np.max(LESIONr_cvimg) == 0):
                         continue
                     basename = self.params[-1]['name'] + '_Gabor_' + str(self.params[:-1]).replace(' ', '_') + '_slice' + str(
