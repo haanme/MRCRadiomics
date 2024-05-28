@@ -30,10 +30,9 @@ class BackgroundMomentsRelative(FeatureIndexandBackground):
     """
     Initialization
 
-    @param name: short name of the feature
     """
     def __init__(self, name):
-        super('BackgroundMomentsRelative', None)
+        super(BackgroundMomentsRelative, self).__init__('BackgroundMomentsRelative', None)
 
 
     """

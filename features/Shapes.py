@@ -76,7 +76,7 @@ class Shapes(FeatureIndexandBackground):
     """
 
     def __init__(self):
-        super('Shapes', None)
+        super(Shapes, self).__init__('Shapes', None)
 
 
     """

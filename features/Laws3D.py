@@ -129,7 +129,7 @@ if numba_found:
         # >1: downsampling
         res_f = params[0]
 
-        x_lo, x_hi, y_lo, y_hi, z_lo, z_hi = Utils.find_bounded_subregion3D(BGr)
+        x_lo, x_hi, y_lo, y_hi, z_lo, z_hi = features.Utils.find_bounded_subregion3D(BGr)
         LESIONDATArs = LESIONDATAr[x_lo:x_hi, y_lo:y_hi, :]
         LESIONrs_temp = LESIONr[0][x_lo:x_hi, y_lo:y_hi, :]
         BGrs_temp = BGr[x_lo:x_hi, y_lo:y_hi, :]
@@ -137,9 +137,9 @@ if numba_found:
         # Create masks and output data to desired resolution, intensity data is resliced later for non-zero only
         min_res = np.max(resolution)
         new_res = [min_res * res_f, min_res * res_f, min_res * res_f]
-        LESIONrs_temp, affineLESIONrs_temp = Utils.reslice_array(LESIONrs_temp, resolution, new_res, 0)
-        BGrs_temp, affineBGrs_temp = Utils.reslice_array(BGrs_temp, resolution, new_res, 0)
-        LESIONDATArs, affineLESIONDATArs = Utils.reslice_array(LESIONDATArs, resolution, new_res, 1)
+        LESIONrs_temp, affineLESIONrs_temp = features.Utils.reslice_array(LESIONrs_temp, resolution, new_res, 0)
+        BGrs_temp, affineBGrs_temp = features.Utils.reslice_array(BGrs_temp, resolution, new_res, 0)
+        LESIONDATArs, affineLESIONDATArs = features.Utils.reslice_array(LESIONDATArs, resolution, new_res, 1)
 
         outdatas = []
         for kernel_i in range(1, len(Laws3Dkernel)):
@@ -148,7 +148,7 @@ if numba_found:
         s = 5
         sys.stderr = io.StringIO()
         ret = np.zeros((5, 5, 5))
-        for (x, y, z, window) in Utils.sliding_window3D(LESIONDATArs, LESIONrs_temp, 1, (s, s, s)):
+        for (x, y, z, window) in features.Utils.sliding_window3D(LESIONDATArs, LESIONrs_temp, 1, (s, s, s)):
             window = np.subtract(window, np.mean(window))
             w_std = np.std(window)
             if w_std > 0:
@@ -197,7 +197,7 @@ class Laws3D(FeatureIndexandBackground):
     """
 
     def __init__(self, params):
-        super('Laws3D', params)
+        super(Laws3D, self).__init__('Laws3D', params)
 
 
     """
@@ -253,7 +253,7 @@ class Laws3D(FeatureIndexandBackground):
         # >1: downsampling
         res_f = self.params[0]
 
-        x_lo, x_hi, y_lo, y_hi, z_lo, z_hi = Utils.find_bounded_subregion3D(background_mask_images)
+        x_lo, x_hi, y_lo, y_hi, z_lo, z_hi = features.Utils.find_bounded_subregion3D(background_mask_images)
         LESIONDATArs = intensity_images[x_lo:x_hi, y_lo:y_hi, :]
         LESIONrs_temp = foreground_mask_images[x_lo:x_hi, y_lo:y_hi, :]
         BGrs_temp = background_mask_images[x_lo:x_hi, y_lo:y_hi, :]
@@ -261,9 +261,9 @@ class Laws3D(FeatureIndexandBackground):
         # Create masks and output data to desired resolution, intensity data is resliced later for non-zero only
         min_res = np.max(resolution)
         new_res = [min_res * res_f, min_res * res_f, min_res * res_f]
-        LESIONrs_temp, affineLESIONrs_temp = Utils.reslice_array(LESIONrs_temp, resolution, new_res, 0)
-        BGrs_temp, affineBGrs_temp = Utils.reslice_array(BGrs_temp, resolution, new_res, 0)
-        LESIONDATArs, affineLESIONDATArs = Utils.reslice_array(LESIONDATArs, resolution, new_res, 1)
+        LESIONrs_temp, affineLESIONrs_temp = features.Utils.reslice_array(LESIONrs_temp, resolution, new_res, 0)
+        BGrs_temp, affineBGrs_temp = features.Utils.reslice_array(BGrs_temp, resolution, new_res, 0)
+        LESIONDATArs, affineLESIONDATArs = features.Utils.reslice_array(LESIONDATArs, resolution, new_res, 1)
 
         outdatas = []
         for kernel_i in range(1, len(self.Laws3Dkernel)):
@@ -271,7 +271,7 @@ class Laws3D(FeatureIndexandBackground):
 
         s = 5
         sys.stderr = io.StringIO()
-        for (x, y, z, window) in Utils.sliding_window3D(LESIONDATArs, LESIONrs_temp, 1, (s, s, s)):
+        for (x, y, z, window) in features.Utils.sliding_window3D(LESIONDATArs, LESIONrs_temp, 1, (s, s, s)):
             window = np.subtract(window, np.mean(window))
             w_std = np.std(window)
             if w_std > 0:

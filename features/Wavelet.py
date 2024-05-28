@@ -35,7 +35,7 @@ class Wavelet(FeatureIndexandBackground):
     """
 
     def __init__(self, params):
-        super('Wavelet', params)
+        super(Wavelet, self).__init__('Wavelet', None)
 
 
     """
@@ -47,7 +47,7 @@ class Wavelet(FeatureIndexandBackground):
         s = 16
         output = np.zeros([slicedata.shape[0], slicedata.shape[1], 11])
         mid = int(np.floor(s / 2.0))
-        for (x, y, window) in Utils.sliding_window(slicedata, 1, (s, s)):
+        for (x, y, window) in features.Utils.sliding_window(slicedata, 1, (s, s)):
             if np.min(window) == np.max(window):
                 continue
             coeffs = pywt.wavedec2(window, waveletname, mode='periodization', level=4)
@@ -121,7 +121,7 @@ class Wavelet(FeatureIndexandBackground):
         # >1: downsampling
         res_f = self.params[1]
 
-        x_lo, x_hi, y_lo, y_hi = Utils.find_bounded_subregion2DBG(background_mask_images, 10)
+        x_lo, x_hi, y_lo, y_hi = features.Utils.find_bounded_subregion2DBG(background_mask_images, 10)
 
         if len(intensity_images.shape) > 2:
             slices = intensity_images.shape[2]
@@ -137,9 +137,9 @@ class Wavelet(FeatureIndexandBackground):
         # Create masks and output data to desired resolution, intensity data is resliced later for non-zero only
         min_res = np.max(resolution)
         new_res = [min_res * res_f, min_res * res_f, min_res * res_f]
-        LESIONrs_temp, affineLESIONrs_temp = Utils.reslice_array(LESIONrs_temp, resolution, new_res, 0)
-        BG_rois_temp, affineBG_rois_temp = Utils.reslice_array(BG_rois_temp, resolution, new_res, 0)
-        LESIONDATArs, affineLESIONDATArs = Utils.reslice_array(LESIONDATArs, resolution, new_res, 1)
+        LESIONrs_temp, affineLESIONrs_temp = features.Utils.reslice_array(LESIONrs_temp, resolution, new_res, 0)
+        BG_rois_temp, affineBG_rois_temp = features.Utils.reslice_array(BG_rois_temp, resolution, new_res, 0)
+        LESIONDATArs, affineLESIONDATArs = features.Utils.reslice_array(LESIONDATArs, resolution, new_res, 1)
 
         if np.max(foreground_mask_images) == 0:
             return float('nan'), float('nan'), float('nan'), float('nan'), float('nan'), float('nan'), float(

@@ -65,7 +65,7 @@ class Shapes_background(FeatureIndexandBackground):
     """
 
     def __init__(self):
-        super('Shapes_background', None)
+        super(Shapes_background, self).__init__('ShapesBackground', None)
 
 
     """

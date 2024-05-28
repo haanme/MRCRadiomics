@@ -32,7 +32,7 @@ class Moments(FeatureIndexandBackground):
 
     """
     def __init__(self):
-        super('Moments', None)
+        super(Moments, self).__init__('Moments', None)
 
 
     """
@@ -45,6 +45,8 @@ class Moments(FeatureIndexandBackground):
     @return number of return values matching get_return_value_descriptions
     """
     def fun(self, intensity_images, foreground_mask_images, background_mask_images, resolution, **kwargs):
+        if type(foreground_mask_images) is list:
+            foreground_mask_images = foreground_mask_images[0]
         ROIdata = intensity_images[foreground_mask_images > 0]
         mean = np.mean(ROIdata)
         median = np.median(ROIdata)

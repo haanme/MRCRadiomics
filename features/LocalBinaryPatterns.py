@@ -30,7 +30,7 @@ class LocalBinaryPatterns(FeatureIndexandBackground):
     """
 
     def __init__(self, params):
-        super('LocalBinaryPatterns', params)
+        super(LocalBinaryPatterns, self).__init__('LocalBinaryPatterns', params)
 
 
     """

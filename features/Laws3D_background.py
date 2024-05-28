@@ -108,7 +108,8 @@ class Laws3D_Background(FeatureIndexandBackground):
     """
 
     def __init__(self, params):
-        super('Laws3D', params)
+        super(Laws3D_Background, self).__init__('Laws3DBackground', params)
+
 
     """
     Appends Laws feature values to the end of exiting list for background region
@@ -192,7 +193,7 @@ class Laws3D_Background(FeatureIndexandBackground):
         res_f = self.params[0]
 
         s = 5
-        x_lo, x_hi, y_lo, y_hi, z_lo, z_hi = Utils.find_bounded_subregion3D(intensity_images)
+        x_lo, x_hi, y_lo, y_hi, z_lo, z_hi = features.Utils.find_bounded_subregion3D(intensity_images)
         x_lo -= 2
         x_hi += 2
         y_lo -= 2
@@ -212,15 +213,15 @@ class Laws3D_Background(FeatureIndexandBackground):
         # Create masks and output data to desired resolution, intensity data is resliced later for non-zero only
         min_res = np.max(resolution)
         new_res = [min_res * res_f, min_res * res_f, min_res * res_f]
-        BGrs_temp, affineBGrs_temp = Utils.reslice_array(BGrs_temp, resolution, new_res, 0)
-        LESIONDATArs, affineLESIONDATArs = Utils.reslice_array(LESIONDATArs, resolution, new_res, 1)
+        BGrs_temp, affineBGrs_temp = features.Utils.reslice_array(BGrs_temp, resolution, new_res, 0)
+        LESIONDATArs, affineLESIONDATArs = features.Utils.reslice_array(LESIONDATArs, resolution, new_res, 1)
 
         outdatas = []
         for kernel_i in range(1, len(Laws3Dkernel)):
             outdatas.append(np.zeros_like(LESIONDATArs))
 
         sys.stderr = io.StringIO()
-        for (x, y, z, window) in Utils.sliding_window3D(LESIONDATArs, BGrs_temp, 1, (s, s, s)):
+        for (x, y, z, window) in features.Utils.sliding_window3D(LESIONDATArs, BGrs_temp, 1, (s, s, s)):
             window = np.subtract(window, np.mean(window))
             w_std = np.std(window)
             if w_std > 0:

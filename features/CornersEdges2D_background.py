@@ -39,7 +39,8 @@ class HarrisStephensBackground(FeatureIndexandBackground):
     """
 
     def __init__(self, params):
-        super().__init__('HarrisStephensBackground', params)
+        super(HarrisStephensBackground, self).__init__('HarrisStephensBackground', params)
+
 
     """
     Executes the feature
@@ -81,9 +82,9 @@ class HarrisStephensBackground(FeatureIndexandBackground):
             if (np.max(LS) == 0 and np.max(BG) == 0):
                 continue
             if (slices == 1):
-                cvimg = Utils.make_cv2_slice2D(intensity_images[:, :])
+                cvimg = features.Utils.make_cv2_slice2D(intensity_images[:, :])
             else:
-                cvimg = Utils.make_cv2_slice2D(intensity_images[:, :, slice_i])
+                cvimg = features.Utils.make_cv2_slice2D(intensity_images[:, :, slice_i])
             edgemap = abs(cv2.cornerHarris(cvimg, blockSize, ksize, k))
             ROIdata = copy.deepcopy(edgemap)
             ROIdata[LS == 0] = 0
@@ -249,7 +250,8 @@ class HessianBackground(FeatureIndexandBackground):
     """
 
     def __init__(self, params):
-        super().__init__('HessianBackground', params)
+        super(HessianBackground, self).__init__('HessianBackground', params)
+
 
     """
     Function applying Hessian filter
@@ -299,7 +301,7 @@ class HessianBackground(FeatureIndexandBackground):
                 if (np.max(background_mask_images[:, :, slice_i]) == 0):
                     continue
                 slice2Ddata = intensity_images[:, :, slice_i]
-            x_lo, x_hi, y_lo, y_hi = Utils.find_bounded_subregion2D(slice2Ddata)
+            x_lo, x_hi, y_lo, y_hi = features.Utils.find_bounded_subregion2D(slice2Ddata)
             slice2Ddata = slice2Ddata[x_lo:x_hi, y_lo:y_hi]
             if slices == 1:
                 slice2D_ROI = background_mask_images[x_lo:x_hi, y_lo:y_hi]

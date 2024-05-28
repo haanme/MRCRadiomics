@@ -18,6 +18,7 @@ class Feature(ABC):
     @param params: parameter list for the feature instance
     """
     def __init__(self, name, params):
+        self.name = name
         self.params = params
 
     """
@@ -120,7 +121,7 @@ class FeatureIndexandBackground(Feature):
     """
 
     def __init__(self, name, params):
-        super(name, params)
+        super(FeatureIndexandBackground, self).__init__(name, params)
 
 
     """

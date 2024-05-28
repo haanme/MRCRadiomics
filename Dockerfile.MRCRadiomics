@@ -23,6 +23,6 @@ RUN pip install plyfile
 RUN pip install scikit-learn
 
 COPY *.py .
-COPY features/mask-3d-5.txt features
+COPY features features
+COPY visualizations visualizations
 ENTRYPOINT ["/bin/python3", "MRCRadiomics.py"]
-#ENTRYPOINT ["/bin/bash"]

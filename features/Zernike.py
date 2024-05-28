@@ -24,7 +24,7 @@ class Zernike(Feature):
     """
 
     def __init__(self, params):
-        super('Zernike', params)
+        super(Zernike, self).__init__('Zernike', params)
         # Size of patch
         self.s = params[0]
         # n = The order of Zernike moment (scalar)
@@ -42,7 +42,7 @@ class Zernike(Feature):
         from pyzernikemoment import Zernikemoment
         output = np.zeros_like(slicedata)
         mid = int(np.floor(self.s / 2.0))
-        for (x, y, window) in Utils.sliding_window(slicedata, 1, (self.s, self.s)):
+        for (x, y, window) in features.Utils.sliding_window(slicedata, 1, (self.s, self.s)):
             if np.min(window) == np.max(window):
                 continue
             val = filters.threshold_otsu(window)

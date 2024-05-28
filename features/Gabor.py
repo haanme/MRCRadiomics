@@ -30,7 +30,7 @@ class Gabor(FeatureIndexandBackground):
     3) kernel size in SD units
     """
     def __init__(self, params):
-        super('Gabor', params)
+        super(Gabor, self).__init__('Gabor', params)
 
 
     """
@@ -88,10 +88,10 @@ class Gabor(FeatureIndexandBackground):
                         continue
                     if not self.params[2] == 2:
                         continue
-                    LESIONDATAr_cvimg = Utils.make_cv2_slice2D(slicedata).copy()
-                    LESIONr_cvimg = Utils.make_cv2_slice2D(foreground_mask_images[:, :, slice_i]).copy()
-                    BG_roi_cvimg = Utils.make_cv2_slice2D(background_mask_images[:, :, slice_i]).copy()
-                    outdata_cvimg = Utils.make_cv2_slice2D(outdata[:, :, slice_i]).copy()
+                    LESIONDATAr_cvimg = features.Utils.make_cv2_slice2D(slicedata).copy()
+                    LESIONr_cvimg = features.Utils.make_cv2_slice2D(foreground_mask_images[:, :, slice_i]).copy()
+                    BG_roi_cvimg = features.Utils.make_cv2_slice2D(background_mask_images[:, :, slice_i]).copy()
+                    outdata_cvimg = features.Utils.make_cv2_slice2D(outdata[:, :, slice_i]).copy()
                     if (np.max(LESIONr_cvimg) == 0):
                         continue
                     basename = self.params[-1]['name'] + '_Gabor_' + str(self.params[:-1]).replace(' ', '_') + '_slice' + str(

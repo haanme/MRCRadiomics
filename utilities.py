@@ -75,108 +75,18 @@ def load_mha(name, filename):
     image = sitk.ReadImage(filename, imageIO="MetaImageIO")
     data = sitk.GetArrayViewFromImage(image)
     voxelsize = image.GetSpacing()
+    print(voxelsize)
     affine = np.eye(4)
     affine[0, 0] = voxelsize[0]
     affine[1, 1] = voxelsize[1]
     affine[2, 2] = voxelsize[2]
     print('Loading ' + name + ':' + filename + ' ' + str(data.shape) + ' ' + str(voxelsize))
-    return np.squeeze(data), affine, voxelsize
-
-
-load_dcm_SUPP_exceptions1 = [2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034]
-def load_dcm_SUPP(path, case, prefix):
-
-    #print('LOAD load_dcm_PRO3:' + path + os.sep + '*.dcm')
-    frame_avg = dcmio.ReadDICOM_frames(path + os.sep + '*.dcm', tname='', printout=0)
-    #print(len(frame_avg), len(frame_avg[0]), len(frame_avg[0][0]))
-    no_frames = len(frame_avg[0])
-    if case in load_dcm_SUPP_exceptions1:
-        no_slices = len(frame_avg[0][0])
-    else:
-        no_slices = len(frame_avg)
-    xdim = frame_avg[0][0][0].Columns
-    ydim = frame_avg[0][0][0].Rows
-    imgdata = np.zeros([xdim, ydim, no_slices, no_frames])
-    #print(imgdata.shape)
-    voxelsize = [-1, -1, -1]
-    slice_ii = 1
-    for frame_i in range(no_frames):
-        for slice_i in range(no_slices):
-            if case in load_dcm_SUPP_exceptions1:
-                dslice = frame_avg[0][frame_i][slice_i].pixel_array
-            else:
-                dslice = frame_avg[slice_i][frame_i][0].pixel_array
-            imgdata[:, :, slice_i, frame_i] = dslice
-            slice_ii += 1
-        if (0x0028, 0x0030) in frame_avg[0][frame_i][0]:
-            voxelsize[0:2] = [float(x) for x in frame_avg[0][frame_i][0][0x0028, 0x0030].value]
-        if (0x0018, 0x0050) in frame_avg[0][frame_i][0]:
-            voxelsize[2] = float(frame_avg[0][frame_i][0][0x0018, 0x0050].value)
-    if case == 2005:
-        imgdata = np.squeeze(imgdata)
-        imgdata = imgdata [:, :, ::-1]
-
-    return np.squeeze(imgdata), voxelsize
-
-
-exceptions_SUPP = [2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034]
-def load_LESION_PRO3_SUPP(path, case, prefix):
-    if case in exceptions_SUPP:
-        return load_dcm(path, case, prefix)
-    else:
-        return load_dcm_PRO3(path, case, prefix)
-#    subjname = os.path.basename(path)
-#    data, affine, voxelsize = load_nifti(subjname, path + os.sep + subjname + '_' + prefix + '_lesion_onT2tra.nii.gz')
-#    return data, voxelsize
-
-def load_WG_PRO3_SUPP(path, case, prefix):
-    if case in exceptions_SUPP:
-        data, voxelsize = load_dcm(path, case, prefix)
-    else:
-        data, voxelsize = load_dcm_PRO3(path, case, prefix)
-#    subjname = os.path.basename(path)
-#    data, affine, voxelsize = load_nifti(subjname, path + os.sep + subjname + '_WG_1st_onT2tra.nii.gz')
-    return data, voxelsize
-
-
-def load_RALP_PRO3_SUPP(path, case, prefix):
-    return load_dcm_PRO3(path, case, prefix)
-#    subjname = os.path.basename(path)
-#    data, affine, voxelsize = load_nifti(subjname, path + os.sep + subjname + '_RALP_lesion_onT2tra.nii.gz')
-#    return data, voxelsize
-
-
-def load_dcm_PRO3(path, case, prefix):
-        
-    print('LOAD load_dcm_PRO3:' + path + os.sep + '*.dcm')
-    frame_avg = dcmio.ReadDICOM_frames(path + os.sep + '*.dcm', tname='', printout=0)
-    print(len(frame_avg), len(frame_avg[0]), len(frame_avg[0][0]))
-    no_frames = len(frame_avg[0])
-    no_slices = len(frame_avg)
-    xdim = frame_avg[0][0][0].Columns
-    ydim = frame_avg[0][0][0].Rows
-    imgdata = np.zeros([xdim, ydim, no_slices, no_frames])
-    print(imgdata.shape)
-    voxelsize = [-1, -1, -1]
-    slice_ii = 1
-    for frame_i in range(no_frames):
-        slicedata = []
-        for slice_i in range(no_slices):
-            dslice = frame_avg[slice_i][frame_i][0].pixel_array
-            #imgdata[:, :, slice_i, frame_i] = dslice
-            slicedata.append({'loc':frame_avg[slice_i][frame_i][0][0x0020, 0x1041].value, 'dslice':dslice})
-            slice_ii += 1
-        slicedata = sorted(slicedata, key=lambda x: x['loc'], reverse=False)
-        slice_ii = 1
-        for slice_i in range(no_slices):
-            imgdata[:, :, slice_i, frame_i] = slicedata[slice_i]['dslice']
-            slice_ii +=1
-        if (0x0028, 0x0030) in frame_avg[0][frame_i][0]:
-            voxelsize[0:2] = [float(x) for x in frame_avg[0][frame_i][0][0x0028, 0x0030].value]
-        if (0x0018, 0x0050) in frame_avg[0][frame_i][0]:
-            voxelsize[2] = float(frame_avg[0][frame_i][0][0x0018, 0x0050].value)
-    #print(np.max(imgdata))
-    return np.squeeze(imgdata), voxelsize
+    data = np.squeeze(data)
+    data = data[:, :, ::-1]
+    data = np.rollaxis(data, 0, 3)
+    data = np.transpose(data, (1, 0, 2))
+    data = np.flipud(data)
+    return data, affine, voxelsize
 
 
 def load_dcm(path, case, prefix):
@@ -224,6 +134,10 @@ def load_dcm2(path, case, prefix):
         voxelsize[2] = float(slices[0][0x0018, 0x0050].value)
     #print(np.max(imgdata))
     return np.squeeze(imgdata), voxelsize
+
+
+def remove_suffix(filename):
+    return filename.rstrip('.nii').rstrip('.gz').rstrip('.mha')
 
 
 def check_exists(name, filename, files_missing, printout=True):

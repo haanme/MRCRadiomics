@@ -37,7 +37,7 @@ class Laws2D(FeatureIndexandBackground):
     """
 
     def __init__(self, params):
-        super('Laws2D', params)
+        super(Laws2D, self).__init__('Laws2D', params)
         # Define the 1D kernels
         L5 = np.array([1, 4, 6, 4, 1])  # level
         E5 = np.array([-1, -2, 0, 2, 1])  # edge

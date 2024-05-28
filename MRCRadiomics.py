@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 
 # $Source$
 
@@ -42,7 +42,7 @@ from features.Wavelet import Wavelet
 from features.Shapes import Shapes
 from features.Shapes_background import Shapes_background
 from features.LocalBinaryPatterns import LocalBinaryPatterns
-from utilities import load_nifti, load_mha
+from utilities import load_nifti, load_mha, remove_suffix
 from glob import glob
 from argparse import ArgumentParser
 import copy
@@ -543,20 +543,22 @@ if __name__ == "__main__":
     supported_methods = resolve_datafuns(None, None, False)
     parser = ArgumentParser()
     parser.add_argument("--version", dest="version", help="prints version number", required=False)
-    parser.add_argument("--modality", dest="modality", help="modality (basename of input Nifti)", required=True)
+    parser.add_argument("--modality", dest="modality", help="modality suffix for output", required=True)
+    parser.add_argument("--intensityfile", dest="intensityfile", help="intensityfile, None for not using", required=False, default='None')
     parser.add_argument("--method", dest="method", help="One of: " + str(supported_methods), required=True)
     parser.add_argument("--input", dest="input", help="input base folder", required=True)
     parser.add_argument("--output", dest="output", help="output base folder", required=True)
     parser.add_argument("--case", dest="case", help="case number", required=False, default='')
     parser.add_argument("--voxelsize", dest="voxelsize", help="voxelsize in: '[x,y,z]'", required=False, default='')
     parser.add_argument("--create_visualization", dest="create_visualization", help="1 for extra visualization/debug data if feature is supporting it", required=False, default='')
-    parser.add_argument("--BGname", dest="BGname", help="Background mask Nifti filename", required=False, default='N/A')
-    parser.add_argument("--LSname", dest="LSname", help="Lesion (i e foreground) mask Nifti filename", required=False, default='N/A')
+    parser.add_argument("--BGname", dest="BGname", help="Background mask Nifti filename, default NA", required=False, default='NA')
+    parser.add_argument("--LSname", dest="LSname", help="Lesion (i e foreground) mask Nifti filename, default NA", required=False, default='NA')
     parser.add_argument("--verbose", dest="verbose", help="Print verbose output Yes/No[default]", required=False, default='No')
     parser.add_argument("--boilerplate", dest="boilerplate", help="Write boilerplate.txt with citation(s) and descriptions for the used radiomics Yes/No[default]", required=False,
                         default='No')
     args = parser.parse_args()
     modalityname = args.modality
+    intensityfile = args.intensityfile
     methodname = args.method
     inputpath = args.input
     outputpath = args.output
@@ -564,7 +566,7 @@ if __name__ == "__main__":
     BGname = args.BGname
     LSname = args.LSname
     verbose = args.verbose == 'Yes'
-    if(BGname == 'N/A' and LSname == 'N/A'):
+    if(BGname == 'NA' and LSname == 'NA'):
         print('Either of LSname or BGname must be given')
         sys.exit(1)
     boilerplate = (args.boilerplate == 'Yes')
@@ -621,21 +623,10 @@ if __name__ == "__main__":
         print_verbose('Appending to existing file', verbose)
         fout = open(N_filename, 'a')
     for datafun in datafun_names:
-        if type(datafun[4]) is list:
-            print_verbose('Data function type: list', verbose)
-            feature_names = datafun[4]
-        elif type(datafun[4]) is tuple:
-            print_verbose('Data function type: tuple', verbose)
-            feature_names = datafun[4]
-        elif len(datafun) > 7 and callable(datafun[4]):
-            print_verbose('Data function type: callable', verbose)
-            feature_names = datafun[4](datafun[7])
-        else:
-            print_verbose('Data function type: function without parameters', verbose)
-            feature_names = datafun[4]()
+        feature_names = datafun.get_return_value_short_names()
         if not header_found:
             for name in feature_names:
-                fout.write('\t%s' % (datafun[1] + '_' + name))
+                fout.write('\t%s' % (datafun.get_name() + '_' + name))
     print_verbose('Resolved feature names:' + str(feature_names), verbose)
     if not header_found:
         fout.write('\n')
@@ -670,8 +661,17 @@ if __name__ == "__main__":
             found_case_mismatch += 1
             print_verbose('Folder [' + folder + '] not matching required subfolder ' + required_case, verbose)
             continue
-        print(cases_found)
-        if (case.strip(), LSname.strip('.nii').strip('.mha'), BGname.strip('.nii').strip('.mha')) in cases_found:
+        already_found = False
+        for case_found in cases_found:
+            if not case_found[0] == case.strip():
+                continue
+            if not case_found[1] == os.path.basename(remove_suffix(LSname)):
+                continue
+            if not case_found[2] == os.path.basename(remove_suffix(BGname)):
+                continue
+            already_found = True
+            break
+        if already_found:
             found_already_in_results += 1
             print_verbose('Folder [' + folder + '] already found in results', verbose)
             continue
@@ -683,11 +683,20 @@ if __name__ == "__main__":
             if '.nii' in BGname:
                 PM_data, PM_affine, PM_voxelsize = load_nifti(case + ' ' + BGname, folder + os.sep + BGname)
             elif '.mha' in BGname:
-                LS_data, LS_affine, LS_voxelsize = load_mha(case + ' ' + LSname, folder + os.sep + LSname)
+                PM_data, PM_affine, PM_voxelsize = load_mha(case + ' ' + BGname, folder + os.sep + BGname)
             else:
                 print('Unrecogized file suffix:' + BGname)
+            BGname = folder + os.sep + BGname
         else:
-            PM_data, PM_affine, PM_voxelsize = [None, None, None]
+            if os.path.exists(BGname):
+                if '.nii' in BGname:
+                    PM_data, PM_affine, PM_voxelsize = load_nifti(case + ' ' + BGname, BGname)
+                elif '.mha' in BGname:
+                    PM_data, PM_affine, PM_voxelsize = load_mha(case + ' ' + BGname, BGname)
+                else:
+                    print('Unrecogized file suffix:' + BGname)
+            else:
+                PM_data, PM_affine, PM_voxelsize = [None, None, None]
         if os.path.exists(folder + os.sep + LSname):
             if '.nii' in LSname:
                 LS_data, LS_affine, LS_voxelsize = load_nifti(case + ' ' + LSname, folder + os.sep + LSname)
@@ -695,8 +704,17 @@ if __name__ == "__main__":
                 LS_data, LS_affine, LS_voxelsize = load_mha(case + ' ' + LSname, folder + os.sep + LSname)
             else:
                 print('Unrecogized file suffix:' + LSname)
+            LSname = folder + os.sep + LSname
         else:
-            LS_data, LS_affine, LS_voxelsize = [None, None, None]
+            if os.path.exists(LSname):
+                if '.nii' in LSname:
+                    LS_data, LS_affine, LS_voxelsize = load_nifti(case + ' ' + LSname, LSname)
+                elif '.mha' in LSname:
+                    LS_data, LS_affine, LS_voxelsize = load_mha(case + ' ' + LSname, LSname)
+                else:
+                    print('Unrecogized file suffix:' + LSname)
+            else:
+                LS_data, LS_affine, LS_voxelsize = [None, None, None]
         LESIONmasks = [LS_data, LS_data]
         BGr = PM_data
 
@@ -706,29 +724,56 @@ if __name__ == "__main__":
         write_EOL = False
         for datafun_i in range(len(datafun_names)):
             # Verify ROI existence against feature requirements
-            if datafun_names[datafun_i][5]:
-                if not os.path.exists(folder + os.sep + LSname):
-                    print('%s is missing\n' % (folder + os.sep + LSname))
+            if datafun_names[datafun_i].number_of_foreground_mask_images_required() > 0:
+                if not os.path.exists(LSname):
+                    print('%s is missing\n' % (LSname))
                     if not os.path.basename(folder) in LS_missing:
-                        Nlog.write('%s is missing\n' % (folder + os.sep + LSname))
+                        Nlog.write('%s is missing\n' % (LSname))
                         LS_missing.append(not os.path.basename(folder))
                     continue
-            if datafun_names[datafun_i][6]:
-                if not os.path.exists(folder + os.sep + BGname):
-                    print('%s is missing\n' % (folder + os.sep + BGname))
+            if datafun_names[datafun_i].number_of_background_mask_images_required() > 0:
+                if not os.path.exists(BGname):
+                    print('%s is missing\n' % (BGname))
                     if not os.path.basename(folder) in PM_missing:
-                        Nlog.write('%s is missing\n' % (folder + os.sep + BGname))
+                        Nlog.write('%s is missing\n' % (BGname))
                         PM_missing.append(not os.path.basename(folder))
                     continue
 
             # Verify data existence
-            if not os.path.exists(folder + os.sep + datafun_names[datafun_i][0]):
-                print('%s is missing\n' % (folder + os.sep + datafun_names[datafun_i][0]))
-                if write_missing:
-                    Nlog.write('%s is missing\n' % (folder + os.sep + datafun_names[datafun_i][0]))
-                    write_missing = False
-                continue
-            DATA1_data, DATA1_affine, DATA1_voxelsize = load_nifti(case + ' DATA', folder + os.sep + datafun_names[datafun_i][0])
+            if intensityfile == 'None':
+                if os.path.exists(folder + os.sep + modalityname):
+                    if not os.path.exists(folder + os.sep + modalityname + '.nii'):
+                        print_verbose('%s is missing\n' % (folder + os.sep + modalityname + '.nii'), verbose)
+                        if not os.path.exists(folder + os.sep + modalityname + '.nii.gz'):
+                            print_verbose('%s is missing\n' % (folder + os.sep + modalityname + '.nii.gz'), verbose)
+                            if not os.path.exists(folder + os.sep + modalityname + '.mha'):
+                                print_verbose('%s is missing\n' % (folder + os.sep + modalityname + '.mha'), verbose)
+                                if write_missing:
+                                    Nlog.write('%s is missing\n' % (folder + os.sep + modalityname))
+                                    write_missing = False
+                            else:
+                                intensityfile = folder + os.sep + modalityname + '.mha'
+                        else:
+                            intensityfile = folder + os.sep + modalityname + '.nii.gz'
+                    else:
+                        intensityfile = folder + os.sep + modalityname + '.nii'
+                else:
+                    intensityfile = folder + os.sep + modalityname
+            else:
+                intensityfile = folder + os.sep + intensityfile
+            if '.nii' in intensityfile:
+                DATA1_data, DATA1_affine, DATA1_voxelsize = load_nifti(case + ' DATA', intensityfile)
+            elif '.mha' in intensityfile:
+                DATA1_data, DATA1_affine, DATA1_voxelsize = load_mha(case + ' DATA', intensityfile)
+            import nibabel as nib
+            #final_img = nib.Nifti1Image(LS_data, DATA1_affine)
+            #nib.save(final_img, folder + os.sep + "testroi.nii")
+            #final_img = nib.Nifti1Image(DATA1_data, DATA1_affine)
+            #nib.save(final_img, folder + os.sep + "test.nii")
+            #DATA1_data, DATA1_affine, DATA1_voxelsize = load_mha(case + ' DATA', intensityfile.replace('.nii.gz', '.mha'))
+            #final_img = nib.Nifti1Image(DATA1_data, DATA1_affine)
+            #nib.save(final_img, folder + os.sep + "test_mha.nii")
+
             if len(DATA1_data.shape) > 3:
                 Nlog.write('%s\n' % str(DATA1_data.shape))
                 continue
@@ -748,33 +793,19 @@ if __name__ == "__main__":
                 resolution = DATA1_voxelsize
 
             # Apply feature
-            datafun_name = datafun_names[datafun_i][1]
-            datafun_scale = datafun_names[datafun_i][2]
-            casefun = datafun_names[datafun_i][3]
-            print_verbose('Function to run:' + str(casefun), verbose)
+            datafun_name = datafun_names[datafun_i].get_name()
+            casefun = datafun_names[datafun_i].fun
+            print_verbose('Function to run:' + str(datafun_name), verbose)
             # Special handling for feature having specific input parameters
-            if len(datafun_names[datafun_i]) > 7:
-                if type(datafun_names[datafun_i][4]) is list or type(datafun_names[datafun_i][4]) is tuple:
-                    casefun_names = datafun_names[datafun_i][4]
-                else:
-                    casefun_names = datafun_names[datafun_i][4](datafun_names[datafun_i][7])
-                if np.max(LESIONDATAr) == 0 or np.max(LESIONmasks[0]) == 0:
-                    print('NULL DATA' + str((np.max(LESIONDATAr) == 0, np.max(LESIONmasks[0]) == 0)))
-                    casefun_vals = [float('nan') for x in casefun_names]
-                else:
-                    if create_visualization:
-                        datafun_names[datafun_i][7].append(
-                            {'write_visualization': outputpath + os.sep + 'visualizations', 'name': case})
-                        datafun_params = datafun_names[datafun_i][7]
-                        casefun_vals = casefun(LESIONDATAr, copy.deepcopy(LESIONmasks), BGr, resolution, datafun_params)
-                    else:
-                        casefun_vals = casefun(LESIONDATAr, copy.deepcopy(LESIONmasks), BGr, resolution, datafun_names[datafun_i][7])
-            # Handling for features not having specific parameters
+            casefun_names = datafun_names[datafun_i].get_return_value_short_names()
+            if np.max(LESIONDATAr) == 0 or np.max(LESIONmasks[0]) == 0:
+                print('NULL DATA' + str((np.max(LESIONDATAr) == 0, np.max(LESIONmasks[0]) == 0)))
+                casefun_vals = [float('nan') for x in casefun_names]
             else:
-                casefun_names = datafun_names[datafun_i][4]
-                if np.max(LESIONDATAr) == 0 or np.max(LESIONmasks[0]) == 0:
-                    print('NULL DATA' + str((np.max(LESIONDATAr) == 0, np.max(LESIONmasks[0]) == 0)))
-                    casefun_vals = [float('nan') for x in casefun_names]
+                if create_visualization:
+                    datafun_names[datafun_i][7].append({})
+                    datafun_params = datafun_names[datafun_i][7]
+                    casefun_vals = casefun(LESIONDATAr, copy.deepcopy(LESIONmasks), BGr, resolution, datafun_params, write_visualization=outputpath + os.sep + 'visualizations', name=case)
                 else:
                     casefun_vals = casefun(LESIONDATAr, copy.deepcopy(LESIONmasks), BGr, resolution)
 
@@ -789,7 +820,7 @@ if __name__ == "__main__":
             if (not create_visualization) and (len(casefun_vals) > 0 and write_case):
                 if not EOL_found:
                     fout.write('\n')
-                fout.write('%s\t%s\t%s' % (case.strip(), LSname.strip('.nii'), BGname.strip('.nii')))
+                fout.write('%s\t%s\t%s' % (case.strip(), os.path.basename(remove_suffix(LSname)), os.path.basename(remove_suffix(BGname))))
                 write_case = False
             for val in casefun_vals:
                 fout.write('\t%10.9f' % val)

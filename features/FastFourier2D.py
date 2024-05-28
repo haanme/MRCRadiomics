@@ -22,15 +22,14 @@ class FastFourier2D(FeatureIndexandBackground):
     """
     Initialization
 
-    @param name: short name of the feature
     @param params: not used
     1) 1: original resolution <1: upsampling >1: downsampling
     2) start_FWHM: starting FWHM threshold in mm
     3) end_FWHM: ending FWHM threshold in mm
     4) step_FWHM: setp FWHM threshold in mm
     """
-    def __init__(self, name, params):
-        super('FastFourier2D', params)
+    def __init__(self, params):
+        super(FastFourier2D, self).__init__('FastFourier2D', params)
 
     """
     Appends results 
@@ -111,6 +110,12 @@ class FastFourier2D(FeatureIndexandBackground):
     @return number of return values matching get_return_value_descriptions
     """
     def fun(self, intensity_images, foreground_mask_images, background_mask_images, resolution, **kwargs):
+        if type(intensity_images) == list:
+            intensity_images = intensity_images[0]
+        if type(foreground_mask_images) == list:
+            foreground_mask_images = foreground_mask_images[0]
+        if type(background_mask_images) == list:
+            background_mask_images = background_mask_images[0]
         if np.max(intensity_images) == 0 or np.max(foreground_mask_images) == 0:
             return [float('nan') for x in self.get_return_value_short_names()]
 
@@ -128,8 +133,8 @@ class FastFourier2D(FeatureIndexandBackground):
         thresholds_FWHM = [float(x) for x in np.linspace(int(start_FWHM), int(end_FWHM), int(step_FWHM))]
 
         # print(np.max(LESIONDATAr))
-        x_lo, x_hi, y_lo, y_hi = Utils.find_bounded_subregion3D2D(intensity_images)
-        # print((x_lo, x_hi, y_lo, y_hi))
+        x_lo, x_hi, y_lo, y_hi = features.Utils.find_bounded_subregion3D2D(intensity_images)
+        print((x_lo, x_hi, y_lo, y_hi))
         if len(intensity_images.shape) > 2:
             slices = intensity_images.shape[2]
             LESIONDATArs_temp = intensity_images[x_lo:x_hi, y_lo:y_hi, :]

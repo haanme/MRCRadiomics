@@ -26,12 +26,12 @@ class CornersEdges2D(FeatureIndexandBackground):
     """
     Initialization
 
-    @param name: short name of the feature
     @param params: parameter list for the feature instance
     """
 
     def __init__(self, name, params):
-        super().__init__('CornersEdges2D', params)
+        super(CornersEdges2D, self).__init__('CornersEdges2D', params)
+
 
     """
     Executes the feature
@@ -154,9 +154,9 @@ class HarrisStephens(CornersEdges2D):
             if (np.max(LS) == 0 and np.max(BG) == 0):
                 continue
             if (slices == 1):
-                cvimg = Utils.make_cv2_slice2D(intensity_images[:, :])
+                cvimg = features.Utils.make_cv2_slice2D(intensity_images[:, :])
             else:
-                cvimg = Utils.make_cv2_slice2D(intensity_images[:, :, slice_i])
+                cvimg = features.Utils.make_cv2_slice2D(intensity_images[:, :, slice_i])
             edgemap = abs(cv2.cornerHarris(cvimg, blockSize, ksize, k))
             ROIdata = copy.deepcopy(edgemap)
             ROIdata[LS == 0] = 0
@@ -348,14 +348,14 @@ class ShiTomasi(CornersEdges2D):
             if slices == 1:
                 if (np.max(foreground_mask_images[:, :]) == 0 and np.max(background_mask_images[:, :]) == 0):
                     continue
-                cvimg = Utils.make_cv2_slice2D(intensity_images[:, :])
-                cvROImask = Utils.make_cv2_slice2D(foreground_mask_images[:, :])
+                cvimg = features.Utils.make_cv2_slice2D(intensity_images[:, :])
+                cvROImask = features.Utils.make_cv2_slice2D(foreground_mask_images[:, :])
             else:
                 if (np.max(foreground_mask_images[:, :, slice_i]) == 0 and np.max(
                         background_mask_images[:, :, slice_i]) == 0):
                     continue
-                cvimg = Utils.make_cv2_slice2D(intensity_images[:, :, slice_i])
-                cvROImask = Utils.make_cv2_slice2D(foreground_mask_images[:, :, slice_i])
+                cvimg = features.Utils.make_cv2_slice2D(intensity_images[:, :, slice_i])
+                cvROImask = features.Utils.make_cv2_slice2D(foreground_mask_images[:, :, slice_i])
             locs_ROI = cv2.goodFeaturesToTrack(cvimg, maxCorners, qualityLevel, minDistance, mask=cvROImask)
             locs_ROI = np.squeeze(locs_ROI)
             if locs_ROI is None or len(locs_ROI.shape) == 0:
@@ -377,7 +377,7 @@ class ShiTomasi(CornersEdges2D):
             else:
                 sliceBGdata = copy.deepcopy(background_mask_images[:, :, slice_i])
                 sliceBGdata[foreground_mask_images[:, :, slice_i] > 0] = 0
-            cvBGmask = Utils.make_cv2_slice2D(sliceBGdata)
+            cvBGmask = features.Utils.make_cv2_slice2D(sliceBGdata)
             locs_BG = cv2.goodFeaturesToTrack(cvimg, maxCorners, qualityLevel, minDistance, mask=cvBGmask)
             locs_BG = np.squeeze(locs_BG)
             if locs_BG is None or len(locs_BG.shape) == 0:
@@ -563,7 +563,7 @@ class Objprop(CornersEdges2D, ABC):
                         background_mask_images[:, :, slice_i]) == 0):
                     continue
                 slice2Ddata = intensity_images[:, :, slice_i]
-            x_lo, x_hi, y_lo, y_hi = Utils.find_bounded_subregion2D(slice2Ddata)
+            x_lo, x_hi, y_lo, y_hi = features.Utils.find_bounded_subregion2D(slice2Ddata)
             slice2Ddata = slice2Ddata[x_lo:x_hi, y_lo:y_hi]
             if slices == 1:
                 slice2D_ROI = foreground_mask_images[x_lo:x_hi, y_lo:y_hi]
@@ -580,8 +580,8 @@ class Objprop(CornersEdges2D, ABC):
 
             if (type(self.params) == list) and (len(self.params) > 1) and (not type(self.params[-1]) == int) and (
                     'write_visualization' in self.params[-1]):
-                LESIONDATAr_cvimg = Utils.make_cv2_slice2D(intensity_images[:, :, slice_i]).copy()
-                LESIONr_cvimg = Utils.make_cv2_slice2D(foreground_mask_images[:, :, slice_i]).copy()
+                LESIONDATAr_cvimg = features.Utils.make_cv2_slice2D(intensity_images[:, :, slice_i]).copy()
+                LESIONr_cvimg = features.Utils.make_cv2_slice2D(foreground_mask_images[:, :, slice_i]).copy()
                 basename = self.params[-1]['name'] + '_2D_curvature_' + str(self.params[:-1]).replace(' ', '_')
                 visualizations.write_slice2D(cvimg,
                                              self.params[-1]['write_visualization'] + os.sep + basename + '_data.tiff')

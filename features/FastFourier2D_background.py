@@ -23,7 +23,6 @@ class FastFourier2D_background(FeatureIndexandBackground):
     """
     Initialization
 
-    @param name: short name of the feature
     @param params: not used
     1) 1: original resolution <1: upsampling >1: downsampling
     2) start_FWHM: starting FWHM threshold in mm
@@ -31,7 +30,8 @@ class FastFourier2D_background(FeatureIndexandBackground):
     4) step_FWHM: setp FWHM threshold in mm
     """
     def __init__(self, name, params):
-        super('FastFourier2D_background', params)
+        super(FastFourier2D_background, self).__init__('FastFourier2D_background', params)
+
 
     """
     Appends results
@@ -93,7 +93,7 @@ class FastFourier2D_background(FeatureIndexandBackground):
         thresholds_FWHM = [float(x) for x in np.linspace(int(start_FWHM), int(end_FWHM), int(step_FWHM))]
 
         # print(np.max(LESIONDATAr))
-        x_lo, x_hi, y_lo, y_hi = Utils.find_bounded_subregion3D2D(intensity_images)
+        x_lo, x_hi, y_lo, y_hi = features.Utils.find_bounded_subregion3D2D(intensity_images)
         # print((x_lo, x_hi, y_lo, y_hi))
         LESIONDATArs_temp = intensity_images[x_lo:x_hi, y_lo:y_hi, :]
         BG_rois_temp = background_mask_images[x_lo:x_hi, y_lo:y_hi, :]
