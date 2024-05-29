@@ -43,6 +43,12 @@ class Gabor(FeatureIndexandBackground):
     @return number of return values matching get_return_value_descriptions
     """
     def fun(self, intensity_images, foreground_mask_images, background_mask_images, resolution, **kwargs):
+        if type(intensity_images) == list:
+            intensity_images = intensity_images[0]
+        if type(foreground_mask_images) == list:
+            foreground_mask_images = foreground_mask_images[0]
+        if type(background_mask_images) == list:
+            background_mask_images = background_mask_images[0]
         """
         params[0] frequency of filter at index 0
         params[1] directions

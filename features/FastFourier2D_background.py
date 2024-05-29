@@ -29,7 +29,7 @@ class FastFourier2D_background(FeatureIndexandBackground):
     3) end_FWHM: ending FWHM threshold in mm
     4) step_FWHM: setp FWHM threshold in mm
     """
-    def __init__(self, name, params):
+    def __init__(self, params):
         super(FastFourier2D_background, self).__init__('FastFourier2D_background', params)
 
 
@@ -76,6 +76,12 @@ class FastFourier2D_background(FeatureIndexandBackground):
     @return number of return values matching get_return_value_descriptions
     """
     def fun(self, intensity_images, foreground_mask_images, background_mask_images, resolution, **kwargs):
+        if type(intensity_images) == list:
+            intensity_images = intensity_images[0]
+        if type(foreground_mask_images) == list:
+            foreground_mask_images = foreground_mask_images[0]
+        if type(background_mask_images) == list:
+            background_mask_images = background_mask_images[0]
         if np.max(intensity_images) == 0:
             return [float('nan') for x in self.get_return_value_short_names()]
 
@@ -103,8 +109,7 @@ class FastFourier2D_background(FeatureIndexandBackground):
         # print(resolution)
         # print(res_f)
         # print(slice2Ddata.shape)
-        cvimg = cv2.resize(slice2Ddata, None, fx=resolution[0] * res_f, fy=resolution[1] * res_f,
-                           interpolation=cv2.INTER_NEAREST)
+        cvimg = cv2.resize(slice2Ddata, None, fx=resolution[0] * res_f, fy=resolution[1] * res_f, interpolation=cv2.INTER_NEAREST)
         out_dim = np.max([cvimg.shape[0], cvimg.shape[1]])
         if np.mod(out_dim, 2) == 0:
             out_dim += 1
@@ -113,11 +118,10 @@ class FastFourier2D_background(FeatureIndexandBackground):
         # more accurately 2.3548200450309493
         try:
             for threshold_FWHM_i in range(len(thresholds_FWHM)):
-                kern = FastFourier2D.gkern2(out_dim, thresholds_FWHM[threshold_FWHM_i] / 2.3548200450309493)
+                kern = features.FastFourier2D.FastFourier2D.gkern2(out_dim, thresholds_FWHM[threshold_FWHM_i] / 2.3548200450309493)
                 Y = kern[out_dim // 2, :]
                 X = range(len(Y))
-                fwhm_est = FastFourier2D.FWHM(X, Y)
-                # print('FWHM[' + str(threshold_FWHM_i+1) + ']:' + str(fwhm_est) + 'mm')
+                fwhm_est = features.FastFourier2D.FastFourier2D.FWHM(X, Y)
         except:
             print('FWHM estimation failed')
             return [float('nan') for x in self.get_return_value_short_names()]
@@ -129,12 +133,10 @@ class FastFourier2D_background(FeatureIndexandBackground):
         LESIONDATArs = np.zeros_like(BG_rois)
         for slice_i in range(BG_rois.shape[2]):
             slice2Ddata = BG_rois_temp[:, :, slice_i]
-            BGcvimg = cv2.resize(slice2Ddata, None, fx=resolution[0] * res_f, fy=resolution[1] * res_f,
-                                 interpolation=cv2.INTER_NEAREST)
+            BGcvimg = cv2.resize(slice2Ddata, None, fx=resolution[0] * res_f, fy=resolution[1] * res_f, interpolation=cv2.INTER_NEAREST)
             BG_rois[pad_x:pad_x + BGcvimg.shape[0], pad_y:pad_y + BGcvimg.shape[1], slice_i] = BGcvimg
             slice2Ddata = LESIONDATArs_temp[:, :, slice_i]
-            DATAcvimg = cv2.resize(slice2Ddata, None, fx=resolution[0] * res_f, fy=resolution[1] * res_f,
-                                   interpolation=cv2.INTER_LANCZOS4)
+            DATAcvimg = cv2.resize(slice2Ddata, None, fx=resolution[0] * res_f, fy=resolution[1] * res_f, interpolation=cv2.INTER_LANCZOS4)
             LESIONDATArs[pad_x:pad_x + DATAcvimg.shape[0], pad_y:pad_y + DATAcvimg.shape[1], slice_i] = DATAcvimg
         outdata = []
         for threshold_FWHM in thresholds_FWHM:

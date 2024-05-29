@@ -35,22 +35,23 @@ class Wavelet(FeatureIndexandBackground):
     """
 
     def __init__(self, params):
-        super(Wavelet, self).__init__('Wavelet', None)
+        super(Wavelet, self).__init__('Wavelet', params)
 
 
     """
     Wavelet for one slice
     @param slicedata: one slice
-    @oaram waveletname: wavelet type to be taken
+    @param waveletname: wavelet type to be taken
+    @param levels: composition levels
     """
-    def wavelet_2D_slice4(self, slicedata, waveletname):
+    def wavelet_2D_slice4(self, slicedata, waveletname, levels):
         s = 16
         output = np.zeros([slicedata.shape[0], slicedata.shape[1], 11])
         mid = int(np.floor(s / 2.0))
         for (x, y, window) in features.Utils.sliding_window(slicedata, 1, (s, s)):
             if np.min(window) == np.max(window):
                 continue
-            coeffs = pywt.wavedec2(window, waveletname, mode='periodization', level=4)
+            coeffs = pywt.wavedec2(window, waveletname, mode='periodization', level=levels)
             xmid = x + mid
             ymid = y + mid
             if xmid >= slicedata.shape[0]:
@@ -61,16 +62,17 @@ class Wavelet(FeatureIndexandBackground):
             output[xmid, ymid, 1] = np.mean(np.abs(coeffs[1]))
             output[xmid, ymid, 2] = np.mean(np.abs(coeffs[2]))
             output[xmid, ymid, 3] = np.mean(np.abs(coeffs[3]))
-            output[xmid, ymid, 4] = np.mean(np.abs(coeffs[4]))
-            output[xmid, ymid, 5] = np.mean(np.abs(coeffs[4][0][0]))
-            output[xmid, ymid, 5] = np.mean(np.abs(coeffs[4][0][0]))
-            output[xmid, ymid, 7] = np.mean(np.abs(coeffs[4][1][0]))
-            output[xmid, ymid, 9] = np.mean(np.abs(coeffs[4][2][0]))
-            if len(coeffs[4][0]) > 1:
-                output[xmid, ymid, 6] = np.mean(np.abs(coeffs[4][0][1]))
-                output[xmid, ymid, 6] = np.mean(np.abs(coeffs[4][0][1]))
-                output[xmid, ymid, 8] = np.mean(np.abs(coeffs[4][1][1]))
-                output[xmid, ymid, 10] = np.mean(np.abs(coeffs[4][2][1]))
+            if len(coeffs) > 4:
+                output[xmid, ymid, 4] = np.mean(np.abs(coeffs[4]))
+                output[xmid, ymid, 5] = np.mean(np.abs(coeffs[4][0][0]))
+                output[xmid, ymid, 5] = np.mean(np.abs(coeffs[4][0][0]))
+                output[xmid, ymid, 7] = np.mean(np.abs(coeffs[4][1][0]))
+                output[xmid, ymid, 9] = np.mean(np.abs(coeffs[4][2][0]))
+                if len(coeffs[4][0]) > 1:
+                    output[xmid, ymid, 6] = np.mean(np.abs(coeffs[4][0][1]))
+                    output[xmid, ymid, 6] = np.mean(np.abs(coeffs[4][0][1]))
+                    output[xmid, ymid, 8] = np.mean(np.abs(coeffs[4][1][1]))
+                    output[xmid, ymid, 10] = np.mean(np.abs(coeffs[4][2][1]))
         return output
 
 
@@ -80,8 +82,9 @@ class Wavelet(FeatureIndexandBackground):
     @param data: input 3D data
     @param roidata: mask 3D data
     @waveletname: wavelet type
+    @levels: composition levels
     """
-    def wavelet_2D(self, data, roidata, waveletname):
+    def wavelet_2D(self, data, roidata, waveletname, levels):
         if len(data.shape) > 2:
             # print('data.shape:' + str(data.shape))
             outdata = np.zeros([data.shape[0], data.shape[1], data.shape[2], 11])
@@ -90,7 +93,7 @@ class Wavelet(FeatureIndexandBackground):
                     # print('Skipped [outside ROI] ' + str(slice_i+1) + '/' + str(data.shape[2]))
                     continue
                 slicedata = data[:, :, slice_i]
-                output = self.wavelet_2D_slice4(slicedata, waveletname)
+                output = self.wavelet_2D_slice4(slicedata, waveletname, levels)
                 outdata[:, :, slice_i, :] = output
                 # print('Filtered ' + str(slice_i+1) + '/' + str(data.shape[2]))
             # print('outdata.shape:' + str(outdata.shape))
@@ -98,7 +101,7 @@ class Wavelet(FeatureIndexandBackground):
             outdata = np.zeros([data.shape[0], data.shape[1], 1, 11])
             if not (np.max(roidata[:, :]) == 0):
                 slicedata = data[:, :]
-                output = self.wavelet_2D_slice4(slicedata, waveletname)
+                output = self.wavelet_2D_slice4(slicedata, waveletname, levels)
                 outdata[:, :, 0, :] = output
 
         return outdata
@@ -115,13 +118,21 @@ class Wavelet(FeatureIndexandBackground):
     """
 
     def fun(self, intensity_images, foreground_mask_images, background_mask_images, resolution, **kwargs):
+        if type(intensity_images) == list:
+            intensity_images = intensity_images[0]
+        if type(foreground_mask_images) == list:
+            foreground_mask_images = foreground_mask_images[0]
+        if type(background_mask_images) == list:
+            background_mask_images = background_mask_images[0]
+
         # resolution factor affecting laws feature sampling ratio
         # 1: original resolution
         # <1: upsampling
         # >1: downsampling
         res_f = self.params[1]
+        levels = self.params[2]
 
-        x_lo, x_hi, y_lo, y_hi = features.Utils.find_bounded_subregion2DBG(background_mask_images, 10)
+        x_lo, x_hi, y_lo, y_hi = features.Utils.find_bounded_subregion2D(background_mask_images)
 
         if len(intensity_images.shape) > 2:
             slices = intensity_images.shape[2]
@@ -146,7 +157,7 @@ class Wavelet(FeatureIndexandBackground):
                 'nan'), float(
                 'nan'), float('nan')
 
-        outdata = self.wavelet_2D(intensity_images, LESIONrs_temp, self.params[0])
+        outdata = self.wavelet_2D(intensity_images, LESIONrs_temp, self.params[0], levels)
         results = []
         for c_i in range(outdata.shape[3]):
             cframe = outdata[:, :, :, c_i]
@@ -217,6 +228,9 @@ class Wavelet(FeatureIndexandBackground):
     """
     Returns number of required background mask images
     """
+
+    def get_input_descriptions(self):
+        pass
 
     def number_of_background_mask_images_required(self):
         return 1

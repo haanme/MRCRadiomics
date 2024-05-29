@@ -207,7 +207,7 @@ def add_Wavelet(method, datafuns, boilerplate_str):
     if method is None:
         datafuns.append('Wavelet')
     if method == 'Wavelet':
-        datafuns.append(Wavelet(['Haar', 1.0]))
+        datafuns.append(Wavelet(['Haar', 1.0, 4]))
     if boilerplate_str is not None:
         boilerplate_str.append(Wavelet.get_boilerplate())
     return datafuns, boilerplate_str
@@ -552,10 +552,9 @@ if __name__ == "__main__":
     parser.add_argument("--voxelsize", dest="voxelsize", help="voxelsize in: '[x,y,z]'", required=False, default='')
     parser.add_argument("--create_visualization", dest="create_visualization", help="1 for extra visualization/debug data if feature is supporting it", required=False, default='')
     parser.add_argument("--BGname", dest="BGname", help="Background mask Nifti filename, default NA", required=False, default='NA')
-    parser.add_argument("--LSname", dest="LSname", help="Lesion (i e foreground) mask Nifti filename, default NA", required=False, default='NA')
+    parser.add_argument("--ROIname", dest="ROIname", help="Region of Interest (i e foreground) mask Nifti filename, default NA", required=False, default='NA')
     parser.add_argument("--verbose", dest="verbose", help="Print verbose output Yes/No[default]", required=False, default='No')
-    parser.add_argument("--boilerplate", dest="boilerplate", help="Write boilerplate.txt with citation(s) and descriptions for the used radiomics Yes/No[default]", required=False,
-                        default='No')
+    parser.add_argument("--boilerplate", dest="boilerplate", help="Write boilerplate.txt with citation(s) and descriptions for the used radiomics Yes/No[default]", required=False, default='No')
     args = parser.parse_args()
     modalityname = args.modality
     intensityfile = args.intensityfile
@@ -564,9 +563,9 @@ if __name__ == "__main__":
     outputpath = args.output
     required_case = args.case
     BGname = args.BGname
-    LSname = args.LSname
+    ROIname = args.ROIname
     verbose = args.verbose == 'Yes'
-    if(BGname == 'NA' and LSname == 'NA'):
+    if(BGname == 'NA' and ROIname == 'NA'):
         print('Either of LSname or BGname must be given')
         sys.exit(1)
     boilerplate = (args.boilerplate == 'Yes')
@@ -599,6 +598,7 @@ if __name__ == "__main__":
     datafun_names, boilerplate = resolve_datafuns(methodname, modalityname, boilerplate)
     if len(datafun_names) == 0:
         print('No data functions to processs')
+        print()
         sys.exit(1)
 
     # Open log file
@@ -665,7 +665,7 @@ if __name__ == "__main__":
         for case_found in cases_found:
             if not case_found[0] == case.strip():
                 continue
-            if not case_found[1] == os.path.basename(remove_suffix(LSname)):
+            if not case_found[1] == os.path.basename(remove_suffix(ROIname)):
                 continue
             if not case_found[2] == os.path.basename(remove_suffix(BGname)):
                 continue
@@ -681,42 +681,42 @@ if __name__ == "__main__":
         # Read ROIs
         if os.path.exists(folder + os.sep + BGname):
             if '.nii' in BGname:
-                PM_data, PM_affine, PM_voxelsize = load_nifti(case + ' ' + BGname, folder + os.sep + BGname)
+                BGROI_data, PM_affine, PM_voxelsize = load_nifti(case + ' ' + BGname, folder + os.sep + BGname)
             elif '.mha' in BGname:
-                PM_data, PM_affine, PM_voxelsize = load_mha(case + ' ' + BGname, folder + os.sep + BGname)
+                BGROI_data, PM_affine, PM_voxelsize = load_mha(case + ' ' + BGname, folder + os.sep + BGname)
             else:
                 print('Unrecogized file suffix:' + BGname)
             BGname = folder + os.sep + BGname
         else:
             if os.path.exists(BGname):
                 if '.nii' in BGname:
-                    PM_data, PM_affine, PM_voxelsize = load_nifti(case + ' ' + BGname, BGname)
+                    BGROI_data, PM_affine, PM_voxelsize = load_nifti(case + ' ' + BGname, BGname)
                 elif '.mha' in BGname:
-                    PM_data, PM_affine, PM_voxelsize = load_mha(case + ' ' + BGname, BGname)
+                    BGROI_data, PM_affine, PM_voxelsize = load_mha(case + ' ' + BGname, BGname)
                 else:
                     print('Unrecogized file suffix:' + BGname)
             else:
-                PM_data, PM_affine, PM_voxelsize = [None, None, None]
-        if os.path.exists(folder + os.sep + LSname):
-            if '.nii' in LSname:
-                LS_data, LS_affine, LS_voxelsize = load_nifti(case + ' ' + LSname, folder + os.sep + LSname)
-            elif '.mha' in LSname:
-                LS_data, LS_affine, LS_voxelsize = load_mha(case + ' ' + LSname, folder + os.sep + LSname)
+                BGROI_data, PM_affine, PM_voxelsize = [None, None, None]
+        if os.path.exists(folder + os.sep + ROIname):
+            if '.nii' in ROIname:
+                ROI_data, LS_affine, LS_voxelsize = load_nifti(case + ' ' + ROIname, folder + os.sep + ROIname)
+            elif '.mha' in ROIname:
+                ROI_data, LS_affine, LS_voxelsize = load_mha(case + ' ' + ROIname, folder + os.sep + ROIname)
             else:
-                print('Unrecogized file suffix:' + LSname)
-            LSname = folder + os.sep + LSname
+                print('Unrecogized file suffix:' + ROIname)
+            ROIname = folder + os.sep + ROIname
         else:
-            if os.path.exists(LSname):
-                if '.nii' in LSname:
-                    LS_data, LS_affine, LS_voxelsize = load_nifti(case + ' ' + LSname, LSname)
-                elif '.mha' in LSname:
-                    LS_data, LS_affine, LS_voxelsize = load_mha(case + ' ' + LSname, LSname)
+            if os.path.exists(ROIname):
+                if '.nii' in ROIname:
+                    ROI_data, LS_affine, LS_voxelsize = load_nifti(case + ' ' + ROIname, ROIname)
+                elif '.mha' in ROIname:
+                    ROI_data, LS_affine, LS_voxelsize = load_mha(case + ' ' + ROIname, ROIname)
                 else:
-                    print('Unrecogized file suffix:' + LSname)
+                    print('Unrecogized file suffix:' + ROIname)
             else:
-                LS_data, LS_affine, LS_voxelsize = [None, None, None]
-        LESIONmasks = [LS_data, LS_data]
-        BGr = PM_data
+                ROI_data, LS_affine, LS_voxelsize = [None, None, None]
+        LESIONmasks = [ROI_data]
+        BGr = [BGROI_data]
 
         # Process all feature extraction function in settings
         write_missing = True
@@ -725,31 +725,31 @@ if __name__ == "__main__":
         for datafun_i in range(len(datafun_names)):
             # Verify ROI existence against feature requirements
             if datafun_names[datafun_i].number_of_foreground_mask_images_required() > 0:
-                if not os.path.exists(LSname):
-                    print('%s is missing\n' % (LSname))
+                if not os.path.exists(ROIname):
+                    print('Foreground mask %s is missing while required by method %s\n' % (ROIname, methodname))
                     if not os.path.basename(folder) in LS_missing:
-                        Nlog.write('%s is missing\n' % (LSname))
+                        Nlog.write('Foreground mask %s is missing while required by method %s\n' % (ROIname, methodname))
                         LS_missing.append(not os.path.basename(folder))
                     continue
             if datafun_names[datafun_i].number_of_background_mask_images_required() > 0:
                 if not os.path.exists(BGname):
-                    print('%s is missing\n' % (BGname))
+                    print('Background mask %s is missing while required by method %s\n' % (BGname, methodname))
                     if not os.path.basename(folder) in PM_missing:
-                        Nlog.write('%s is missing\n' % (BGname))
+                        Nlog.write('Background mask %s is missing while required by method %s\n' % (BGname, methodname))
                         PM_missing.append(not os.path.basename(folder))
                     continue
 
             # Verify data existence
             if intensityfile == 'None':
-                if os.path.exists(folder + os.sep + modalityname):
+                if not os.path.exists(folder + os.sep + modalityname):
                     if not os.path.exists(folder + os.sep + modalityname + '.nii'):
-                        print_verbose('%s is missing\n' % (folder + os.sep + modalityname + '.nii'), verbose)
+                        print_verbose('Intensity image %s is missing\n' % (folder + os.sep + modalityname + '.nii'), verbose)
                         if not os.path.exists(folder + os.sep + modalityname + '.nii.gz'):
-                            print_verbose('%s is missing\n' % (folder + os.sep + modalityname + '.nii.gz'), verbose)
+                            print_verbose('Intensity image %s is missing\n' % (folder + os.sep + modalityname + '.nii.gz'), verbose)
                             if not os.path.exists(folder + os.sep + modalityname + '.mha'):
-                                print_verbose('%s is missing\n' % (folder + os.sep + modalityname + '.mha'), verbose)
+                                print_verbose('Intensity image %s is missing\n' % (folder + os.sep + modalityname + '.mha'), verbose)
                                 if write_missing:
-                                    Nlog.write('%s is missing\n' % (folder + os.sep + modalityname))
+                                    Nlog.write('Intensity image %s is missing\n' % (folder + os.sep + modalityname))
                                     write_missing = False
                             else:
                                 intensityfile = folder + os.sep + modalityname + '.mha'
@@ -761,10 +761,15 @@ if __name__ == "__main__":
                     intensityfile = folder + os.sep + modalityname
             else:
                 intensityfile = folder + os.sep + intensityfile
-            if '.nii' in intensityfile:
-                DATA1_data, DATA1_affine, DATA1_voxelsize = load_nifti(case + ' DATA', intensityfile)
-            elif '.mha' in intensityfile:
-                DATA1_data, DATA1_affine, DATA1_voxelsize = load_mha(case + ' DATA', intensityfile)
+            try:
+                if '.nii' in intensityfile:
+                    DATA1_data, DATA1_affine, DATA1_voxelsize = load_nifti(case + ' DATA', intensityfile)
+                elif '.mha' in intensityfile:
+                    DATA1_data, DATA1_affine, DATA1_voxelsize = load_mha(case + ' DATA', intensityfile)
+            except:
+                print('Failed to read %s\n' % str(intensityfile))
+                Nlog.write('Failed to read %s\n' % str(intensityfile))
+                continue
             import nibabel as nib
             #final_img = nib.Nifti1Image(LS_data, DATA1_affine)
             #nib.save(final_img, folder + os.sep + "testroi.nii")
@@ -780,9 +785,7 @@ if __name__ == "__main__":
             LESIONDATAr = DATA1_data
 
             # Verify ROI vs data dimensions match
-            if test_dimensions(DATA1_data, BGr, LESIONmasks, Nlog, 0) or test_dimensions(DATA1_data, BGr, LESIONmasks,
-                                                                                         Nlog, 1) or test_dimensions(
-                    DATA1_data, BGr, LESIONmasks, Nlog, 2):
+            if test_dimensions(DATA1_data, BGr[0], LESIONmasks, Nlog, 0) or test_dimensions(DATA1_data, BGr[0], LESIONmasks, Nlog, 1) or test_dimensions(DATA1_data, BGr[0], LESIONmasks, Nlog, 2):
                 Nlog.write('Dimension errors found for case ' + case + '\n')
                 continue
 
@@ -820,7 +823,7 @@ if __name__ == "__main__":
             if (not create_visualization) and (len(casefun_vals) > 0 and write_case):
                 if not EOL_found:
                     fout.write('\n')
-                fout.write('%s\t%s\t%s' % (case.strip(), os.path.basename(remove_suffix(LSname)), os.path.basename(remove_suffix(BGname))))
+                fout.write('%s\t%s\t%s' % (case.strip(), os.path.basename(remove_suffix(ROIname)), os.path.basename(remove_suffix(BGname))))
                 write_case = False
             for val in casefun_vals:
                 fout.write('\t%10.9f' % val)

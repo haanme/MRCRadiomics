@@ -80,7 +80,7 @@ class FastFourier2D(FeatureIndexandBackground):
     """
 
     @staticmethod
-    def gkern2(self, kernlen, nsig):
+    def gkern2(kernlen, nsig):
 
         # create nxn zeros
         inp = np.zeros((kernlen, kernlen))
@@ -94,7 +94,7 @@ class FastFourier2D(FeatureIndexandBackground):
     Full Width at Half Maximum of 2D intensity distribution
     """
     @staticmethod
-    def FWHM(self, X, Y):
+    def FWHM(X, Y):
         spline = UnivariateSpline(X, Y - np.max(Y) / 2, s=0)
         r1, r2 = spline.roots()  # find the roots
         return r2 - r1
@@ -286,4 +286,4 @@ class FastFourier2D(FeatureIndexandBackground):
     Returns number of required background mask images
     """
     def number_of_background_mask_images_required(self):
-        return 0
+        return 1

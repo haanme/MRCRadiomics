@@ -125,6 +125,12 @@ class HarrisStephens(CornersEdges2D):
     """
 
     def fun(self, intensity_images, foreground_mask_images, background_mask_images, resolution, **kwargs):
+        if type(intensity_images) == list:
+            intensity_images = intensity_images[0]
+        if type(foreground_mask_images) == list:
+            foreground_mask_images = foreground_mask_images[0]
+        if type(background_mask_images) == list:
+            background_mask_images = background_mask_images[0]
         blockSize = int(np.round(self.params[0] / np.mean([resolution[0], resolution[1]])))
         # print('Harris effective block size:' + str(blockSize))
         ksize = self.params[1]

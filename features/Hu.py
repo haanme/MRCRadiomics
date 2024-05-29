@@ -148,6 +148,13 @@ class Hu(FeatureIndexandBackground):
     """
 
     def fun(self, intensity_images, foreground_mask_images, background_mask_images, resolution, **kwargs):
+        if type(intensity_images) == list:
+            intensity_images = intensity_images[0]
+        if type(foreground_mask_images) == list:
+            foreground_mask_images = foreground_mask_images[0]
+        if type(background_mask_images) == list:
+            background_mask_images = background_mask_images[0]
+
         if np.max(intensity_images) == 0:
             return [float('nan') for x in self.get_return_value_short_names()]
         labelimage = copy.deepcopy(intensity_images)

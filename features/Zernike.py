@@ -92,13 +92,18 @@ class Zernike(Feature):
     @return number of return values matching get_return_value_descriptions
     """
 
-    def fun(self, intensity_images, mask_images, resolution, **kwargs):
-        if np.max(mask_images) == 0:
+    def fun(self, intensity_images, foreground_mask_images, background_mask_images, resolution, **kwargs):
+        if type(intensity_images) == list:
+            intensity_images = intensity_images[0]
+        if type(foreground_mask_images) == list:
+            foreground_mask_images = foreground_mask_images[0]
+
+        if np.max(foreground_mask_images) == 0:
             return float('nan'), float('nan'), float('nan'), float('nan'), float('nan'), float('nan'), float(
                 'nan'), float(
                 'nan'), float('nan')
-        Zdata = self.zernike_2D(intensity_images, mask_images)
-        ROIdata = Zdata[0][mask_images > 0]
+        Zdata = self.zernike_2D(intensity_images, foreground_mask_images)
+        ROIdata = Zdata[0][foreground_mask_images > 0]
 
         mean = np.mean(ROIdata)
         median = np.median(ROIdata)
@@ -161,6 +166,15 @@ class Zernike(Feature):
     """
     Returns number of required background mask images
     """
+
+    def number_of_foreground_mask_images_required(self):
+        return 1
+
+    def need_foreground(self):
+        return True
+
+    def need_background(self):
+        return False
 
     def number_of_background_mask_images_required(self):
         return 0

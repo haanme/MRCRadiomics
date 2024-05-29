@@ -45,6 +45,13 @@ class BackgroundMomentsRelative(FeatureIndexandBackground):
     @return number of return values matching get_return_value_descriptions
     """
     def fun(self, intensity_images, foreground_mask_images, background_mask_images, resolution, **kwargs):
+        if type(intensity_images) == list:
+            intensity_images = intensity_images[0]
+        if type(foreground_mask_images) == list:
+            foreground_mask_images = foreground_mask_images[0]
+        if type(background_mask_images) == list:
+            background_mask_images = background_mask_images[0]
+
         ROIdata = intensity_images[foreground_mask_images > 0]
         BGdata = intensity_images[background_mask_images > 0]
         volume = len(BGdata) * (0.001 * resolution[0] * resolution[1] * resolution[2])
