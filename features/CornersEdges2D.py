@@ -152,10 +152,10 @@ class HarrisStephens(CornersEdges2D):
             BG_axis_a = None
             BG_axis_b = None
             if (slices == 1):
-                LS = foreground_mask_images[0][:, :]
+                LS = foreground_mask_images[:, :]
                 BG = background_mask_images[:, :]
             else:
-                LS = foreground_mask_images[0][:, :, slice_i]
+                LS = foreground_mask_images[:, :, slice_i]
                 BG = background_mask_images[:, :, slice_i]
             if (np.max(LS) == 0 and np.max(BG) == 0):
                 continue
