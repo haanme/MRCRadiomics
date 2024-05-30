@@ -172,7 +172,6 @@ class Laws3D_Background(FeatureIndexandBackground):
             ret.append(mean1 / (mean1 + np.mean(BGdata)))
         return ret
 
-
     """
     Executes the feature
 
@@ -183,7 +182,6 @@ class Laws3D_Background(FeatureIndexandBackground):
     @param params: feature specific additional parameters
     @return number of return values matching get_return_value_descriptions
     """
-
 
     def fun(self, intensity_images, foreground_mask_images, background_mask_images, resolution, **kwargs):
         if type(intensity_images) == list:
@@ -265,7 +263,7 @@ class Laws3D_Background(FeatureIndexandBackground):
         for laws3D_names_i in range(len(laws3D_names)):
             for name_i in range(len(casefun_3D_Laws_names) - 1):
                 name = casefun_3D_Laws_names[name_i]
-                names.append('BGUTU3DLaws%s_%s_f%2.1f' % (laws3D_names[laws3D_names_i], name, params[0]))
+                names.append('BGUTU3DLaws%s_%s_f%2.1f' % (laws3D_names[laws3D_names_i], name, self.params[0]))
         return names
 
     """

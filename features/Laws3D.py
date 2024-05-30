@@ -181,10 +181,15 @@ class Laws3D(FeatureIndexandBackground):
     """
     Names for 3D Laws features. Contains basic first order statistics to be takesn for each feature map.
     """
-    casefun_3D_Laws_names = ['mean_ROI', 'median_ROI', 'SD_ROI', 'IQR_ROI', 'skewnessROI', 'kurtosisROI', 'p25ROI',
-                             'p75ROI', 'rel']
+    casefun_3D_Laws_names = ['mean_ROI', 'median_ROI', 'SD_ROI', 'IQR_ROI', 'skewnessROI', 'kurtosisROI', 'p25ROI', 'p75ROI', 'rel']
 
-
+    laws3D_names = []
+    length_Laws3Dkernel = len(Laws3Dkernel)
+    Laws3Dkernel_array = np.zeros([length_Laws3Dkernel, 5, 5, 5])
+    for kernel_i in range(0, length_Laws3Dkernel):
+        Laws3Dkernel_array[kernel_i, :, :, :] = Laws3Dkernel[kernel_i]['data']
+    for kernel_i in range(1, length_Laws3Dkernel):
+        laws3D_names.append(Laws3Dkernel[kernel_i]['name'])
 
     """
     Initialization
@@ -272,7 +277,7 @@ class Laws3D(FeatureIndexandBackground):
         LESIONDATArs, affineLESIONDATArs = features.Utils.reslice_array(LESIONDATArs, resolution, new_res, 1)
 
         outdatas = []
-        for kernel_i in range(1, len(self.Laws3Dkernel)):
+        for kernel_i in range(1, len(Laws3Dkernel)):
             outdatas.append(np.zeros_like(LESIONDATArs))
 
         s = 5
@@ -293,14 +298,14 @@ class Laws3D(FeatureIndexandBackground):
                 continue
 
             correlates = []
-            for kernel_i in range(1, len(self.Laws3Dkernel)):
-                c = correlate(window, self.Laws3Dkernel[kernel_i]['data'])
+            for kernel_i in range(1, len(Laws3Dkernel)):
+                c = correlate(window, Laws3Dkernel[kernel_i]['data'])
                 correlates.append(c[2:7, 2:7, 2:7])
             for c_i in range(len(correlates)):
                 outdatas[c_i][xmid, ymid, zmid] = np.sum(correlates[c_i])
         sys.stderr = sys.__stderr__
         ret = []
-        for kernel_i in range(1, len(self.Laws3Dkernel)):
+        for kernel_i in range(1, len(Laws3Dkernel)):
             ret = self.append_Laws_results(outdatas[kernel_i - 1], LESIONrs_temp, BGrs_temp, ret)
         return ret
 
@@ -312,9 +317,9 @@ class Laws3D(FeatureIndexandBackground):
 
     def get_return_value_short_names(self):
         names = []
-        for name_i in range(len(self.laws_names)):
-            for name in self.casefun_3D_2D_Laws_names:
-                names.append('UTU3D2DLaws%s_%s_f%2.1f' % (self.laws_names[name_i], name, self.params[0]))
+        for name_i in range(len(self.laws3D_names)):
+            for name in self.casefun_3D_Laws_names:
+                names.append('UTU3D2DLaws%s_%s_f%2.1f' % (self.laws3D_names[name_i], name, self.params[0]))
         return names
 
     """

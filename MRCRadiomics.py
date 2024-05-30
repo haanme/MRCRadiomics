@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-__version__ = "1.3.0"
+__version__ = "1.3.1"
 
 # $Source$
 
@@ -627,7 +627,9 @@ if __name__ == "__main__":
         if not header_found:
             for name in feature_names:
                 fout.write('\t%s' % (datafun.get_name() + '_' + name))
-    print_verbose('Resolved feature names:' + str(feature_names), verbose)
+    print_verbose('Resolved feature names:', verbose)
+    for feature_name in feature_names:
+        print_verbose(feature_name, verbose)
     if not header_found:
         fout.write('\n')
         EOL_found = True
@@ -686,6 +688,7 @@ if __name__ == "__main__":
                 BGROI_data, PM_affine, PM_voxelsize = load_mha(case + ' ' + BGname, folder + os.sep + BGname)
             else:
                 print('Unrecogized file suffix:' + BGname)
+                BGROI_data, PM_affine, PM_voxelsize = [None, None, None]
             BGname = folder + os.sep + BGname
         else:
             if os.path.exists(BGname):
@@ -695,6 +698,7 @@ if __name__ == "__main__":
                     BGROI_data, PM_affine, PM_voxelsize = load_mha(case + ' ' + BGname, BGname)
                 else:
                     print('Unrecogized file suffix:' + BGname)
+                    BGROI_data, PM_affine, PM_voxelsize = [None, None, None]
             else:
                 BGROI_data, PM_affine, PM_voxelsize = [None, None, None]
         if os.path.exists(folder + os.sep + ROIname):
@@ -704,6 +708,7 @@ if __name__ == "__main__":
                 ROI_data, LS_affine, LS_voxelsize = load_mha(case + ' ' + ROIname, folder + os.sep + ROIname)
             else:
                 print('Unrecogized file suffix:' + ROIname)
+                ROI_data, LS_affine, LS_voxelsize = [None, None, None]
             ROIname = folder + os.sep + ROIname
         else:
             if os.path.exists(ROIname):
@@ -713,13 +718,17 @@ if __name__ == "__main__":
                     ROI_data, LS_affine, LS_voxelsize = load_mha(case + ' ' + ROIname, ROIname)
                 else:
                     print('Unrecogized file suffix:' + ROIname)
+                    ROI_data, LS_affine, LS_voxelsize = [None, None, None]
             else:
                 ROI_data, LS_affine, LS_voxelsize = [None, None, None]
         LESIONmasks = [ROI_data]
         BGr = [BGROI_data]
 
         # Process all feature extraction function in settings
-        write_missing = True
+        if verbose :
+            write_missing = True
+        else:
+            write_missing = False
         write_case = True
         write_EOL = False
         for datafun_i in range(len(datafun_names)):

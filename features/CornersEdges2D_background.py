@@ -26,8 +26,7 @@ class HarrisStephensBackground(FeatureIndexandBackground):
     """
     Output names
     """
-    subfun_3D_2D_Harris_names_BG = (
-        'No_corners_ROI', 'Corner_density_primary', 'Corner_density_secondary', 'Corner_density_mean')
+    subfun_3D_2D_Harris_names_BG = ('No_corners_ROI', 'No_corners_BG', 'No_corners_ratio', 'Corner_density_primary', 'Corner_density_secondary', 'Corner_density_mean', 'Corner_density_ratio', 'Corner_density_ratio_overall')
 
     """
     Initialization
@@ -53,6 +52,12 @@ class HarrisStephensBackground(FeatureIndexandBackground):
     """
 
     def fun(self, intensity_images, foreground_mask_images, background_mask_images, resolution, **kwargs):
+        if type(intensity_images) == list:
+            intensity_images = intensity_images[0]
+        if type(foreground_mask_images) == list:
+            foreground_mask_images = foreground_mask_images[0]
+        if type(background_mask_images) == list:
+            background_mask_images = background_mask_images[0]
         blockSize = int(np.round(self.params[0] / np.mean([resolution[0], resolution[1]])))
         # print('Harris effective block size:' + str(blockSize))
         ksize = self.params[1]
@@ -74,10 +79,10 @@ class HarrisStephensBackground(FeatureIndexandBackground):
             BG_axis_a = None
             BG_axis_b = None
             if (slices == 1):
-                LS = foreground_mask_images[0][:, :]
+                LS = foreground_mask_images[:, :]
                 BG = background_mask_images[:, :]
             else:
-                LS = foreground_mask_images[0][:, :, slice_i]
+                LS = foreground_mask_images[:, :, slice_i]
                 BG = background_mask_images[:, :, slice_i]
             if (np.max(LS) == 0 and np.max(BG) == 0):
                 continue

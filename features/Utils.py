@@ -166,6 +166,31 @@ def sliding_window(image, stepSize, windowSize):
 
 
 """
+3D sliding window help function
+
+@param image: Intensity image
+@param mask: Masking window
+@param stepSize: step size in voxels
+@param windowSize: window size in voxels
+@returns: yield for sliding window processing
+"""
+
+
+def sliding_window3D(image, mask, stepSize, windowSize):
+    # slide a window across the image
+    for z in range(0, image.shape[2], stepSize):
+        if np.max(mask[:, :, z]) == 0:
+            continue
+        for y in range(0, image.shape[1], stepSize):
+            if np.max(mask[:, y, z]) == 0:
+                continue
+            for x in range(0, image.shape[0], stepSize):
+                # yield the current window
+                yield x, y, z, image[x:x + windowSize[0], y:y + windowSize[1], z:z + windowSize[2]]
+        print(('%d/%d Laws' % (z, image.shape[2])))
+
+
+"""
 Resolve non-zero subregion in the image
 
 @param data: data to be resliced

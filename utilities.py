@@ -13,6 +13,7 @@ import os
 import subprocess
 from skimage import measure
 import SimpleITK as sitk
+import copy
 
 
 # Directory where result data are located
@@ -35,14 +36,18 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
-def load_nifti(name, filename):
+def load_nifti(name, filename, voxel_source='pixdim'):
     """
     Loads Nifti data
     :param name: data name for stdout
     :param filename: loaded filename
+    :param voxel_source: source for resolving voxel size as information pixdim(default)/sform/qform
     :return: data matrix, affine transformation matrix, data voxelsize
     """
     img = nib.load(filename)
+    if voxel_source == 'pixdim':
+        print(img.header)
+        voxelsize = [img.header['pixdim'][1], img.header['pixdim'][2], img.header['pixdim'][3]]
     img = nib.Nifti1Image(img.get_fdata(), np.eye(4))
     try:
         affine = img.affine
@@ -57,7 +62,10 @@ def load_nifti(name, filename):
     except:
         data_qform = img.get_header().get_qform()
     data = img.get_fdata()
-    voxelsize = [abs(data_sform[0, 0]), abs(data_sform[1, 1]), abs(data_sform[2,2])]
+    if voxel_source == 'data_qform':
+        voxelsize = [abs(data_qform[0, 0]), abs(data_qform[1, 1]), abs(data_qform[2, 2])]
+    else:
+        voxelsize = [abs(data_sform[0, 0]), abs(data_sform[1, 1]), abs(data_sform[2, 2])]
     print('Loading ' + name + ':' + filename + ' ' + str(data.shape) + ' ' + str(voxelsize))
 
     return np.squeeze(data), affine, voxelsize
@@ -73,7 +81,7 @@ def load_mha(name, filename):
     """
 
     image = sitk.ReadImage(filename, imageIO="MetaImageIO")
-    data = sitk.GetArrayViewFromImage(image)
+    data = copy.deepcopy(sitk.GetArrayViewFromImage(image))
     voxelsize = image.GetSpacing()
     print(voxelsize)
     affine = np.eye(4)
